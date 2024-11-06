@@ -263,7 +263,7 @@ def process_universe(
                     publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
                     publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                     publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
-                    
+
                     data = candles[ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                     start = time.time()
 
@@ -284,8 +284,8 @@ def process_universe(
 
                     log(f"published candles {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {(time.time() - start) *1000} ms")
 
-            except Exception as subscribe_error:
-                log(f"Fail to subscribe for {this_row_header}. Error: {subscribe_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+            except Exception as loop_error:
+                log(f"Fail to subscribe for {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
 
             if not task.keep_running:
                 break
