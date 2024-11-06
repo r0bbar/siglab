@@ -285,7 +285,7 @@ def process_universe(
                     log(f"published candles {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {(time.time() - start) *1000} ms")
 
             except Exception as loop_error:
-                log(f"Fail to subscribe for {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+                log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
 
             if not task.keep_running:
                 break
