@@ -5,6 +5,8 @@ import argparse
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, Union
+import hashlib
+from collections import deque
 import logging
 import json
 from io import StringIO
@@ -28,6 +30,9 @@ After perform TA calc, it'd publish back to redis under:
     key example: candles_ta-BTC-USDT-SWAP-okx_linear-1h
     key format: candles_ta-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$
 
+From command prompt:
+    python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999
+
 Launch.json if you wish to debug from VSCode:
 {
     "version": "0.2.0",
@@ -43,7 +48,8 @@ Launch.json if you wish to debug from VSCode:
                                 "--ma_long_intervals", "24",
                                 "--ma_short_intervals", "8",
                                 "--boillenger_std_multiples", "2",
-                                "--redis_ttl_ms", "3600000"
+                                "--redis_ttl_ms", "3600000",
+                                "--processed_hash_queue_max_size", "999"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
@@ -68,7 +74,12 @@ param : Dict = {
     'ma_short_intervals' : 8,
     "boillenger_std_multiples" : 2,
     
-    "candles_ta_publish_topic_regex" : r"^candles-[A-Z]+-[A-Z]+-[A-Z]+-[a-z_]+-\d+[smhdwMy]$", # regex corresponding to candles_publish_topic
+    # regex corresponding to candles_publish_topic. If you want specific instances to process specific tickers only (performance concerns), you can use this regex filter to do the trick.
+    "candles_ta_publish_topic_regex" : r"^candles-[A-Z]+-[A-Z]+-[A-Z]+-[a-z_]+-\d+[smhdwMy]$", 
+
+    # processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'.
+    # Depending on how many tickers this instance is monitoring, you may want to adjust this queue size.
+    "processed_hash_queue_max_size" : 999,
 
     'job_name' : 'candles_ta_provider',
 
@@ -116,6 +127,7 @@ def parse_args():
     parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
     parser.add_argument("--boillenger_std_multiples", help="Boillenger bands: # std", default=2)
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
+    parser.add_argument("--processed_hash_queue_max_size", help="processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'", default=999)
 
     args = parser.parse_args()
     param['candle_size'] = args.candle_size
@@ -124,6 +136,7 @@ def parse_args():
     param['boillenger_std_multiples'] = int(args.boillenger_std_multiples)
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
+    param['processed_hash_queue_max_size'] = int(args.processed_hash_queue_max_size)
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -150,6 +163,9 @@ def work(
     candles_ta_publish_topic_regex : str = param['candles_ta_publish_topic_regex']
     candles_ta_publish_topic_regex_pattern : Pattern = re.compile(candles_ta_publish_topic_regex)
 
+    # This is how we avoid reprocess same message twice. We check message hash and cache it.
+    processed_hash_queue = deque(maxlen=10)
+
     while True:
         try:
             keys = redis_client.keys()
@@ -163,38 +179,45 @@ def work(
                         candles = None
                         message = redis_client.get(key)
                         if message:
+                            # When candles_provider.py republish candles to same key (i.e. overwrites it), we'd know.
+                            message_hash = hashlib.sha256(message).hexdigest()
                             message = message.decode('utf-8')
-                            candles = json.loads(message)
-                            pd_candles = pd.read_json(StringIO(candles), convert_dates=False)
+                            if message_hash not in processed_hash_queue: # Dont process what's been processed before.
+                                processed_hash_queue.append(message_hash)
 
-                            start = time.time()
-                            compute_candles_stats(
-                                        pd_candles=pd_candles, 
-                                        boillenger_std_multiples=boillenger_std_multiples, 
-                                        sliding_window_how_many_candles=ma_long_intervals, 
-                                        slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals)
-                                    )
-                            compute_candles_stats_elapsed_ms = int((time.time() - start) *1000)
-                            data = pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                                candles = json.loads(message)
+                                pd_candles = pd.read_json(StringIO(candles), convert_dates=False)
 
-                            start = time.time()
-                            if redis_client:
-                                '''
-                                https://redis.io/commands/set/
-                                '''
-                                expiry_sec : int = 0
-                                if candle_size=="m":
-                                    expiry_sec = 60 + 60*15
-                                elif candle_size=="h":
-                                    expiry_sec = 60*60 + 60*15
-                                elif candle_size=="d":
-                                    expiry_sec = 60*60*24 
-                                expiry_sec += 60*15 # additional 15min
+                                start = time.time()
+                                compute_candles_stats(
+                                            pd_candles=pd_candles, 
+                                            boillenger_std_multiples=boillenger_std_multiples, 
+                                            sliding_window_how_many_candles=ma_long_intervals, 
+                                            slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals)
+                                        )
+                                compute_candles_stats_elapsed_ms = int((time.time() - start) *1000)
+                                data = pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
 
-                                redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
-                                redis_set_elapsed_ms = int((time.time() - start) *1000)
+                                start = time.time()
+                                if redis_client:
+                                    '''
+                                    https://redis.io/commands/set/
+                                    '''
+                                    expiry_sec : int = 0
+                                    if candle_size=="m":
+                                        expiry_sec = 60 + 60*15
+                                    elif candle_size=="h":
+                                        expiry_sec = 60*60 + 60*15
+                                    elif candle_size=="d":
+                                        expiry_sec = 60*60*24 
+                                    expiry_sec += 60*15 # additional 15min
 
-                                log(f"published candles {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms, compute_candles_stats_elapsed_ms: {compute_candles_stats_elapsed_ms}")
+                                    redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
+                                    redis_set_elapsed_ms = int((time.time() - start) *1000)
+
+                                    log(f"published candles {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms, compute_candles_stats_elapsed_ms: {compute_candles_stats_elapsed_ms}")
+                            else:
+                                log(f"{s_key} message with hash {message_hash} been processed previously.")
 
 
                 except Exception as key_error:
