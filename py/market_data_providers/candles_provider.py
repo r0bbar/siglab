@@ -265,8 +265,8 @@ def process_universe(
                     publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
 
                     data = candles[ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                    
                     start = time.time()
-
                     if redis_client:
                         '''
                         https://redis.io/commands/set/
@@ -282,7 +282,9 @@ def process_universe(
 
                         redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
 
-                    log(f"published candles {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {(time.time() - start) *1000} ms")
+                        redis_set_elapsed_ms = int((time.time() - start) *1000)
+
+                        log(f"published candles {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
 
             except Exception as loop_error:
                 log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
