@@ -81,7 +81,7 @@ param : Dict = {
     'mds' : {
         'topics' : {
             'partition_assign_topic' : 'mds_assign_$PROVIDER_ID$',
-            'candles_publish_topic' : 'ccxt_candles_$PROVIDER_ID$'
+            'candles_publish_topic' : 'candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
         },
         'redis' : {
             'host' : 'localhost',
@@ -259,7 +259,11 @@ def process_universe(
 
                     denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==ticker]))['id']
 
-                    publish_key = f"candles-{denormalized_ticker}-{exchange_name}-{param['candle_size']}"
+                    publish_key = param['candles_publish_topic']
+                    publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
+                    publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
+                    publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
+                    
                     data = candles[ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                     start = time.time()
 
