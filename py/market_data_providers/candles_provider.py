@@ -259,7 +259,7 @@ def process_universe(
 
                     denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==ticker]))['id']
 
-                    publish_key = param['candles_publish_topic']
+                    publish_key = param['mds']['topics']['candles_publish_topic']
                     publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
                     publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                     publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
