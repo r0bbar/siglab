@@ -11,7 +11,7 @@ from redis import StrictRedis
 from redis.client import PubSub
 
 '''
-set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab
+set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
 python test_provider.py --provider_id aaa
 '''
 

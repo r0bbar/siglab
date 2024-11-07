@@ -31,6 +31,7 @@ After perform TA calc, it'd publish back to redis under:
     key format: candles_ta-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$
 
 From command prompt:
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999
 
 Launch.json if you wish to debug from VSCode:

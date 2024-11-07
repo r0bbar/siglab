@@ -26,7 +26,7 @@ from util.market_data_util import fetch_candles
 
 '''
 To start from command prompt:
-    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 2169 --redis_ttl_ms 3600000
 
 This script is pypy compatible.
