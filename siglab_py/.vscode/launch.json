@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args" : [
+                                "--candle_size", "1h",
+                                "--ma_long_intervals", "24",
+                                "--ma_short_intervals", "8",
+                                "--boillenger_std_multiples", "2",
+                                "--redis_ttl_ms", "3600000",
+                                "--processed_hash_queue_max_size", "999"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+    ]
+}
