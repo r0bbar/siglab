@@ -17,29 +17,53 @@ from yahoofinancials import YahooFinancials
 import yfinance as yf
 
 def fix_column_types(pd_candles : pd.DataFrame):
-        pd_candles['open'] = pd_candles['open'].astype(float)
-        pd_candles['high'] = pd_candles['high'].astype(float)
-        pd_candles['low'] = pd_candles['low'].astype(float)
-        pd_candles['close'] = pd_candles['close'].astype(float)
-        pd_candles['volume'] = pd_candles['volume'].astype(float)
+    local_tz = datetime.now().astimezone().tzinfo
 
-        pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(
-            lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000))
-        )
-        pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
-        pd_candles['datetime_utc'] = pd_candles['timestamp_ms'].apply(
-            lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000), tz=timezone.utc)
-        )
-        
-        # This is to make it easy to do grouping with Excel pivot table
-        pd_candles['year'] = pd_candles['datetime'].dt.year
-        pd_candles['month'] = pd_candles['datetime'].dt.month
-        pd_candles['day'] = pd_candles['datetime'].dt.day
-        pd_candles['hour'] = pd_candles['datetime'].dt.hour
-        pd_candles['minute'] = pd_candles['datetime'].dt.minute
-        pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
+    pd_candles['open'] = pd_candles['open'].astype(float)
+    pd_candles['high'] = pd_candles['high'].astype(float)
+    pd_candles['low'] = pd_candles['low'].astype(float)
+    pd_candles['close'] = pd_candles['close'].astype(float)
+    pd_candles['volume'] = pd_candles['volume'].astype(float)
+
+    pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(
+        lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000))
+    )
+    pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
+    if pd_candles['datetime'].dt.tz is None:
+        pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC')
+    pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz)
+    pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
+    pd_candles['datetime_utc'] = pd_candles['timestamp_ms'].apply(
+        lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000), tz=timezone.utc)
+    )
+    
+    # This is to make it easy to do grouping with Excel pivot table
+    pd_candles['year'] = pd_candles['datetime'].dt.year
+    pd_candles['month'] = pd_candles['datetime'].dt.month
+    pd_candles['day'] = pd_candles['datetime'].dt.day
+    pd_candles['hour'] = pd_candles['datetime'].dt.hour
+    pd_candles['minute'] = pd_candles['datetime'].dt.minute
+    pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
 
 class YahooExchange:
+    def fetch_ohlcv(
+        self,
+        symbol : str,
+        since : int,
+        timeframe : str,
+        limit : int = 1
+    ) -> List:
+        pd_candles = self.fetch_candles(
+            symbols=[symbol],
+            start_ts=int(since/1000),
+            end_ts=None,
+            candle_size=timeframe
+        )[symbol]
+        if pd_candles is not None:
+            return pd_candles.values.tolist()
+        else:
+            return []
+
     def fetch_candles(
         self,
         start_ts,
@@ -57,10 +81,15 @@ class YahooExchange:
 
         for symbol in symbols:
             # From yf, "DateTime" in UTC
+            # The requested range must be within the last 730 days. Otherwise API will return empty DataFrame.
             pd_candles = yf.download(tickers=symbol, start=start_date_str, end=end_date_str, interval=candle_size)
             pd_candles.reset_index(inplace=True)
             pd_candles.rename(columns={'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
+            pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
+            if pd_candles['datetime'].dt.tz is None:
+                pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC')
             pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz)
+            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
             pd_candles['timestamp_ms'] = pd_candles.datetime.values.astype(np.int64) // 10**6
             pd_candles = pd_candles.sort_values(by=['timestamp_ms'], ascending=[True])
             
