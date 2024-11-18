@@ -333,7 +333,17 @@ def compute_candles_stats(
 
     # MFI (Money Flow Index) https://randerson112358.medium.com/algorithmic-trading-strategy-using-money-flow-index-mfi-python-aa46461a5ea5 
     pd_candles['typical_price'] = (pd_candles['high'] + pd_candles['low'] + pd_candles['close']) / 3
-    pd_candles['mfi'] = pd_candles['typical_price'] * pd_candles['volume']
+    pd_candles['money_flow'] = pd_candles['typical_price'] * pd_candles['volume']
+    pd_candles['money_flow_positive'] = pd_candles['money_flow'].where(
+        pd_candles['typical_price'] > pd_candles['typical_price'].shift(1), 0
+    )
+    pd_candles['money_flow_negative'] = pd_candles['money_flow'].where(
+        pd_candles['typical_price'] < pd_candles['typical_price'].shift(1), 0
+    )
+    pd_candles['positive_flow_sum'] = pd_candles['money_flow_positive'].rolling(sliding_window_how_many_candles).sum()
+    pd_candles['negative_flow_sum'] = pd_candles['money_flow_negative'].rolling(sliding_window_how_many_candles).sum()
+    pd_candles['money_flow_ratio'] = pd_candles['positive_flow_sum'] / pd_candles['negative_flow_sum']
+    pd_candles['mfi'] = 100 - (100 / (1 + pd_candles['money_flow_ratio']))
     
 
     # MACD https://www.investopedia.com/terms/m/macd.asp
