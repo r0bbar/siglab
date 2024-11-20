@@ -329,6 +329,7 @@ def compute_candles_stats(
         
     lo_rs = lo_ma_up / lo_ma_down
     pd_candles.loc[:,'rsi'] = 100 - (100/(1 + lo_rs))
+    pd_candles['ema_rsi'] = pd_candles['rsi'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
 
 
     # MFI (Money Flow Index) https://randerson112358.medium.com/algorithmic-trading-strategy-using-money-flow-index-mfi-python-aa46461a5ea5 
@@ -376,6 +377,15 @@ def compute_candles_stats(
     X = sm.add_constant(range(len(pd_candles['boillenger_lower'])))
     rolling_slope = pd_candles['boillenger_lower'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
     pd_candles['boillenger_lower_slope'] = rolling_slope
+
+    X = sm.add_constant(range(len(pd_candles['ema_rsi'])))
+    rolling_slope = pd_candles['ema_rsi'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+    pd_candles['ema_rsi_slope'] = rolling_slope
+
+    pd_candles['regular_divergence'] = (
+        (pd_candles['ema_long_slope'] > 0) & (pd_candles['ema_rsi_slope'] < 0) |
+        (pd_candles['ema_long_slope'] < 0) & (pd_candles['ema_rsi_slope'] > 0)
+    )
     
 
     # Fibonacci
