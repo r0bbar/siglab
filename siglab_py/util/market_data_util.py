@@ -45,6 +45,14 @@ def fix_column_types(pd_candles : pd.DataFrame):
     pd_candles['minute'] = pd_candles['datetime'].dt.minute
     pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
 
+    '''
+    The 'Unnamed: 0', 'Unnamed : 1'... etc columns often appears in a DataFrame when it is saved to a file (e.g., CSV or Excel) and later loaded. 
+    This usually happens if the DataFrame's index was saved along with the data, and then pandas automatically treats it as a column during the file loading process.
+    We want to drop them as it'd mess up idmin, idmax calls, which will take values from 'Unnamed' instead of actual pandas index.
+    '''
+    pd_candles.drop(pd_candles.columns[pd_candles.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+    pd_candles.reset_index(drop=True, inplace=True)
+
 class YahooExchange:
     def fetch_ohlcv(
         self,
@@ -253,8 +261,6 @@ def compute_candles_stats(
         boillenger_ema : bool = False,
         slow_fast_interval_ratio : float = 3
         ):
-    fix_column_types(pd_candles)
-    
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
 
     '''
@@ -267,7 +273,8 @@ def compute_candles_stats(
     ] = np.sign(pd_btc_candles['close'] - pd_btc_candles['ema_long_periods']) <-- TypeError: unorderable types for comparison
     '''
     # pd_candles = pd_candles[pd_candles.close.notnull()] # Don't make a copy. Drop in-place
-    pd_candles.drop(pd_candles[pd_candles.close.isnull()].index, inplace=True)
+    
+    fix_column_types(pd_candles) # Do this AFTER filtering. Or you'd mess up index, introduce error around idmax, idmin. fix_column_types will drop all 'unnamed' columns and reset_index.
 
     pd_candles['pct_change_close'] = pd_candles['close'].pct_change() * 100
     pd_candles['sma_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
