@@ -1,6 +1,7 @@
 import tzlocal
 from datetime import datetime, timezone
 from typing import List, Dict, Union, NoReturn, Any
+from pathlib import Path
 import math
 import pandas as pd
 import numpy as np
@@ -52,6 +53,66 @@ def fix_column_types(pd_candles : pd.DataFrame):
     '''
     pd_candles.drop(pd_candles.columns[pd_candles.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
     pd_candles.reset_index(drop=True, inplace=True)
+
+class NASDAQExchange:
+    def __init__(self, data_dir : Union[str, None]) -> None:
+        if data_dir:
+            self.data_dir = data_dir
+        else:
+            self.data_dir = Path(__file__).resolve().parents[2] / "data/nasdaq" 
+
+    def fetch_candles(
+        self,
+        start_ts,
+        end_ts,
+        symbols,
+        candle_size
+    ) -> Dict[str, Union[pd.DataFrame, None]]:
+        exchange_candles : Dict[str, Union[pd.DataFrame, None]] = {}
+
+        start_date = datetime.fromtimestamp(start_ts)
+        end_date = datetime.fromtimestamp(end_ts)
+        start_date_str = start_date.strftime('%Y-%m-%d')
+        end_date_str = end_date.strftime('%Y-%m-%d')
+        local_tz = datetime.now().astimezone().tzinfo
+
+        for symbol in symbols:
+            # CSV from NASDAQ: https://www.nasdaq.com/market-activity/quotes/historical
+            pd_daily_candles = pd.read_csv(f"{self.data_dir}\\NASDAQ_hist_{symbol}.csv")
+            pd_daily_candles.rename(columns={'Date' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close/Last' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
+            pd_daily_candles['open'] = pd_daily_candles['open'].astype(str).str.replace('$','')
+            pd_daily_candles['high'] = pd_daily_candles['high'].astype(str).str.replace('$','')
+            pd_daily_candles['low'] = pd_daily_candles['low'].astype(str).str.replace('$','')
+            pd_daily_candles['close'] = pd_daily_candles['close'].astype(str).str.replace('$','')
+            pd_daily_candles['datetime']= pd.to_datetime(pd_daily_candles['datetime'])
+            pd_daily_candles['timestamp_ms'] = pd_daily_candles.datetime.values.astype(np.int64) // 10 ** 6
+            pd_daily_candles['symbol'] = symbol
+            pd_daily_candles['exchange'] = 'nasdaq'
+            fix_column_types(pd_daily_candles)
+
+            if candle_size=="1h":
+                # Fill forward (i.e. you dont actually have hourly candles)
+                start = pd_daily_candles["datetime"].min().normalize()
+                end = pd_daily_candles["datetime"].max().normalize() + pd.Timedelta(days=1)
+                hourly_index = pd.date_range(start=start, end=end, freq="H")
+                pd_hourly_candles = pd.DataFrame({"datetime": hourly_index})
+                pd_hourly_candles = pd.merge_asof(
+                    pd_hourly_candles.sort_values("datetime"),
+                    pd_daily_candles.sort_values("datetime"),
+                    on="datetime",
+                    direction="backward"
+                )
+
+                # When you fill foward, a few candles before start date can have null values (open, high, low, close, volume ...)
+                first_candle_dt = pd_hourly_candles[(~pd_hourly_candles.close.isna())  & (pd_hourly_candles['datetime'].dt.time == pd.Timestamp('00:00:00').time())].iloc[0]['datetime']
+                pd_hourly_candles = pd_hourly_candles[pd_hourly_candles.datetime>=first_candle_dt]
+
+                exchange_candles[symbol] = pd_hourly_candles
+
+            elif candle_size=="1d":
+                exchange_candles[symbol] = pd_daily_candles
+
+        return exchange_candles
 
 class YahooExchange:
     def fetch_ohlcv(
@@ -134,7 +195,13 @@ def fetch_candles(
                             symbols=normalized_symbols,
                             candle_size=candle_size
                         )
-
+    elif type(exchange) is NASDAQExchange:
+        return exchange.fetch_candles(
+                            start_ts=start_ts,
+                            end_ts=end_ts,
+                            symbols=normalized_symbols,
+                            candle_size=candle_size
+                        )
     elif issubclass(exchange.__class__, CcxtExchange):
         return _fetch_candles_ccxt(
             start_ts=start_ts,
