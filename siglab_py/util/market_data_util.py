@@ -53,6 +53,7 @@ def fix_column_types(pd_candles : pd.DataFrame):
     '''
     pd_candles.drop(pd_candles.columns[pd_candles.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
     pd_candles.reset_index(drop=True, inplace=True)
+    pd_candles.sort_values("datetime", inplace=True)
 
 class NASDAQExchange:
     def __init__(self, data_dir : Union[str, None]) -> None:
@@ -61,6 +62,24 @@ class NASDAQExchange:
         else:
             self.data_dir = Path(__file__).resolve().parents[2] / "data/nasdaq" 
 
+    def fetch_ohlcv(
+        self,
+        symbol : str,
+        since : int,
+        timeframe : str,
+        limit : int = 1
+    ) -> List:
+        pd_candles = self.fetch_candles(
+            symbols=[symbol],
+            start_ts=int(since/1000),
+            end_ts=None,
+            candle_size=timeframe
+        )[symbol]
+        if pd_candles is not None:
+            return pd_candles.values.tolist()
+        else:
+            return []
+    
     def fetch_candles(
         self,
         start_ts,
@@ -106,7 +125,6 @@ class NASDAQExchange:
                 # When you fill foward, a few candles before start date can have null values (open, high, low, close, volume ...)
                 first_candle_dt = pd_hourly_candles[(~pd_hourly_candles.close.isna())  & (pd_hourly_candles['datetime'].dt.time == pd.Timestamp('00:00:00').time())].iloc[0]['datetime']
                 pd_hourly_candles = pd_hourly_candles[pd_hourly_candles.datetime>=first_candle_dt]
-
                 exchange_candles[symbol] = pd_hourly_candles
 
             elif candle_size=="1d":
