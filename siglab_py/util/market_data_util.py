@@ -92,7 +92,7 @@ class NASDAQExchange:
         start_date = datetime.fromtimestamp(start_ts)
         end_date = datetime.fromtimestamp(end_ts) if end_ts else None
         start_date_str = start_date.strftime('%Y-%m-%d')
-        end_date_str = end_date.strftime('%Y-%m-%d') if end_ts else None
+        end_date_str = end_date.strftime('%Y-%m-%d') if end_date else None
         local_tz = datetime.now().astimezone().tzinfo
 
         for symbol in symbols:
