@@ -391,8 +391,16 @@ def compute_candles_stats(
     pd_candles.loc[:,'atr'] = pd_candles['tr'].rolling(window=sliding_window_how_many_candles).mean()
 
 
-    # Hurst https://towardsdatascience.com/introduction-to-the-hurst-exponent-with-code-in-python-4da0414ca52e
-    pd_candles['hurst_exp'] = pd_candles['close'].rolling(window=120).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
+    '''
+    @hardcode @todo
+    Hurst https://towardsdatascience.com/introduction-to-the-hurst-exponent-with-code-in-python-4da0414ca52e
+    Smaller Windows (e.g., 50–100)
+    Larger Windows (e.g., 200+)
+
+    Sometimes you may encounter "Exception has occurred: FloatingPointError invalid value encountered in scalar divide"
+    And for example adjusting window size from 120 to 125 will resolve the issue.
+    '''
+    pd_candles['hurst_exp'] = pd_candles['close'].rolling(window=125).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
 
 
     # Boillenger https://www.quantifiedstrategies.com/python-bollinger-band-trading-strategy/
