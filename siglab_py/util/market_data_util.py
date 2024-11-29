@@ -97,7 +97,7 @@ class NASDAQExchange:
 
         for symbol in symbols:
             # CSV from NASDAQ: https://www.nasdaq.com/market-activity/quotes/historical
-            pd_daily_candles = pd.read_csv(f"{self.data_dir}\\NASDAQ_hist_{symbol}.csv")
+            pd_daily_candles = pd.read_csv(f"{self.data_dir}\\NASDAQ_hist_{symbol.replace('^','')}.csv")
             pd_daily_candles.rename(columns={'Date' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close/Last' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
             pd_daily_candles['open'] = pd_daily_candles['open'].astype(str).str.replace('$','')
             pd_daily_candles['high'] = pd_daily_candles['high'].astype(str).str.replace('$','')
