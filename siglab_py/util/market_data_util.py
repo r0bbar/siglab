@@ -113,7 +113,7 @@ class NASDAQExchange:
                 # Fill forward (i.e. you dont actually have hourly candles)
                 start = pd_daily_candles["datetime"].min().normalize()
                 end = pd_daily_candles["datetime"].max().normalize() + pd.Timedelta(days=1)
-                hourly_index = pd.date_range(start=start, end=end, freq="H")
+                hourly_index = pd.date_range(start=start, end=end, freq="h") # FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.
                 pd_hourly_candles = pd.DataFrame({"datetime": hourly_index})
                 pd_hourly_candles = pd.merge_asof(
                     pd_hourly_candles.sort_values("datetime"),
