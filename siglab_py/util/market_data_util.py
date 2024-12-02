@@ -344,7 +344,9 @@ def compute_candles_stats(
         sliding_window_how_many_candles : int,
         rsi_ema : bool = True,
         boillenger_ema : bool = False,
-        slow_fast_interval_ratio : float = 3
+        slow_fast_interval_ratio : float = 3,
+        rsi_sliding_window_how_many_candles : int = 14,
+        hurst_exp_window_how_many_candles : int = 125
         ):
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
 
@@ -400,7 +402,7 @@ def compute_candles_stats(
     Sometimes you may encounter "Exception has occurred: FloatingPointError invalid value encountered in scalar divide"
     And for example adjusting window size from 120 to 125 will resolve the issue.
     '''
-    pd_candles['hurst_exp'] = pd_candles['close'].rolling(window=125).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
+    pd_candles['hurst_exp'] = pd_candles['close'].rolling(window=hurst_exp_window_how_many_candles).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
 
 
     # Boillenger https://www.quantifiedstrategies.com/python-bollinger-band-trading-strategy/
@@ -419,17 +421,17 @@ def compute_candles_stats(
 
     if rsi_ema == True:
         # Use exponential moving average
-        lo_ma_up = lo_up.ewm(com = sliding_window_how_many_candles - 1, adjust=True, min_periods = sliding_window_how_many_candles).mean()
-        lo_ma_down = lo_down.ewm(com = sliding_window_how_many_candles - 1, adjust=True, min_periods = sliding_window_how_many_candles).mean()
+        lo_ma_up = lo_up.ewm(com = rsi_sliding_window_how_many_candles - 1, adjust=True, min_periods = rsi_sliding_window_how_many_candles).mean()
+        lo_ma_down = lo_down.ewm(com = rsi_sliding_window_how_many_candles - 1, adjust=True, min_periods = rsi_sliding_window_how_many_candles).mean()
 
     else:
         # Use simple moving average
-        lo_ma_up = lo_up.rolling(window = sliding_window_how_many_candles).mean()
-        lo_ma_down = lo_down.rolling(window = sliding_window_how_many_candles).mean()
+        lo_ma_up = lo_up.rolling(window = rsi_sliding_window_how_many_candles).mean()
+        lo_ma_down = lo_down.rolling(window = rsi_sliding_window_how_many_candles).mean()
         
     lo_rs = lo_ma_up / lo_ma_down
     pd_candles.loc[:,'rsi'] = 100 - (100/(1 + lo_rs))
-    pd_candles['ema_rsi'] = pd_candles['rsi'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    pd_candles['ema_rsi'] = pd_candles['rsi'].ewm(span=rsi_sliding_window_how_many_candles, adjust=False).mean()
 
 
     # MFI (Money Flow Index) https://randerson112358.medium.com/algorithmic-trading-strategy-using-money-flow-index-mfi-python-aa46461a5ea5 
@@ -441,8 +443,8 @@ def compute_candles_stats(
     pd_candles['money_flow_negative'] = pd_candles['money_flow'].where(
         pd_candles['typical_price'] < pd_candles['typical_price'].shift(1), 0
     )
-    pd_candles['positive_flow_sum'] = pd_candles['money_flow_positive'].rolling(sliding_window_how_many_candles).sum()
-    pd_candles['negative_flow_sum'] = pd_candles['money_flow_negative'].rolling(sliding_window_how_many_candles).sum()
+    pd_candles['positive_flow_sum'] = pd_candles['money_flow_positive'].rolling(rsi_sliding_window_how_many_candles).sum()
+    pd_candles['negative_flow_sum'] = pd_candles['money_flow_negative'].rolling(rsi_sliding_window_how_many_candles).sum()
     pd_candles['money_flow_ratio'] = pd_candles['positive_flow_sum'] / pd_candles['negative_flow_sum']
     pd_candles['mfi'] = 100 - (100 / (1 + pd_candles['money_flow_ratio']))
     
