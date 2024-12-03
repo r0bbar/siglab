@@ -403,7 +403,9 @@ def compute_candles_stats(
     And for example adjusting window size from 120 to 125 will resolve the issue.
     '''
     pd_candles['hurst_exp'] = pd_candles['close'].rolling(
-        window=hurst_exp_window_how_many_candles if hurst_exp_window_how_many_candles else sliding_window_how_many_candles
+        window=(
+            hurst_exp_window_how_many_candles if hurst_exp_window_how_many_candles else (sliding_window_how_many_candles if sliding_window_how_many_candles>=125 else 125)
+            )
         ).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
 
 
@@ -453,8 +455,10 @@ def compute_candles_stats(
     pd_candles['money_flow_negative'] = pd_candles['money_flow'].where(
         pd_candles['typical_price'] < pd_candles['typical_price'].shift(1), 0
     )
-    pd_candles['positive_flow_sum'] = pd_candles['money_flow_positive'].rolling(rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).sum()
-    pd_candles['negative_flow_sum'] = pd_candles['money_flow_negative'].rolling(rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).sum()
+    pd_candles['positive_flow_sum'] = pd_candles['money_flow_positive'].rolling(
+        rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).sum()
+    pd_candles['negative_flow_sum'] = pd_candles['money_flow_negative'].rolling(
+        rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).sum()
     pd_candles['money_flow_ratio'] = pd_candles['positive_flow_sum'] / pd_candles['negative_flow_sum']
     pd_candles['mfi'] = 100 - (100 / (1 + pd_candles['money_flow_ratio']))
     
