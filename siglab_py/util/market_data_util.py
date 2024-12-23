@@ -18,8 +18,6 @@ from yahoofinancials import YahooFinancials
 import yfinance as yf
 
 def fix_column_types(pd_candles : pd.DataFrame):
-    local_tz = datetime.now().astimezone().tzinfo
-
     pd_candles['open'] = pd_candles['open'].astype(float)
     pd_candles['high'] = pd_candles['high'].astype(float)
     pd_candles['low'] = pd_candles['low'].astype(float)
@@ -30,9 +28,6 @@ def fix_column_types(pd_candles : pd.DataFrame):
         lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000))
     )
     pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
-    if pd_candles['datetime'].dt.tz is None:
-        pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC')
-    pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz)
     pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
     pd_candles['datetime_utc'] = pd_candles['timestamp_ms'].apply(
         lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000), tz=timezone.utc)
