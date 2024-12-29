@@ -132,6 +132,7 @@ async def main():
 
     exchange = deribit()
 
+    i = 0
     while True:
         try:
             pd_old_expiry_data = None
@@ -145,7 +146,7 @@ async def main():
             start = time.time()
             expiry_data = fetch_deribit_btc_option_expiries(market = "BTC")
             elapsed_sec = int((time.time() - start))
-            log(f"Took {elapsed_sec} sec to fetch option expiry data from Deribit")
+            log(f"#{i} Took {elapsed_sec} sec to fetch option expiry data from Deribit")
 
             publish_key = param['mds']['topics']['deribit_options_expiry_publish_topic']
             expiry_sec = int(int(param['mds']['redis']['ttl_ms'])/1000)
@@ -189,9 +190,11 @@ async def main():
             pd_merged_expiry_data['daily_candle_height_tm3'] = pd_merged_expiry_data.apply(lambda rw : _fetch_historical_daily_candle_height(exchange, rw['symbol'], rw['timestamp_ms'], -3, rw['daily_candle_height_tm3']), axis=1) # type: ignore
 
             pd_merged_expiry_data.to_csv(param['archive_file_name'])
-
+            
         except Exception as loop_err:
             log(f"Loop error {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
+        finally:
+            i += 1
 
 async def _run_jobs():
     await main()
