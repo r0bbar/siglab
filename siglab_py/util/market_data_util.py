@@ -1,6 +1,6 @@
 import tzlocal
 from datetime import datetime, timezone
-from typing import List, Dict, Union, NoReturn, Any
+from typing import List, Dict, Union, NoReturn, Any, Tuple
 from pathlib import Path
 import math
 import pandas as pd
@@ -10,6 +10,7 @@ import statsmodels.api as sm # in-compatible with pypy
 from hurst import compute_Hc # compatible with pypy
 
 from ccxt.base.exchange import Exchange as CcxtExchange
+from ccxt import deribit
 
 # https://www.analyticsvidhya.com/blog/2021/06/download-financial-dataset-using-yahoo-finance-in-python-a-complete-guide/
 from yahoofinancials import YahooFinancials
@@ -182,6 +183,34 @@ class YahooExchange:
 
         return exchange_candles
 
+def fetch_historical_price(
+    exchange,
+    normalized_symbol : str,
+    timestamp_ms : int,
+    ref_timeframe : str = '1m'
+):
+    one_candle = fetch_ohlcv_one_candle(exchange=exchange, normalized_symbol=normalized_symbol, timestamp_ms=timestamp_ms, ref_timeframe=ref_timeframe)
+    reference_price = abs(one_candle['close'] + one_candle['open'])/2 if one_candle else None
+    return reference_price
+
+def fetch_ohlcv_one_candle(
+    exchange,
+    normalized_symbol : str,
+    timestamp_ms : int,
+    ref_timeframe : str = '1m'
+):
+    candles = exchange.fetch_ohlcv(symbol=normalized_symbol, since=int(timestamp_ms), timeframe=ref_timeframe, limit=1)
+    one_candle = {
+            'timestamp_ms' : candles[0][0],
+            'open' : candles[0][1],
+            'high' : candles[0][2],
+            'low' : candles[0][3],
+            'close' : candles[0][4],
+            'volume' : candles[0][5] 
+        } if candles and len(candles)>0 else None
+    
+    return one_candle
+    
 def fetch_candles(
     start_ts, # in sec
     end_ts, # in sec
@@ -918,3 +947,40 @@ def partition_sliding_window(
         'maxima' : maxima,
         'segments' : consolidated_segements
     }
+
+def fetch_deribit_btc_option_expiries(
+    market: str = 'BTC'
+) -> list[Tuple[str, float]]:
+    exchange = deribit()
+    instruments = exchange.public_get_get_instruments({
+        'currency': market,
+        'kind': 'option',
+        # 'expired': 'true'
+    })['result']
+    
+    index_price = exchange.public_get_get_index_price({
+        'index_name': f"{market.lower()}_usd"
+    })['result']['index_price']
+    index_price = float(index_price)
+    
+    expiry_data : Dict[str, float] = {}
+    for instrument in instruments:
+        expiry_timestamp = int(instrument["expiration_timestamp"]) / 1000
+        expiry_date = datetime.utcfromtimestamp(expiry_timestamp)
+    
+        ticker = exchange.public_get_ticker({
+            'instrument_name': instrument['instrument_name']
+        })['result']
+        
+        open_interest = ticker.get("open_interest", 0)  # Open interest in BTC
+        open_interest = float(open_interest)
+        notional_value : float = open_interest * index_price  # Convert to USD
+        
+        expiry_str : str = expiry_date.strftime("%Y-%m-%d")
+        if expiry_str not in expiry_data:
+            expiry_data[expiry_str] = 0
+        expiry_data[expiry_str] += notional_value
+    
+    sorted_expiry_data = sorted(expiry_data.items())
+    return sorted_expiry_data
+    
