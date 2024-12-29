@@ -13,7 +13,7 @@ from ccxt import deribit
 from redis import StrictRedis
 import pandas as pd
 
-from util.market_data_util import fetch_deribit_btc_option_expiries, fetch_ohlcv_one_candle
+from util.market_data_util import timestamp_to_datetime_cols, fetch_deribit_btc_option_expiries, fetch_ohlcv_one_candle
 
 param : Dict = {
     'market' : 'BTC',
@@ -139,12 +139,13 @@ async def main():
             max_datetime_from_old_expiry_data = None
             if os.path.isfile(param['archive_file_name']):
                 pd_old_expiry_data = pd.read_csv(param['archive_file_name'])
+                pd_old_expiry_data.drop(pd_old_expiry_data.columns[pd_old_expiry_data.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
                 pd_old_expiry_data['datetime'] = pd.to_datetime(pd_old_expiry_data['datetime'])
                 pd_old_expiry_data['datetime'] = pd_old_expiry_data['datetime'].dt.tz_localize(None)
                 max_datetime_from_old_expiry_data = pd_old_expiry_data['datetime'].max()
 
             start = time.time()
-            expiry_data = fetch_deribit_btc_option_expiries(market = "BTC")
+            expiry_data = fetch_deribit_btc_option_expiries(market = param['market'])
             elapsed_sec = int((time.time() - start))
             log(f"#{i} Took {elapsed_sec} sec to fetch option expiry data from Deribit")
 
@@ -155,25 +156,19 @@ async def main():
             pd_new_expiry_data = pd.DataFrame([ { 'datetime' : x[0], 'notional_usd' : x[1] } for x in expiry_data ])
 
             pd_new_expiry_data['symbol'] = f"{param['market']}/USDT"
+
             pd_new_expiry_data['datetime'] = pd.to_datetime(pd_new_expiry_data['datetime'])
             pd_new_expiry_data['datetime'] = pd_new_expiry_data['datetime'].dt.tz_localize(None)
             pd_new_expiry_data['timestamp_sec'] = pd_new_expiry_data['datetime'].apply(lambda dt: int(dt.timestamp()))
             pd_new_expiry_data['timestamp_ms'] = pd_new_expiry_data['timestamp_sec'] * 1000
-            
-            # This is to make it easy to do grouping with Excel pivot table
-            pd_new_expiry_data['year'] = pd_new_expiry_data['datetime'].dt.year
-            pd_new_expiry_data['month'] = pd_new_expiry_data['datetime'].dt.month
-            pd_new_expiry_data['day'] = pd_new_expiry_data['datetime'].dt.day
-            pd_new_expiry_data['hour'] = pd_new_expiry_data['datetime'].dt.hour
-            pd_new_expiry_data['minute'] = pd_new_expiry_data['datetime'].dt.minute
-            pd_new_expiry_data['dayofweek'] = pd_new_expiry_data['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
+            timestamp_to_datetime_cols(pd_new_expiry_data)
 
             if pd_old_expiry_data is not None:
                 pd_new_expiry_data = pd_new_expiry_data[
                     pd_new_expiry_data['datetime'] > max_datetime_from_old_expiry_data
                 ]
-
                 pd_merged_expiry_data = pd.concat([pd_old_expiry_data, pd_new_expiry_data], axis=0, ignore_index=True)
+
             else:
                 pd_merged_expiry_data = pd_new_expiry_data
 
@@ -190,7 +185,7 @@ async def main():
             pd_merged_expiry_data['daily_candle_height_tm3'] = pd_merged_expiry_data.apply(lambda rw : _fetch_historical_daily_candle_height(exchange, rw['symbol'], rw['timestamp_ms'], -3, rw['daily_candle_height_tm3']), axis=1) # type: ignore
 
             pd_merged_expiry_data.to_csv(param['archive_file_name'])
-            
+
         except Exception as loop_err:
             log(f"Loop error {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
         finally:
