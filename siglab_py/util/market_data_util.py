@@ -18,13 +18,7 @@ from yahoofinancials import YahooFinancials
 # yfinance allows intervals '1m', '5m', '15m', '1h', '1d', '1wk', '1mo'. yahoofinancials not as flexible
 import yfinance as yf
 
-def fix_column_types(pd_candles : pd.DataFrame):
-    pd_candles['open'] = pd_candles['open'].astype(float)
-    pd_candles['high'] = pd_candles['high'].astype(float)
-    pd_candles['low'] = pd_candles['low'].astype(float)
-    pd_candles['close'] = pd_candles['close'].astype(float)
-    pd_candles['volume'] = pd_candles['volume'].astype(float)
-
+def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(
         lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000))
     )
@@ -41,6 +35,15 @@ def fix_column_types(pd_candles : pd.DataFrame):
     pd_candles['hour'] = pd_candles['datetime'].dt.hour
     pd_candles['minute'] = pd_candles['datetime'].dt.minute
     pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
+
+def fix_column_types(pd_candles : pd.DataFrame):
+    pd_candles['open'] = pd_candles['open'].astype(float)
+    pd_candles['high'] = pd_candles['high'].astype(float)
+    pd_candles['low'] = pd_candles['low'].astype(float)
+    pd_candles['close'] = pd_candles['close'].astype(float)
+    pd_candles['volume'] = pd_candles['volume'].astype(float)
+
+    timestamp_to_datetime_cols(pd_candles)
 
     '''
     The 'Unnamed: 0', 'Unnamed : 1'... etc columns often appears in a DataFrame when it is saved to a file (e.g., CSV or Excel) and later loaded. 
