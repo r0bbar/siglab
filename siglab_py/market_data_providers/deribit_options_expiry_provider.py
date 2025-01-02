@@ -136,13 +136,11 @@ async def main():
     while True:
         try:
             pd_old_expiry_data = None
-            max_datetime_from_old_expiry_data = None
             if os.path.isfile(param['archive_file_name']):
                 pd_old_expiry_data = pd.read_csv(param['archive_file_name'])
                 pd_old_expiry_data.drop(pd_old_expiry_data.columns[pd_old_expiry_data.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
                 pd_old_expiry_data['datetime'] = pd.to_datetime(pd_old_expiry_data['datetime'])
                 pd_old_expiry_data['datetime'] = pd_old_expiry_data['datetime'].dt.tz_localize(None)
-                max_datetime_from_old_expiry_data = pd_old_expiry_data['datetime'].max()
 
             start = time.time()
             expiry_data = fetch_deribit_btc_option_expiries(market = param['market'])
@@ -164,8 +162,10 @@ async def main():
             timestamp_to_datetime_cols(pd_new_expiry_data)
 
             if pd_old_expiry_data is not None:
-                pd_new_expiry_data = pd_new_expiry_data[
-                    pd_new_expiry_data['datetime'] > max_datetime_from_old_expiry_data
+                min_datetime_from_new_expiry_data = pd_new_expiry_data['datetime'].min()
+
+                pd_old_expiry_data = pd_old_expiry_data[
+                    pd_old_expiry_data['datetime'] < min_datetime_from_new_expiry_data # Take from new update, OI can change
                 ]
                 pd_merged_expiry_data = pd.concat([pd_old_expiry_data, pd_new_expiry_data], axis=0, ignore_index=True)
 
