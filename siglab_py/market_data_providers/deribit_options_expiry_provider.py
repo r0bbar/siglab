@@ -144,6 +144,7 @@ async def main():
 
             start = time.time()
             expiry_data = fetch_deribit_btc_option_expiries(market = param['market'])
+            expiry_data = expiry_data['by_expiry']
             elapsed_sec = int((time.time() - start))
             log(f"#{i} Took {elapsed_sec} sec to fetch option expiry data from Deribit")
 

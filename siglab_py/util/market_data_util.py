@@ -54,6 +54,12 @@ def fix_column_types(pd_candles : pd.DataFrame):
     pd_candles.reset_index(drop=True, inplace=True)
     pd_candles.sort_values("datetime", inplace=True)
 
+'''
+https://polygon.io/docs/stocks
+'''
+class PolygonMarketDataProvider:
+    pass
+
 class NASDAQExchange:
     def __init__(self, data_dir : Union[str, None]) -> None:
         if data_dir:
@@ -953,7 +959,12 @@ def partition_sliding_window(
 
 def fetch_deribit_btc_option_expiries(
     market: str = 'BTC'
-) -> list[Tuple[str, float]]:
+) -> Dict[
+    str, Union[
+        Dict[str, float],
+        Dict[str, Dict[str, Union[str, float]]]
+    ]
+]:
     exchange = deribit()
     instruments = exchange.public_get_get_instruments({
         'currency': market,
@@ -967,9 +978,12 @@ def fetch_deribit_btc_option_expiries(
     index_price = float(index_price)
     
     expiry_data : Dict[str, float] = {}
+    expiry_data_breakdown_by_strike : Dict[str, Dict] = {}
     for instrument in instruments:
         expiry_timestamp = int(instrument["expiration_timestamp"]) / 1000
         expiry_date = datetime.utcfromtimestamp(expiry_timestamp)
+
+        strike = float(instrument['strike'])
     
         ticker = exchange.public_get_ticker({
             'instrument_name': instrument['instrument_name']
@@ -983,7 +997,20 @@ def fetch_deribit_btc_option_expiries(
         if expiry_str not in expiry_data:
             expiry_data[expiry_str] = 0
         expiry_data[expiry_str] += notional_value
+
+        if f"{expiry_str}-{strike}" not in expiry_data_breakdown_by_strike:
+            expiry_data_breakdown_by_strike[f"{expiry_str}-{strike}"] = {
+                'expiry' : expiry_str,
+                'strike' : strike,
+                'notional_value' : notional_value
+            }
+        else:
+            expiry_data_breakdown_by_strike[f"{expiry_str}-{strike}"]['notional_value'] += notional_value
     
     sorted_expiry_data = sorted(expiry_data.items())
-    return sorted_expiry_data
-    
+
+    return {
+        'index_price' : index_price,
+        'by_expiry' : sorted_expiry_data, # type: ignore Otherwise, Error: Type "dict[str, list[tuple[str, float]] | dict[str, Dict[Unknown, Unknown]]]" is not assignable to return type "Dict[str, Dict[str, float] | Dict[str, Dict[str, str | float]]]"
+        'by_expiry_and_strike' : expiry_data_breakdown_by_strike
+    }
