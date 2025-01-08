@@ -499,12 +499,26 @@ def compute_candles_stats(
 
 
     # FVG - Fair Value Gap https://atas.net/technical-analysis/fvg-trading-what-is-fair-value-gap-meaning-strategy/
-    def compute_fvg_row(row, pd_candles):
+    def compute_fvg(row, pd_candles):
         fvg_low = None
         fvg_high = None
 
         if row['aggressive_up_index'] is not None and not math.isnan(row['aggressive_up_index']):
             idx = row['aggressive_up_index']
+            last_low = pd_candles.at[idx - 1, 'low']
+            if idx + 1 < len(pd_candles):
+                next_high = pd_candles.at[idx + 1, 'high']
+            else:
+                next_high = None
+            
+            if last_low is not None and next_high is not None and next_high > last_low:
+                fvg_low = last_low
+                fvg_high = next_high
+            else:
+                raise ValueError(f"FVG high should be greater than FVG low!")
+
+        elif row['aggressive_down_index'] is not None and not math.isnan(row['aggressive_down_index']):
+            idx = row['aggressive_down_index']
             last_high = pd_candles.at[idx - 1, 'high']
             if idx + 1 < len(pd_candles):
                 next_low = pd_candles.at[idx + 1, 'low']
@@ -513,17 +527,14 @@ def compute_candles_stats(
             fvg_low = last_high
             fvg_high = next_low
 
-        elif row['aggressive_down_index'] is not None and not math.isnan(row['aggressive_down_index']):
-            idx = row['aggressive_down_index']
-            last_low = pd_candles.at[idx - 1, 'low']
-            if idx + 1 < len(pd_candles):
-                next_high = pd_candles.at[idx + 1, 'high']
+            if last_high is not None and next_low is not None and last_high > next_low:
+                fvg_low = last_high
+                fvg_high = next_low
             else:
-                next_high = None
-            fvg_low = last_low
-            fvg_high = next_high
+                raise ValueError(f"FVG high should be greater than FVG low!")
+
         return pd.Series({'fvg_low': fvg_low, 'fvg_high': fvg_high})
-    fvg_result = pd_candles.apply(lambda row: compute_fvg_row(row, pd_candles), axis=1)
+    fvg_result = pd_candles.apply(lambda row: compute_fvg(row, pd_candles), axis=1)
     pd_candles[['fvg_low', 'fvg_high']] = fvg_result
 
 
