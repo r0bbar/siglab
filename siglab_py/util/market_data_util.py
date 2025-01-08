@@ -498,6 +498,35 @@ def compute_candles_stats(
     )
 
 
+    # FVG - Fair Value Gap https://atas.net/technical-analysis/fvg-trading-what-is-fair-value-gap-meaning-strategy/
+    def compute_fvg_row(row, pd_candles):
+        fvg_low = None
+        fvg_high = None
+
+        if row['aggressive_up_index'] is not None and not math.isnan(row['aggressive_up_index']):
+            idx = row['aggressive_up_index']
+            last_high = pd_candles.at[idx - 1, 'high']
+            if idx + 1 < len(pd_candles):
+                next_low = pd_candles.at[idx + 1, 'low']
+            else:
+                next_low = None
+            fvg_low = last_high
+            fvg_high = next_low
+
+        elif row['aggressive_down_index'] is not None and not math.isnan(row['aggressive_down_index']):
+            idx = row['aggressive_down_index']
+            last_low = pd_candles.at[idx - 1, 'low']
+            if idx + 1 < len(pd_candles):
+                next_high = pd_candles.at[idx + 1, 'high']
+            else:
+                next_high = None
+            fvg_low = last_low
+            fvg_high = next_high
+        return pd.Series({'fvg_low': fvg_low, 'fvg_high': fvg_high})
+    fvg_result = pd_candles.apply(lambda row: compute_fvg_row(row, pd_candles), axis=1)
+    pd_candles[['fvg_low', 'fvg_high']] = fvg_result
+
+
     # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
     pd_candles.loc[:,'close_delta'] = pd_candles['close'].diff()
     pd_candles.loc[:,'close_delta_percent'] = pd_candles['close'].pct_change()
