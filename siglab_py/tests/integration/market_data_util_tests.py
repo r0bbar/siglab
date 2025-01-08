@@ -15,8 +15,8 @@ from ccxt.base.exchange import Exchange
 class MarketDataGizmoTests(unittest.TestCase):
 
     def test_fetch_candles_yahoo(self):
-        start_date : datetime = datetime(2023,1,1)
-        end_date : datetime = datetime(2023,12,31)
+        start_date : datetime = datetime(2024, 1,1)
+        end_date : datetime = datetime(2024,12,31)
 
         exchange = YahooExchange()
         normalized_symbols = [ 'AAPL' ]
@@ -83,8 +83,8 @@ class MarketDataGizmoTests(unittest.TestCase):
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
         
     def test_fetch_candles_ccxt(self):
-        start_date : datetime = datetime(2023,1,1)
-        end_date : datetime = datetime(2023,12,31)
+        start_date : datetime = datetime(2024,1,1)
+        end_date : datetime = datetime(2024,12,31)
 
         param = {
             'apiKey' : None,
