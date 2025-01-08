@@ -353,10 +353,13 @@ def estimate_fib_retracement(
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)
     b. ATR
-    c. Hurst Exponent
-    d. RSI, MFI
-    e. MACD
-    f. Inflections points: where 'close' crosses EMA from above or below.
+    c. Boillenger bands (Yes incorrect spelling sorry)
+    d. FVG
+    e. Hurst Exponent
+    f. RSI, MFI
+    g. MACD
+    h. Fibonacci
+    i. Inflections points: where 'close' crosses EMA from above or below.
 
 Parameters:
     a. boillenger_std_multiples: For boillenger upper and lower calc
