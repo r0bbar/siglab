@@ -176,7 +176,7 @@ class YahooExchange:
             # The requested range must be within the last 730 days. Otherwise API will return empty DataFrame.
             pd_candles = yf.download(tickers=symbol, start=start_date_str, end=end_date_str, interval=candle_size)
             pd_candles.reset_index(inplace=True)
-            pd_candles.rename(columns={'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
+            pd_candles.rename(columns={ 'Date' : 'datetime', 'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
             pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
             if pd_candles['datetime'].dt.tz is None:
                 pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC')
@@ -379,7 +379,8 @@ def compute_candles_stats(
         boillenger_ema : bool = False,
         slow_fast_interval_ratio : float = 3,
         rsi_sliding_window_how_many_candles : Union[int, None] = None, # RSI standard 14
-        hurst_exp_window_how_many_candles : Union[int, None] = None # Hurst exp standard 100-200
+        hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
+        boillenger_std_multiples_for_aggressive_moves_detect : int = 3 # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
         ):
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
 
@@ -446,6 +447,55 @@ def compute_candles_stats(
     pd_candles.loc[:,'boillenger_upper'] = (pd_candles['sma_long_periods'] if not boillenger_ema else pd_candles['ema_long_periods']) + pd_candles['std'] * boillenger_std_multiples
     pd_candles.loc[:,'boillenger_lower'] = (pd_candles['sma_long_periods'] if not boillenger_ema else pd_candles['ema_long_periods']) - pd_candles['std'] * boillenger_std_multiples
     pd_candles.loc[:,'boillenger_channel_height'] = pd_candles['boillenger_upper'] - pd_candles['boillenger_lower']
+
+    pd_candles.loc[:,'boillenger_upper_agg'] = (pd_candles['sma_long_periods'] if not boillenger_ema else pd_candles['ema_long_periods']) + pd_candles['std'] * boillenger_std_multiples_for_aggressive_moves_detect
+    pd_candles.loc[:,'boillenger_lower_agg'] = (pd_candles['sma_long_periods'] if not boillenger_ema else pd_candles['ema_long_periods']) - pd_candles['std'] * boillenger_std_multiples_for_aggressive_moves_detect
+    pd_candles.loc[:,'boillenger_channel_height_agg'] = pd_candles['boillenger_upper_agg'] - pd_candles['boillenger_lower_agg']
+
+    def detect_aggressive_movement(
+        index: int,
+        pd_candles: pd.DataFrame,
+        sliding_window_how_many_candles: int,
+        up_or_down: bool = True
+    ):
+        window_start = max(0, index - sliding_window_how_many_candles + 1)
+        window = pd_candles.iloc[window_start:index + 1]
+        first_breach_index = None
+        
+        if up_or_down:
+            aggressive_mask = window['close'] >= window['boillenger_upper_agg']
+            if aggressive_mask.any():
+                first_breach_index = aggressive_mask.idxmax()
+        else:
+            aggressive_mask = window['close'] <= window['boillenger_lower_agg']
+            if aggressive_mask.any():
+                first_breach_index = aggressive_mask.idxmax()
+
+        return {
+            'aggressive_move': aggressive_mask.any(),
+            'first_breach_index': first_breach_index
+        }
+    
+    pd_candles['aggressive_up'] = pd_candles.index.to_series().apply(
+        lambda idx: detect_aggressive_movement(
+            idx, pd_candles, sliding_window_how_many_candles, up_or_down=True
+        )['aggressive_move']
+    )
+    pd_candles['aggressive_up_index'] = pd_candles.index.to_series().apply(
+        lambda idx: detect_aggressive_movement(
+            idx, pd_candles, sliding_window_how_many_candles, up_or_down=True
+        )['first_breach_index']
+    )
+    pd_candles['aggressive_down'] = pd_candles.index.to_series().apply(
+        lambda idx: detect_aggressive_movement(
+            idx, pd_candles, sliding_window_how_many_candles, up_or_down=False
+        )['aggressive_move']
+    )
+    pd_candles['aggressive_down_index'] = pd_candles.index.to_series().apply(
+        lambda idx: detect_aggressive_movement(
+            idx, pd_candles, sliding_window_how_many_candles, up_or_down=False
+        )['first_breach_index']
+    )
 
 
     # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
