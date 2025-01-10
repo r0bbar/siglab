@@ -226,7 +226,6 @@ def fetch_candles(
     exchange,
     normalized_symbols,
     candle_size,
-    how_many_candles = None,
 
     logger = None,
 
@@ -260,7 +259,6 @@ def fetch_candles(
             exchange=exchange,
             normalized_symbols=normalized_symbols,
             candle_size=candle_size,
-            how_many_candles=how_many_candles,
             logger=logger,
             num_candles_limit=num_candles_limit,
             cache_dir=cache_dir,
@@ -274,7 +272,6 @@ def _fetch_candles_ccxt(
     exchange,
     normalized_symbols : List[str],
     candle_size : str,
-    how_many_candles : Union[int, None],
     num_candles_limit : int = 100,
     logger = None,
     cache_dir : Union[str, None] = None,

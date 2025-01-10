@@ -247,7 +247,6 @@ def process_universe(
                                                 end_ts=int(end_date.timestamp()), 
                                                 exchange=exchange, normalized_symbols=[ticker], 
                                                 candle_size = candle_size, 
-                                                how_many_candles = number_intervals, 
                                                 num_candles_limit = 100,
                                                 logger = None
                                             )
