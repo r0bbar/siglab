@@ -1095,7 +1095,7 @@ def fetch_deribit_btc_option_expiries(
             expiry_data_breakdown_by_strike[f"{expiry_str}-{strike}"] = {
                 'expiry' : expiry_str,
                 'strike' : strike,
-                'option_type': 'Call' if is_call else 'Put',
+                'option_type': 'call' if is_call else 'put',
                 'notional_value' : notional_value
             }
         else:
