@@ -1074,6 +1074,9 @@ def fetch_deribit_btc_option_expiries(
         expiry_date = datetime.utcfromtimestamp(expiry_timestamp)
 
         strike = float(instrument['strike'])
+
+        option_type = instrument['instrument_name'].split('-')[-1]  # Last part is 'C' or 'P'
+        is_call = option_type == 'C'
     
         ticker = exchange.public_get_ticker({
             'instrument_name': instrument['instrument_name']
@@ -1092,6 +1095,7 @@ def fetch_deribit_btc_option_expiries(
             expiry_data_breakdown_by_strike[f"{expiry_str}-{strike}"] = {
                 'expiry' : expiry_str,
                 'strike' : strike,
+                'option_type': 'Call' if is_call else 'Put',
                 'notional_value' : notional_value
             }
         else:
