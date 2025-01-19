@@ -536,6 +536,7 @@ def compute_candles_stats(
         return pd.Series({'fvg_low': fvg_low, 'fvg_high': fvg_high})
     fvg_result = pd_candles.apply(lambda row: compute_fvg(row, pd_candles), axis=1)
     pd_candles[['fvg_low', 'fvg_high']] = fvg_result
+    pd_candles['fvg_gap'] = pd_candles['fvg_high'] - pd_candles['fvg_low']
 
 
     # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
