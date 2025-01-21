@@ -531,6 +531,18 @@ def compute_candles_stats(
     pd_candles[['fvg_low', 'fvg_high']] = fvg_result
     pd_candles['fvg_gap'] = pd_candles['fvg_high'] - pd_candles['fvg_low']
 
+    def compute_fvg_mitigated(row, pd_candles):
+        mitigated = False
+        if row['aggressive_down_index'] is not None and not math.isnan(row['aggressive_down_index']):
+            idx = int(row['aggressive_down_index'])
+            mitigated = pd_candles.iloc[idx + 1:row.name]['close'].gt(row['fvg_low']).any()
+        elif row['aggressive_up_index'] is not None and not math.isnan(row['aggressive_up_index']):
+            idx = int(row['aggressive_up_index'])
+            mitigated = pd_candles.iloc[idx + 1:row.name]['close'].lt(row['fvg_high']).any()
+        return mitigated
+
+    pd_candles['fvg_mitigated'] = pd_candles.apply(lambda row: compute_fvg_mitigated(row, pd_candles), axis=1)
+
 
     # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
     pd_candles.loc[:,'close_delta'] = pd_candles['close'].diff()
