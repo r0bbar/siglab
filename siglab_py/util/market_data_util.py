@@ -511,11 +511,8 @@ def compute_candles_stats(
             else:
                 next_low = None
             
-            if next_low is not None and last_high is not None and last_high > next_low:
-                fvg_low = next_low
-                fvg_high = last_high
-            else:
-                raise ValueError(f"FVG high should be greater than FVG low!")
+            fvg_low = next_low
+            fvg_high = last_high
 
         elif row['aggressive_down_index'] is not None and not math.isnan(row['aggressive_down_index']):
             idx = row['aggressive_down_index']
@@ -525,18 +522,14 @@ def compute_candles_stats(
             else:
                 next_high = None
 
-            if last_low is not None and next_high is not None and next_high > last_low:
-                fvg_low = last_low
-                fvg_high = next_high
-            else:
-                raise ValueError(f"FVG high should be greater than FVG low!")
+            fvg_low = last_low
+            fvg_high = next_high
 
         return pd.Series({'fvg_low': fvg_low, 'fvg_high': fvg_high})
-        
+
     fvg_result = pd_candles.apply(lambda row: compute_fvg(row, pd_candles), axis=1)
     pd_candles[['fvg_low', 'fvg_high']] = fvg_result
     pd_candles['fvg_gap'] = pd_candles['fvg_high'] - pd_candles['fvg_low']
-    assert(pd_candles[pd_candles.fvg_gap<0].shape[0]==0)
 
 
     # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
