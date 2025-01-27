@@ -496,7 +496,7 @@ def compute_candles_stats(
             idx, pd_candles, sliding_window_how_many_candles, up_or_down=True
         )['first_breach_index']
     )
-    pd_candles['aggressive_up_candle_height'] = pd_candles.apply(
+    pd_candles['aggressive_up_candle_height'] = pd_candles.index.to_series().apply(
         lambda idx: detect_aggressive_movement(
             idx, pd_candles, sliding_window_how_many_candles, up_or_down=True
         )['candle_height']
