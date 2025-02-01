@@ -397,6 +397,8 @@ def compute_candles_stats(
     
     fix_column_types(pd_candles) # Do this AFTER filtering. Or you'd mess up index, introduce error around idmax, idmin. fix_column_types will drop all 'unnamed' columns and reset_index.
 
+    pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
+
     pd_candles['pct_change_close'] = pd_candles['close'].pct_change() * 100
     pd_candles['sma_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
     pd_candles['sma_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).mean()
