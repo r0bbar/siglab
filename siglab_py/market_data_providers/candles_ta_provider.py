@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from redis import StrictRedis
 
-from util.market_data_util import compute_candles_stats
+from util.analytic_util import compute_candles_stats
 
 '''
 candles_provider.py will feed candles to redis. 
