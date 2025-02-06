@@ -1,0 +1,21 @@
+dotenv
+dotmap
+typing_extensions
+arrow
+tzlocal
+nest_asyncio
+pandas
+numpy
+boto3
+web3
+ccxt
+yfinance
+yahoofinancials
+scipy # pypy in-compatible
+statsmodels # pypy in-compatible
+scikit-learn
+sklearn.preprocessing
+hurst
+redis
+redis-py-cluster
+kafka-python
