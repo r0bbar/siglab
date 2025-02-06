@@ -32,9 +32,10 @@ After perform TA calc, it'd publish back to redis under:
 
 From command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999
+    python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
 
-This script is NOT pypy compatible because from analyti_util we referenced scipy and statsmodels.
+This script is pypy compatible but you'd need specify --pypy_compat Y so from analyti_util we'd skip import scipy and statsmodels (They are not pypy compatible).
+    pypy candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat Y
 
 Launch.json if you wish to debug from VSCode:
 {
@@ -132,6 +133,8 @@ def parse_args():
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
     parser.add_argument("--processed_hash_queue_max_size", help="processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'", default=999)
 
+    parser.add_argument("--pypy_compatible", help="pypy_compatible: If Y, analytic_util will import statsmodels.api (slopes and divergence calc). In any case, partition_sliding_window requires scipy.stats.linregress and cannot be used with pypy. Y or N (default).", default='N')
+
     args = parser.parse_args()
     param['candle_size'] = args.candle_size
     param['ma_long_intervals'] = int(args.ma_long_intervals)
@@ -140,6 +143,14 @@ def parse_args():
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
     param['processed_hash_queue_max_size'] = int(args.processed_hash_queue_max_size)
+
+    if args.pypy_compatible:
+        if args.pypy_compatible=='Y':
+            param['pypy_compatible'] = True
+        else:
+            param['pypy_compatible'] = False
+    else:
+        param['pypy_compatible'] = False
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -196,7 +207,8 @@ def work(
                                             pd_candles=pd_candles, 
                                             boillenger_std_multiples=boillenger_std_multiples, 
                                             sliding_window_how_many_candles=ma_long_intervals, 
-                                            slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals)
+                                            slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals),
+                                            pypy_compat=param['pypy_compatible']
                                         )
                                 compute_candles_stats_elapsed_ms = int((time.time() - start) *1000)
                                 data = pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"

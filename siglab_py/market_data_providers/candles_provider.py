@@ -29,7 +29,8 @@ To start from command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 2169 --redis_ttl_ms 3600000
 
-This script is pypy compatible.
+This script is pypy compatible:
+    pypy candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 2169 --redis_ttl_ms 3600000
 
 Key parameters you may want to modify:
     provider_id: You can trigger this provider instance using test_provider.py. Of course, you'd write your own.
