@@ -34,6 +34,8 @@ From command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999
 
+This script is NOT pypy compatible because from analyti_util we referenced scipy and statsmodels.
+
 Launch.json if you wish to debug from VSCode:
 {
     "version": "0.2.0",
