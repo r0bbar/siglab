@@ -1,0 +1,471 @@
+from ctypes import ArgumentError
+import sys
+import traceback
+import os
+from dotenv import load_dotenv
+from enum import Enum
+import argparse
+import time
+from datetime import datetime, timedelta
+from typing import List, Dict, Union, Any
+import hashlib
+from collections import deque
+import logging
+import json
+from io import StringIO
+import re
+from re import Pattern
+from redis import StrictRedis
+import asyncio
+
+from util.aws_util import AwsKmsUtil
+
+from ccxt.bybit import bybit
+from ccxt.binance import binance
+from ccxt.okx import okx
+from ccxt.deribit import deribit
+from ccxt.hyperliquid import hyperliquid
+
+
+from exchanges.any_exchange import AnyExchange
+from ordergateway.client import Order, DivisiblePosition
+
+'''
+Usage:
+    python gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
+
+    --default_type defaults to linear
+    --rate_limit_ms defaults to 100
+
+This script is pypy compatible:
+    pypy gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
+
+Please lookup 'defaultType' (Whether you're trading spot? Or perpectuals) via ccxt library. It's generally under exchange's method 'describe'. Looks under 'options' tag, look for 'defaultType'.
+'Perpetual contracts' are generally referred to as 'linear' or 'swap'.
+
+Examples,
+    binance spot, future, margin, delivery, option https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
+    Deribit spot, swap, future https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
+    bybit supports spot, linear, inverse, futures https://github.com/ccxt/ccxt/blob/master/python/ccxt/bybit.py#L1041
+    okx supports funding, spot, margin, future, swap, option https://github.com/ccxt/ccxt/blob/master/python/ccxt/okx.py#L1144
+    hyperliquid swap only https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
+
+To add exchange, extend "instantiate_exchange".
+
+To debug from vscode, launch.json:
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python Debugger: Current File",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${file}",
+                "console": "integratedTerminal",
+                "args" : [
+                    "--gateway_id", "bybit_01",
+                    "--default_type", "linear",
+                    "--rate_limit_ms", "100"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            }
+        ]
+    }
+'''
+class LogLevel(Enum):
+    CRITICAL = 50
+    ERROR = 40
+    WARNING = 30
+    INFO = 20
+    DEBUG = 10
+    NOTSET = 0
+
+param : Dict = {
+    'gateway_id' : '---',
+
+    "incoming_orders_topic_regex" : r"ordergateway_$GATEWAY_ID$", 
+    "fetch_order_status_poll_freq_ms" : 500,
+
+    'mds' : {
+        'topics' : {
+            
+        },
+        'redis' : {
+            'host' : 'localhost',
+            'port' : 6379,
+            'db' : 0,
+            'ttl_ms' : 1000*60*15 # 15 min?
+        }
+    }
+}
+
+logging.Formatter.converter = time.gmtime
+logger = logging.getLogger()
+log_level = logging.INFO # DEBUG --> INFO --> WARNING --> ERROR
+logger.setLevel(log_level)
+format_str = '%(asctime)s %(message)s'
+formatter = logging.Formatter(format_str)
+sh = logging.StreamHandler()
+sh.setLevel(log_level)
+sh.setFormatter(formatter)
+logger.addHandler(sh)
+
+def log(message : str, log_level : LogLevel = LogLevel.INFO):
+    if log_level.value<LogLevel.WARNING.value:
+        logger.info(f"{datetime.now()} {message}")
+
+    elif log_level.value==LogLevel.WARNING.value:
+        logger.warning(f"{datetime.now()} {message}")
+
+    elif log_level.value==LogLevel.ERROR.value:
+        logger.error(f"{datetime.now()} {message}")
+
+def parse_args():
+    parser = argparse.ArgumentParser() # type: ignore
+
+    parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
+    parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
+    parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
+
+    args = parser.parse_args()
+    param['gateway_id'] = args.gateway_id
+    param['default_type'] = args.default_type
+    param['rate_limit_ms'] = int(args.rate_limit_ms)
+
+def init_redis_client() -> StrictRedis:
+    redis_client : StrictRedis = StrictRedis(
+                    host = param['mds']['redis']['host'],
+                    port = param['mds']['redis']['port'],
+                    db = 0,
+                    ssl = False
+                )
+    try:
+        redis_client.keys()
+    except ConnectionError as redis_conn_error:
+        err_msg = f"Failed to connect to redis: {param['mds']['redis']['host']}, port: {param['mds']['redis']['port']}"
+        raise ConnectionError(err_msg)
+    
+    return redis_client
+
+def instantiate_exchange(
+    gateway_id : str,
+    api_key : str,
+    secret : str,
+    passphrase : str,
+    default_type : str,
+    rate_limit_ms : float = 100
+) -> Union[AnyExchange, None]:
+    exchange : Union[AnyExchange, None] = None
+    exchange_name : str = gateway_id.split('_')[0]
+    exchange_name =exchange_name.lower().strip()
+
+    # Look at ccxt exchange.describe. under 'options' \ 'defaultType' (and 'defaultSubType') for what markets the exchange support.
+    # https://docs.ccxt.com/en/latest/manual.html#instantiation
+    exchange_params : Dict[str, Any]= {
+                        'apiKey' : api_key,
+                        'secret' : secret,
+                        'enableRateLimit'  : True,
+                        'rateLimit' : rate_limit_ms,
+                        'options' : {
+                            'defaultType' : default_type
+                        }
+                    }
+
+    if exchange_name=='bybit':
+        # spot, linear, inverse, futures
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/bybit.py#L1041
+        exchange = bybit(exchange_params) # type: ignore
+    elif exchange_name=='okx':
+        # 'funding', spot, margin, future, swap, option
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/okx.py#L1144
+        exchange_params['password'] = passphrase
+        exchange = okx(exchange_params)  # type: ignore
+    elif exchange_name=='binance':
+        # spot, future, margin, delivery, option
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
+        exchange = binance(exchange_params)  # type: ignore
+    elif exchange_name=='deribit':
+        # spot, swap, future
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
+        exchange = deribit(exchange_params)  # type: ignore
+    elif exchange_name=='hyperliquid':
+        # swap
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
+        exchange = hyperliquid(exchange_params)  # type: ignore
+    else:
+        raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
+
+    return exchange
+
+async def execute_one_position(
+    exchange : AnyExchange,
+    position : DivisiblePosition,
+    param : Dict
+):
+    market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
+    if not market:
+        raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
+
+    min_amount = float(market['limits']['amount']['min']) # type: ignore
+    multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+
+    slices : List[Order] = position.to_slices()
+    i = 0
+    for slice in slices:
+        try:
+            slice_amount_in_base_ccy : float = slice.amount
+            rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After devided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
+            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, slice_amount_in_base_ccy) # type: ignore
+            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+
+            limit_price : float = 0
+            rounded_limit_price : float = 0
+            if position.order_type=='limit':
+                orderbook = exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
+                if position.side=='buy':
+                    asks = [ ask[0] for ask in orderbook['asks'] ]
+                    best_asks = min(asks)
+                    limit_price = best_asks * (1 + position.leg_room_bps/10000)
+                else:
+                    bids = [ bid[0] for bid in orderbook['bids'] ]
+                    best_bid = max(bids)
+                    limit_price = best_bid * (1 - position.leg_room_bps/10000)
+                    
+                rounded_limit_price = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
+                rounded_limit_price = float(rounded_limit_price)
+
+                executed_order = exchange.create_order( # type: ignore
+                    symbol = position.ticker,
+                    type = position.order_type,
+                    amount = rounded_slice_amount_in_base_ccy,
+                    price = rounded_limit_price,
+                    side = position.side
+                )
+
+            else:
+                executed_order = exchange.create_order( # type: ignore
+                    symbol = position.ticker,
+                    type = position.order_type,
+                    amount = rounded_slice_amount_in_base_ccy,
+                    side = position.side
+                )
+
+            executed_order['slice_id'] = i
+
+            '''
+            Format of executed_order:
+                executed_order
+                {'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}, 'id': '2245241151525347328', 'clientOrderId': 'xxx', 'timestamp': None, 'datetime': None, 'lastTradeTimestamp': None, 'lastUpdateTimestamp': None, 'symbol': 'SUSHI/USDT:USDT', 'type': 'limit', 'timeInForce': None, 'postOnly': None, 'side': 'buy', 'price': None, 'stopLossPrice': None, 'takeProfitPrice': None, 'triggerPrice': None, 'average': None, 'cost': None, 'amount': None, 'filled': None, 'remaining': None, 'status': None, 'fee': None, 'trades': [], 'reduceOnly': False, 'fees': [], 'stopPrice': None}
+                special variables:
+                function variables:
+                'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}
+                'id': '2245241151525347328'
+                'clientOrderId': 'xxx'
+                'timestamp': None
+                'datetime': None
+                'lastTradeTimestamp': None
+                'lastUpdateTimestamp': None
+                'symbol': 'SUSHI/USDT:USDT'
+                'type': 'limit'
+                'timeInForce': None
+                'postOnly': None
+                'side': 'buy'
+                'price': None
+                'stopLossPrice': None
+                'takeProfitPrice': None
+                'triggerPrice': None
+                'average': None
+                'cost': None
+                'amount': None
+                'filled': None
+                'remaining': None
+                'status': None
+                'fee': None
+                'trades': []
+                'reduceOnly': False
+                'fees': []
+                'stopPrice': None
+            '''
+            order_id = executed_order['id']
+            order_status = executed_order['status']
+            filled_amount = executed_order['filled']
+            remaining_amount = executed_order['remaining']
+            executed_order['multiplier'] = multiplier
+            position.append_execution(order_id, executed_order)
+
+            log(f"Order dispatched: {order_id}. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+
+            if not order_status or order_status!='closed':
+                start_time = time.time()
+                wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+
+                while time.time() - start_time < wait_threshold_sec:
+                    # Why not use websocket 'watch_orders'? Not every exchange supports this.
+                    order_update = exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                    order_status = order_update['status']
+                    filled_amount = order_update['filled']
+                    remaining_amount = order_update['remaining']
+                    order_update['multiplier'] = multiplier
+                    position.append_execution(order_id, order_update)
+
+                    if remaining_amount <= 0:
+                        log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
+                        break
+
+                    await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+            
+            # Cancel hung limit order, resend as market
+            if order_status!='closed':
+                order_update = exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                order_status = order_update['status']
+                filled_amount = order_update['filled']
+                remaining_amount = order_update['remaining']
+
+                exchange.cancel_order(order_id, position.ticker)  # type: ignore
+                position.get_execution(order_id)['status'] = 'canceled'
+                log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
+                
+                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
+                rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+                rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                if rounded_slice_amount_in_base_ccy>0:
+                    executed_resent_order = exchange.create_order(  # type: ignore
+                        symbol=position.ticker,
+                        type='market',
+                        amount=remaining_amount,
+                        side=position.side
+                    )
+
+                    order_id = executed_resent_order['id']
+                    order_status = executed_resent_order['status']
+                    executed_resent_order['multiplier'] = multiplier
+                    position.append_execution(order_id, executed_resent_order)
+
+                    while not order_status or order_status!='closed':
+                        order_id = executed_resent_order['id']
+                        order_status = executed_resent_order['status']
+                        filled_amount = executed_resent_order['filled']
+                        remaining_amount = executed_resent_order['remaining']
+                        log(f"Waiting for resent market order to close {order_id} ...")
+
+                        await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+
+                    log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+
+            log(f"Executed slice #{i}", log_level=LogLevel.INFO)
+            log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
+            if position.order_type=='limit':
+                log(f"{position.ticker}, limit_price: {limit_price}, rounded_limit_price, {rounded_limit_price}", log_level=LogLevel.INFO)
+
+        except Exception as slice_err:
+            log(
+                f"Failed to execute #{i} slice: {slice.to_dict()}. {slice_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
+                log_level=LogLevel.ERROR
+                )
+        finally:
+            i += 1
+
+async def work(
+    param : Dict,
+    exchange : AnyExchange,
+    redis_client : StrictRedis
+):
+    incoming_orders_topic_regex : str = param['incoming_orders_topic_regex']
+    incoming_orders_topic_regex = incoming_orders_topic_regex.replace("$GATEWAY_ID$", param['gateway_id'])
+    incoming_orders_topic_regex_pattern : Pattern = re.compile(incoming_orders_topic_regex)
+
+    # This is how we avoid reprocess same message twice. We check message hash and cache it.
+    processed_hash_queue = deque(maxlen=10)
+
+    while True:
+        try:
+            keys = redis_client.keys()
+            for key in keys:
+                try:
+                    s_key : str = key.decode("utf-8")
+                    if incoming_orders_topic_regex_pattern.match(s_key):
+                        orders = None
+                        message = redis_client.get(key)
+                        if message:
+                            message_hash = hashlib.sha256(message).hexdigest()
+                            message = message.decode('utf-8')
+                            if message_hash not in processed_hash_queue: # Dont process what's been processed before.
+                                processed_hash_queue.append(message_hash)
+
+                                orders = json.loads(message)
+                                positions : List[DivisiblePosition] = [
+                                    DivisiblePosition(
+                                        ticker=order['ticker'],
+                                        side=order['side'],
+                                        amount=order['amount'],
+                                        order_type=order['order_type'],
+                                        leg_room_bps=order['leg_room_bps'],
+                                        slices=order['slices'],
+                                        wait_fill_threshold_ms=order['wait_fill_threshold_ms']
+                                    )
+                                    for order in orders
+                                ]
+
+                                executions = [ execute_one_position(exchange, position, param) for position in positions ]
+                                await asyncio.gather(*executions)
+
+                                start = time.time()
+                                if redis_client:
+                                    '''
+                                    https://redis.io/commands/set/
+                                    '''
+                                    expiry_sec : int = 60*15 # additional 15min
+                                    _positions = [ position.to_dict() for position in positions ]
+                                    redis_client.set(name=key, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
+                                    redis_set_elapsed_ms = int((time.time() - start) *1000)
+
+
+                except Exception as key_error:
+                    log(
+                        f"Failed to process {key}. Error: {key_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
+                        log_level=LogLevel.ERROR
+                        )
+
+        except Exception as loop_error:
+            log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+
+async def main():
+    parse_args()
+    load_dotenv()
+
+    encrypt_decrypt_with_aws_kms = os.getenv('ENCRYPT_DECRYPT_WITH_AWS_KMS')
+    encrypt_decrypt_with_aws_kms = True if encrypt_decrypt_with_aws_kms=='Y' else False
+    
+    api_key : str = str(os.getenv('APIKEY'))
+    secret : str = str(os.getenv('SECRET'))
+    passphrase : str = str(os.getenv('PASSPHRASE'))
+
+    if encrypt_decrypt_with_aws_kms:
+        aws_kms_key_id = str(os.getenv('AWS_KMS_KEY_ID'))
+
+        aws_kms = AwsKmsUtil(key_id=aws_kms_key_id, profile_name=None)
+        api_key = aws_kms.decrypt(api_key.encode())
+        secret = aws_kms.decrypt(secret.encode())
+        passphrase = aws_kms.decrypt(passphrase.encode())
+    
+    redis_client : StrictRedis = init_redis_client()
+
+    exchange : Union[AnyExchange, None] = instantiate_exchange(
+        gateway_id=param['gateway_id'],
+        api_key=api_key,
+        secret=secret,
+        passphrase=passphrase,
+        default_type=param['default_type'],
+        rate_limit_ms=param['rate_limit_ms']
+    )
+    if exchange:
+        # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
+        balances = exchange.fetch_balance() # type: ignore
+        log(f"{param['gateway_id']}: account balances {balances}")
+
+        await work(param=param, exchange=exchange, redis_client=redis_client)
+
+asyncio.run(main())

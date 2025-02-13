@@ -10,6 +10,7 @@ b. Override ccxt basic functions
     - create_order
     - update_order
     - cancel_order
+    - fetch_order (REST) vs watch_orders (websocket)
     - order amount rounding: amount_to_precision
     - order price rounding: price_to_precision
     ... etc
