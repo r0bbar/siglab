@@ -217,7 +217,7 @@ async def execute_one_position(
         try:
             slice_amount_in_base_ccy : float = slice.amount
             rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After devided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, slice_amount_in_base_ccy) # type: ignore
+            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
             rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
             rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
