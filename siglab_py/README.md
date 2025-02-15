@@ -1,4 +1,4 @@
-**siglab_._py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
+**siglab_py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
 It consists of two primary components.
 1. Under **market_data_providers**
 
