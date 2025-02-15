@@ -3,6 +3,7 @@ It consists of two primary components.
 1. Under **market_data_providers**
 
     **candles_provider.py**: fetches candles from exchanges (currrent implementation only crypto exchanges supported). Candles are published to Redis. Please look at market_data_util.py.
+    
     **candles_ta_provider.py**: calculate tecnical indicators from candles_provider (Fetched from redis). TA calculations are published back to redis for strategy consumption. Please look at analytic_util.py
 
     Two examples shows usage of market_data_util and analytic_util in back tests.
