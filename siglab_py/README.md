@@ -1,4 +1,4 @@
-**siglab.py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
+**siglab_._py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
 It consists of two primary components.
 1. Under **market_data_providers**
 
@@ -10,7 +10,7 @@ It consists of two primary components.
 
         Examples 1: Fibonacci
             https://medium.com/@norman-lm-fung/debunking-myth-fibonacci-618-ea957c795d5a
-            
+
         Example 2: Trading breakouts
             https://medium.com/@norman-lm-fung/debunking-myths-trading-breakouts-f73db8006f44
 
@@ -18,4 +18,5 @@ It consists of two primary components.
 2. Under **ordergateway**
 
     **gateway.py**: This is a standalone order gateway. Current implementation supports a couple crypto exchanges. But if you look at any_exchange.py, the ultimate goal is to support trading via tradfi brokerages like IKBR. To trade exchanges not supported by ccxt or tradfi brokerages of your choice, extend AnyExchange.
+    
     The idea is, strategies (separate service that you'd build), see send orders to **gateway.py** via redis, using API exposed in **client.py**.
