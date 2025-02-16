@@ -61,4 +61,4 @@ It consists of two primary components.
 
     c. Hung limit orders will be cancelled. Remainder are sent as market orders.
 
-    The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation.
+    The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic.
