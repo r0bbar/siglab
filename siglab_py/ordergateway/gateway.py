@@ -80,6 +80,84 @@ To debug from vscode, launch.json:
             }
         ]
     }
+
+    gateway.py takes orders from redis. Strategies should publish orders under topic specified under param['incoming_orders_topic_regex'].
+
+    Expected order format:
+        [
+            {
+                "ticker": "SUSHI/USDT:USDT",
+                "side": "sell",
+                "amount": 10,
+                "order_type": "limit",
+                "leg_room_bps": 5,
+                "slices": 5,
+                "wait_fill_threshold_ms": 15000,
+                "executions": {},
+                "filled_amount": 0,
+                "average_cost": 0
+            }
+        ]
+
+    After executions, gateway.py publish back to redis under topic param['executions_publish_topic'].
+
+    Format:
+        [
+            {
+                "ticker": "SUSHI/USDT:USDT",
+                "side": "sell",
+                "amount": 10,
+                "order_type": "limit",
+                "leg_room_bps": 5,
+                "slices": 5,
+                "wait_fill_threshold_ms": 15000,
+                "executions": {
+                    "xxx": {    <-- order id from exchange
+                        "info": { <-- ccxt convention, raw response from exchanges under info tag
+                            ...
+                        },
+                        "id": "xxx", <-- order id from exchange
+                        "clientOrderId": "xxx",
+                        "timestamp": xxx,
+                        "datetime": "xxx",
+                        "lastTradeTimestamp": xxx,
+                        "lastUpdateTimestamp": xxx,
+                        "symbol": "SUSHI/USDT:USDT",
+                        "type": "limit",
+                        "timeInForce": null,
+                        "postOnly": null,
+                        "side": "sell",
+                        "price": 0.8897,
+                        "stopLossPrice": null,
+                        "takeProfitPrice": null,
+                        "triggerPrice": null,
+                        "average": 0.8901,
+                        "cost": 1.7802,
+                        "amount": 2,
+                        "filled": 2,
+                        "remaining": 0,
+                        "status": "closed",
+                        "fee": {
+                            "cost": 0.00053406,
+                            "currency": "USDT"
+                        },
+                        "trades": [],
+                        "reduceOnly": false,
+                        "fees": [
+                            {
+                                "cost": 0.00053406,
+                                "currency": "USDT"
+                            }
+                        ],
+                        "stopPrice": null,
+                        "multiplier": 1
+                    },
+                    "filled_amount": 10,    <-- aggregates computed by gateway.py
+                    "average_cost": 0.88979 <-- aggregates computed by gateway.py
+                }
+                    
+                ... more executions ...
+        ]
 '''
 class LogLevel(Enum):
     CRITICAL = 50
