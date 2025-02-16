@@ -65,6 +65,9 @@ class DivisiblePosition(Order):
         super().__init__(ticker, side, amount, order_type, leg_room_bps)
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
+        self.multiplier = 1
+        self.filled_amount = 0
+        self.average_cost = 0
 
         self.executions : Dict[str, Dict[str, Any]] = {}
 
@@ -109,14 +112,26 @@ class DivisiblePosition(Order):
     ) -> Dict[str, Any]:
         return self.executions[order_id]
 
-    def get_filled_amount(self):
+    def get_executions(self) -> Dict[str, Dict[str, Any]]:
+        return self.executions
+
+    def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
-        filled_amount = sum([ self.executions[order_id]['filled'] * self.executions[order_id]['multipler'] for order_id in self.executions ])
+        filled_amount = sum([ self.executions[order_id]['filled'] * self.multiplier for order_id in self.executions ])
+        self.filled_amount = filled_amount
         return filled_amount
+
+    def get_average_cost(self) -> float:
+        average_cost = sum([ self.executions[order_id]['average'] * self.executions[order_id]['amount'] for order_id in self.executions ])
+        average_cost = average_cost / sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
+        self.average_cost = average_cost
+        return average_cost
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         rv = super().to_dict()
         rv['slices'] = self.slices
         rv['wait_fill_threshold_ms'] = self.wait_fill_threshold_ms
         rv['executions'] = self.executions
+        rv['filled_amount'] = self.filled_amount
+        rv['average_cost'] = self.average_cost
         return rv
