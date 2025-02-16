@@ -20,12 +20,7 @@ import asyncio
 
 from util.aws_util import AwsKmsUtil
 
-from ccxt.bybit import bybit
-from ccxt.binance import binance
-from ccxt.okx import okx
-from ccxt.deribit import deribit
-from ccxt.hyperliquid import hyperliquid
-
+import ccxt.pro as ccxtpro
 
 from exchanges.any_exchange import AnyExchange
 from ordergateway.client import Order, DivisiblePosition
@@ -39,6 +34,18 @@ Usage:
 
 This script is pypy compatible:
     pypy gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
+
+In above example, $GATEWAY_ID$ is 'bybit_01'.
+
+You should place .env.$GATEWAY_ID$ in same folder as gateway.py. Formmat should be.
+    ENCRYPT_DECRYPT_WITH_AWS_KMS=Y
+    AWS_KMS_KEY_ID=xxx
+    APIKEY=xxx
+    SECRET=xxx
+    PASSPHRASE=xxx
+
+If ENCRYPT_DECRYPT_WITH_AWS_KMS set to N, APIKEY, SECRET and PASSPHRASE in un-encrypted format(Bad idea in general but if you want to quickly test things out).
+IF ENCRYPT_DECRYPT_WITH_AWS_KMS set to Y, APIKEY, SECRET and PASSPHRASE are decrypted using AWS KMS (You can use 'encrypt_keys_util.py' to encrypt your credentials)
 
 Please lookup 'defaultType' (Whether you're trading spot? Or perpectuals) via ccxt library. It's generally under exchange's method 'describe'. Looks under 'options' tag, look for 'defaultType'.
 'Perpetual contracts' are generally referred to as 'linear' or 'swap'.
@@ -85,7 +92,9 @@ class LogLevel(Enum):
 param : Dict = {
     'gateway_id' : '---',
 
-    "incoming_orders_topic_regex" : r"ordergateway_$GATEWAY_ID$", 
+    "incoming_orders_topic_regex" : r"ordergateway_pending_orders_$GATEWAY_ID$", 
+    "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
+
     "fetch_order_status_poll_freq_ms" : 500,
 
     'mds' : {
@@ -173,43 +182,65 @@ def instantiate_exchange(
                         }
                     }
 
-    if exchange_name=='bybit':
+    if exchange_name=='binance':
+        # spot, future, margin, delivery, option
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
+        exchange = ccxtpro.binance(exchange_params)  # type: ignore
+    elif exchange_name=='bybit':
         # spot, linear, inverse, futures
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/bybit.py#L1041
-        exchange = bybit(exchange_params) # type: ignore
+        exchange = ccxtpro.bybit(exchange_params) # type: ignore
     elif exchange_name=='okx':
         # 'funding', spot, margin, future, swap, option
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/okx.py#L1144
         exchange_params['password'] = passphrase
-        exchange = okx(exchange_params)  # type: ignore
-    elif exchange_name=='binance':
-        # spot, future, margin, delivery, option
-        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
-        exchange = binance(exchange_params)  # type: ignore
+        exchange = ccxtpro.okx(exchange_params) # type: ignore
     elif exchange_name=='deribit':
         # spot, swap, future
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
-        exchange = deribit(exchange_params)  # type: ignore
+        exchange = ccxtpro.deribit(exchange_params)  # type: ignore
     elif exchange_name=='hyperliquid':
         # swap
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
-        exchange = hyperliquid(exchange_params)  # type: ignore
+        exchange = ccxtpro.hyperliquid(exchange_params)  # type: ignore
     else:
         raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
     return exchange
 
+async def watch_orders_task(
+    exchange : AnyExchange,
+    executions : Dict[str, Dict[str, Any]]
+):
+    while True:
+        try:
+            order_updates = await exchange.watch_orders() # type: ignore
+            for order_update in order_updates:
+                order_id = order_update['id']
+                executions[order_id] = order_update
+
+            log(f"order updates: {order_updates}", log_level=LogLevel.INFO)
+        except Exception as loop_err:
+            print(f"watch_orders_task error: {loop_err}")
+        
+        await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+
 async def execute_one_position(
     exchange : AnyExchange,
     position : DivisiblePosition,
-    param : Dict
+    param : Dict,
+    executions : Dict[str, Dict[str, Any]]
 ):
+    await exchange.load_markets() # type: ignore
+    await exchange.authenticate() # type: ignore
+
     market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
     if not market:
         raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
 
     min_amount = float(market['limits']['amount']['min']) # type: ignore
     multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+    position.multiplier = multiplier
 
     slices : List[Order] = position.to_slices()
     i = 0
@@ -224,7 +255,7 @@ async def execute_one_position(
             limit_price : float = 0
             rounded_limit_price : float = 0
             if position.order_type=='limit':
-                orderbook = exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
+                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
                 if position.side=='buy':
                     asks = [ ask[0] for ask in orderbook['asks'] ]
                     best_asks = min(asks)
@@ -237,7 +268,7 @@ async def execute_one_position(
                 rounded_limit_price = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
                 rounded_limit_price = float(rounded_limit_price)
 
-                executed_order = exchange.create_order( # type: ignore
+                executed_order = await exchange.create_order( # type: ignore
                     symbol = position.ticker,
                     type = position.order_type,
                     amount = rounded_slice_amount_in_base_ccy,
@@ -246,7 +277,7 @@ async def execute_one_position(
                 )
 
             else:
-                executed_order = exchange.create_order( # type: ignore
+                executed_order = await exchange.create_order( # type: ignore
                     symbol = position.ticker,
                     type = position.order_type,
                     amount = rounded_slice_amount_in_base_ccy,
@@ -302,58 +333,78 @@ async def execute_one_position(
                 start_time = time.time()
                 wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
 
-                while time.time() - start_time < wait_threshold_sec:
-                    # Why not use websocket 'watch_orders'? Not every exchange supports this.
-                    order_update = exchange.fetch_order(order_id, position.ticker) # type: ignore 
-                    order_status = order_update['status']
-                    filled_amount = order_update['filled']
-                    remaining_amount = order_update['remaining']
-                    order_update['multiplier'] = multiplier
-                    position.append_execution(order_id, order_update)
+                elapsed_sec = time.time() - start_time
+                while elapsed_sec < wait_threshold_sec:
+                    order_update = None
+                    if order_id in executions:
+                        order_update = executions[order_id]
+                    
+                    if order_update:
+                        order_status = order_update['status']
+                        filled_amount = order_update['filled']
+                        remaining_amount = order_update['remaining']
+                        order_update['multiplier'] = multiplier
+                        position.append_execution(order_id, order_update)
 
-                    if remaining_amount <= 0:
-                        log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
-                        break
+                        if remaining_amount <= 0:
+                            log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
+                            break
 
                     await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
             
+            
+
             # Cancel hung limit order, resend as market
             if order_status!='closed':
-                order_update = exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                # If no update from websocket, do one last fetch via REST
+                order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
                 order_status = order_update['status']
                 filled_amount = order_update['filled']
                 remaining_amount = order_update['remaining']
+                order_update['multiplier'] = multiplier
+                position.append_execution(order_id, order_update)
 
-                exchange.cancel_order(order_id, position.ticker)  # type: ignore
-                position.get_execution(order_id)['status'] = 'canceled'
-                log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
-                
-                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
-                rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
-                rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
-                if rounded_slice_amount_in_base_ccy>0:
-                    executed_resent_order = exchange.create_order(  # type: ignore
-                        symbol=position.ticker,
-                        type='market',
-                        amount=remaining_amount,
-                        side=position.side
-                    )
+                if order_status!='closed': 
+                    order_status = order_update['status']
+                    filled_amount = order_update['filled']
+                    remaining_amount = order_update['remaining']
 
-                    order_id = executed_resent_order['id']
-                    order_status = executed_resent_order['status']
-                    executed_resent_order['multiplier'] = multiplier
-                    position.append_execution(order_id, executed_resent_order)
+                    await exchange.cancel_order(order_id, position.ticker)  # type: ignore
+                    position.get_execution(order_id)['status'] = 'canceled'
+                    log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
+                    
+                    rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
+                    rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+                    rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                    if rounded_slice_amount_in_base_ccy>0:
+                        executed_resent_order = await exchange.create_order(  # type: ignore
+                            symbol=position.ticker,
+                            type='market',
+                            amount=remaining_amount,
+                            side=position.side
+                        )
 
-                    while not order_status or order_status!='closed':
                         order_id = executed_resent_order['id']
                         order_status = executed_resent_order['status']
-                        filled_amount = executed_resent_order['filled']
-                        remaining_amount = executed_resent_order['remaining']
-                        log(f"Waiting for resent market order to close {order_id} ...")
+                        executed_resent_order['multiplier'] = multiplier
+                        position.append_execution(order_id, executed_resent_order)
 
-                        await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+                        while not order_status or order_status!='closed':
+                            order_update = None
+                            if order_id in executions:
+                                order_update = executions[order_id]
 
-                    log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+                            if order_update:
+                                order_id = order_update['id']
+                                order_status = order_update['status']
+                                filled_amount = order_update['filled']
+                                remaining_amount = order_update['remaining']
+
+                            log(f"Waiting for resent market order to close {order_id} ...")
+
+                            await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+
+                        log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
             log(f"Executed slice #{i}", log_level=LogLevel.INFO)
             log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
@@ -377,8 +428,13 @@ async def work(
     incoming_orders_topic_regex = incoming_orders_topic_regex.replace("$GATEWAY_ID$", param['gateway_id'])
     incoming_orders_topic_regex_pattern : Pattern = re.compile(incoming_orders_topic_regex)
 
+    executions_publish_topic : str = param['executions_publish_topic'].replace("$GATEWAY_ID$", param['gateway_id'])
+
     # This is how we avoid reprocess same message twice. We check message hash and cache it.
     processed_hash_queue = deque(maxlen=10)
+
+    executions : Dict[str, Dict[str, Any]] = {}
+    asyncio.create_task(watch_orders_task(exchange, executions))
 
     while True:
         try:
@@ -409,19 +465,29 @@ async def work(
                                     for order in orders
                                 ]
 
-                                executions = [ execute_one_position(exchange, position, param) for position in positions ]
-                                await asyncio.gather(*executions)
+                                start = time.time()
+                                pending_executions = [ execute_one_position(exchange, position, param, executions) for position in positions ]
+                                await asyncio.gather(*pending_executions)
+                                order_dispatch_elapsed_ms = int((time.time() - start) *1000)
+
+                                i = 0
+                                for position in positions:
+                                    log(f"{i} {position.ticker}, {position.side} # executions: {len(position.get_executions())}, filled_amount: {position.get_filled_amount()}, average_cost: {position.get_average_cost()}, order_dispatch_elapsed_ms: {order_dispatch_elapsed_ms}")
+                                    i += 1
 
                                 start = time.time()
                                 if redis_client:
+                                    redis_client.delete(key)
+
                                     '''
                                     https://redis.io/commands/set/
                                     '''
                                     expiry_sec : int = 60*15 # additional 15min
                                     _positions = [ position.to_dict() for position in positions ]
-                                    redis_client.set(name=key, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
+                                    redis_client.set(name=executions_publish_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
                                     redis_set_elapsed_ms = int((time.time() - start) *1000)
 
+                                    log(f"positions published back to redis, redis_set_elapsed_ms: {redis_set_elapsed_ms}")
 
                 except Exception as key_error:
                     log(
@@ -463,7 +529,7 @@ async def main():
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
-        balances = exchange.fetch_balance() # type: ignore
+        balances = await exchange.fetch_balance() # type: ignore
         log(f"{param['gateway_id']}: account balances {balances}")
 
         await work(param=param, exchange=exchange, redis_client=redis_client)
