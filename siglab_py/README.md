@@ -69,3 +69,11 @@ It consists of two primary components.
     Take look at [**DivisiblePosition**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py)
        
     A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades?), "slices" are executed sequentially.
+
+    Further, a note on entry vs exit:
+    
+    a. When you Enter into a position: You are thinking in USD. You'd want to deploy $xxx to buy BTC for example.
+
+    b. When you Exit from a position: You'd unwind the BTC you have, back into USD.
+
+    That's a strategy concern, and gateway.py don't handle that for you.
