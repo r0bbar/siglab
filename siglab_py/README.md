@@ -54,7 +54,9 @@ It consists of two primary components.
     
     a. Execute orders in slices
 
-       Take look at [**DivisiblePosition**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py). When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades?), "slices" are executed sequentially.
+       Take look at [**DivisiblePosition**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py)
+       
+       When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades?), "slices" are executed sequentially.
 
     b. Round order price and amount to exchange precision 
        (ccxt price_to_precision and amount_to_precision)
