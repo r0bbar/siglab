@@ -35,7 +35,7 @@ It consists of two primary components.
 
     [market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) fetches the candles.
 
-    The code which computes the TA are in [analytic_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py).
+    The code which computes the TA is in [analytic_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py).
 
     Two examples shows usage of market_data_util and analytic_util in back tests.
 
