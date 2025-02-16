@@ -68,7 +68,7 @@ It consists of two primary components.
 
     Take look at [**DivisiblePosition**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py)
        
-    A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades?), "slices" are executed sequentially. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
+    A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades? You'd like the two legs to be executed concurrently.), "slices" are executed sequentially. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
     Further, a note on entry vs exit:
     
