@@ -45,19 +45,23 @@ def init_redis_client() -> StrictRedis:
 def execute_positions(
     redis_client : StrictRedis, 
     positions : List[DivisiblePosition], 
-    ordergateway_topic : str):
+    ordergateway_pending_orders_topic : str):
     # https://redis.io/commands/publish/
     _positions = [ position.to_dict() for position in positions ]
-    redis_client.set(name=ordergateway_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
+    redis_client.set(name=ordergateway_pending_orders_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
 
-    print(f"{ordergateway_topic}: Orders sent {_positions}.")
+    print(f"{ordergateway_pending_orders_topic}: Orders sent {_positions}.")
 
 if __name__ == '__main__':
     parse_args()
 
     gateway_id : str = param['gateway_id']
-    ordergateway_topic = 'ordergateway_pending_orders_$GATEWAY_ID$'
-    ordergateway_topic = ordergateway_topic.replace("$GATEWAY_ID$", gateway_id)
+    ordergateway_pending_orders_topic = 'ordergateway_pending_orders_$GATEWAY_ID$'
+    ordergateway_pending_orders_topic = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
+    
+    ordergateway_executions_topic = "ordergateway_executions_$GATEWAY_ID$"
+    ordergateway_executions_topic = ordergateway_executions_topic.replace("$GATEWAY_ID$", gateway_id)
+
     redis_client : StrictRedis = init_redis_client()
 
     # Example, enter into a pair position long SUSHI, short DYDX
@@ -108,4 +112,28 @@ if __name__ == '__main__':
     execute_positions(
         redis_client=redis_client,
         positions=positions_2,
-        ordergateway_topic=ordergateway_topic)
+        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic)
+
+    # Wait for fills
+    while True:
+        try:
+            keys = redis_client.keys()
+            for key in keys:
+                s_key : str = key.decode("utf-8")
+                if s_key==ordergateway_executions_topic:
+                    message = redis_client.get(key)
+                    if message:
+                        message = message.decode('utf-8')
+                        positions = json.loads(message)
+
+                        for position in positions:
+                            print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}")
+                            
+                        break
+
+        except Exception as loop_err:
+            print(f"Oops {loop_err}")
+        finally:
+            time.sleep(1)
+
+    
