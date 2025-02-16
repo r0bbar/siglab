@@ -1,6 +1,6 @@
 **siglab_py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
 
-![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py_arch.jpg)
+![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
 It consists of two primary components.
 
