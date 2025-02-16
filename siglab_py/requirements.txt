@@ -9,6 +9,7 @@ numpy
 boto3
 web3
 ccxt
+ccxtpro
 yfinance
 yahoofinancials
 scipy # pypy in-compatible
