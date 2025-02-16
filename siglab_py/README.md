@@ -40,7 +40,7 @@ It consists of two primary components.
         Example 2: Trading breakouts
             https://medium.com/@norman-lm-fung/debunking-myths-trading-breakouts-f73db8006f44
 
-            **partition_sliding_windo** segments time series based on inflection points: Where price crosses MAs.
+            **partition_sliding_window** segments time series based on inflection points: Where price crosses MAs.
             https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
 
 
