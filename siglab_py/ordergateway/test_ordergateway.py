@@ -56,12 +56,12 @@ if __name__ == '__main__':
     parse_args()
 
     gateway_id : str = param['gateway_id']
-    ordergateway_topic = 'ordergateway_$GATEWAY_ID$'
+    ordergateway_topic = 'ordergateway_pending_orders_$GATEWAY_ID$'
     ordergateway_topic = ordergateway_topic.replace("$GATEWAY_ID$", gateway_id)
     redis_client : StrictRedis = init_redis_client()
 
     # Example, enter into a pair position long SUSHI, short DYDX
-    positions : List[DivisiblePosition] = [
+    positions_1 : List[DivisiblePosition] = [
         DivisiblePosition(
             ticker = 'SUSHI/USDT:USDT',
             side = 'sell',
@@ -81,7 +81,31 @@ if __name__ == '__main__':
             wait_fill_threshold_ms=15000
         )
     ]
+
+    positions_2 : List[DivisiblePosition] = [
+        DivisiblePosition(
+            ticker = 'SUSHI/USDT:USDT',
+            side = 'buy',
+            amount = 10,
+            leg_room_bps = 5,
+            order_type = 'limit',
+            slices=5,
+            wait_fill_threshold_ms=15000
+        ),
+    ]
+
+    positions_3 : List[DivisiblePosition] = [
+        DivisiblePosition(
+            ticker = 'BTC/USDT:USDT',
+            side = 'sell',
+            amount = 0.01,
+            leg_room_bps = 5,
+            order_type = 'limit',
+            slices=1,
+            wait_fill_threshold_ms=60000
+        )
+    ]
     execute_positions(
         redis_client=redis_client,
-        positions=positions,
+        positions=positions_2,
         ordergateway_topic=ordergateway_topic)
