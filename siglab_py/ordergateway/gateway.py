@@ -45,7 +45,10 @@ You should place .env.$GATEWAY_ID$ in same folder as gateway.py. Formmat should 
     PASSPHRASE=xxx
 
 If ENCRYPT_DECRYPT_WITH_AWS_KMS set to N, APIKEY, SECRET and PASSPHRASE in un-encrypted format(Bad idea in general but if you want to quickly test things out).
-IF ENCRYPT_DECRYPT_WITH_AWS_KMS set to Y, APIKEY, SECRET and PASSPHRASE are decrypted using AWS KMS (You can use 'encrypt_keys_util.py' to encrypt your credentials)
+If ENCRYPT_DECRYPT_WITH_AWS_KMS set to Y, APIKEY, SECRET and PASSPHRASE are decrypted using AWS KMS (You can use 'encrypt_keys_util.py' to encrypt your credentials)
+
+Optionally, credentials can be passed in as command line arguments, which will override credentials from .env
+    python gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --passphrase xxx
 
 Please lookup 'defaultType' (Whether you're trading spot? Or perpectuals) via ccxt library. It's generally under exchange's method 'describe'. Looks under 'options' tag, look for 'defaultType'.
 'Perpetual contracts' are generally referred to as 'linear' or 'swap'.
@@ -72,7 +75,13 @@ To debug from vscode, launch.json:
                 "args" : [
                     "--gateway_id", "bybit_01",
                     "--default_type", "linear",
-                    "--rate_limit_ms", "100"
+                    "--rate_limit_ms", "100",
+
+                    "--encrypt_decrypt_with_aws_kms", "N",
+                    "--aws_kms_key_id", "",
+                    "--apikey", "xxx",
+                    "--secret", "xxx",
+                    "--passphrase", "xxx"
                 ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -216,10 +225,29 @@ def parse_args():
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
+    parser.add_argument("--encrypt_decrypt_with_aws_kms", help="Y or N. If encrypt_decrypt_with_aws_kms=N, pass in apikey, secret and passphrase unencrypted (Not recommended, for testing only). If Y, they will be decrypted using AMS KMS key.", default='N')
+    parser.add_argument("--aws_kms_key_id", help="AWS KMS key ID", default=None)
+    parser.add_argument("--apikey", help="Exchange apikey", default=None)
+    parser.add_argument("--secret", help="Exchange secret", default=None)
+    parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
+
     args = parser.parse_args()
     param['gateway_id'] = args.gateway_id
     param['default_type'] = args.default_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
+
+    if args.encrypt_decrypt_with_aws_kms:
+        if args.encrypt_decrypt_with_aws_kms=='Y':
+            param['encrypt_decrypt_with_aws_kms'] = True
+        else:
+            param['encrypt_decrypt_with_aws_kms'] = False
+    else:
+        param['encrypt_decrypt_with_aws_kms'] = False
+
+    param['aws_kms_key_id'] = args.aws_kms_key_id
+    param['apikey'] = args.apikey
+    param['secret'] = args.secret
+    param['passphrase'] = args.passphrase
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -578,14 +606,25 @@ async def work(
 
 async def main():
     parse_args()
-    load_dotenv()
 
-    encrypt_decrypt_with_aws_kms = os.getenv('ENCRYPT_DECRYPT_WITH_AWS_KMS')
-    encrypt_decrypt_with_aws_kms = True if encrypt_decrypt_with_aws_kms=='Y' else False
-    
-    api_key : str = str(os.getenv('APIKEY'))
-    secret : str = str(os.getenv('SECRET'))
-    passphrase : str = str(os.getenv('PASSPHRASE'))
+    if not param['apikey']:
+        log("Loading credentials from .env")
+
+        load_dotenv()
+
+        encrypt_decrypt_with_aws_kms = os.getenv('ENCRYPT_DECRYPT_WITH_AWS_KMS')
+        encrypt_decrypt_with_aws_kms = True if encrypt_decrypt_with_aws_kms=='Y' else False
+        
+        api_key : str = str(os.getenv('APIKEY'))
+        secret : str = str(os.getenv('SECRET'))
+        passphrase : str = str(os.getenv('PASSPHRASE'))
+    else:
+        log("Loading credentials from command line args")
+
+        encrypt_decrypt_with_aws_kms = param['encrypt_decrypt_with_aws_kms']
+        api_key : str = param['apikey']
+        secret : str = param['secret']
+        passphrase : str = param['passphrase']
 
     if encrypt_decrypt_with_aws_kms:
         aws_kms_key_id = str(os.getenv('AWS_KMS_KEY_ID'))
