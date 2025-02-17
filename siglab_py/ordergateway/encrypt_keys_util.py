@@ -32,8 +32,12 @@ aws_kms = AwsKmsUtil(key_id=key_id, profile_name=None)
 
 apikey = aws_kms.encrypt(apikey).decode("utf-8")
 secret = aws_kms.encrypt(secret).decode("utf-8")
-passphrase = aws_kms.encrypt(passphrase).decode("utf-8")
+
+if passphrase:
+    passphrase = aws_kms.encrypt(passphrase).decode("utf-8")
 
 print(f"apikey: {apikey}")
 print(f"secret: {secret}")
-print(f"passphrase: {passphrase}")
+
+if passphrase:
+    print(f"passphrase: {passphrase}")
