@@ -338,7 +338,10 @@ async def execute_one_position(
     executions : Dict[str, Dict[str, Any]]
 ):
     await exchange.load_markets() # type: ignore
-    # await exchange.authenticate() # type: ignore
+    try:
+        await exchange.authenticate() # type: ignore
+    except Exception as swallow_this_error:
+        pass # @todo, perhaps a better way for handling this?
 
     market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
     if not market:
