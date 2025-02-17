@@ -338,7 +338,7 @@ async def execute_one_position(
     executions : Dict[str, Dict[str, Any]]
 ):
     await exchange.load_markets() # type: ignore
-    await exchange.authenticate() # type: ignore
+    # await exchange.authenticate() # type: ignore
 
     market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
     if not market:
@@ -632,7 +632,8 @@ async def main():
         aws_kms = AwsKmsUtil(key_id=aws_kms_key_id, profile_name=None)
         api_key = aws_kms.decrypt(api_key.encode())
         secret = aws_kms.decrypt(secret.encode())
-        passphrase = aws_kms.decrypt(passphrase.encode())
+        if passphrase:
+            passphrase = aws_kms.decrypt(passphrase.encode())
     
     redis_client : StrictRedis = init_redis_client()
 
