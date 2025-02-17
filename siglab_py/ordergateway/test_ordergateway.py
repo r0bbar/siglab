@@ -115,7 +115,8 @@ if __name__ == '__main__':
         ordergateway_pending_orders_topic=ordergateway_pending_orders_topic)
 
     # Wait for fills
-    while True:
+    fills_received : bool = False
+    while not fills_received:
         try:
             keys = redis_client.keys()
             for key in keys:
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 
                         for position in positions:
                             print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}")
-                            
+                        fills_received = True
                         break
 
         except Exception as loop_err:
