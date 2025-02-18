@@ -57,7 +57,9 @@ It consists of two primary components.
 
     From strategy code, you can also access ordergateway.client.DivisiblePosition by first installing **siglib_py**
     
+    ```
     [pip install siglab-py](https://pypi.org/project/siglab-py)
+    ```
 
     [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
     
