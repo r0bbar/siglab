@@ -1,10 +1,11 @@
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
+import json
+import time
+from redis import StrictRedis
 
-from ccxt.base.types import Position
-
-from ..exchanges.any_exchange import AnyExchange
-from ..constants import JSON_SERIALIZABLE_TYPES
+from exchanges.any_exchange import AnyExchange
+from constants import JSON_SERIALIZABLE_TYPES
 
 '''
 Example,
@@ -135,3 +136,40 @@ class DivisiblePosition(Order):
         rv['filled_amount'] = self.filled_amount
         rv['average_cost'] = self.average_cost
         return rv
+
+def execute_positions(
+    redis_client : StrictRedis, 
+    positions : List[DivisiblePosition], 
+    ordergateway_pending_orders_topic : str,
+    ordergateway_executions_topic : str
+    ) -> Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None]:
+
+    executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = None
+
+    # https://redis.io/commands/publish/
+    _positions = [ position.to_dict() for position in positions ]
+    redis_client.set(name=ordergateway_pending_orders_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
+
+    print(f"{ordergateway_pending_orders_topic}: Orders sent {_positions}.")
+
+    # Wait for fills
+    fills_received : bool = False
+    while not fills_received:
+        try:
+            keys = redis_client.keys()
+            for key in keys:
+                s_key : str = key.decode("utf-8")
+                if s_key==ordergateway_executions_topic:
+                    message = redis_client.get(key)
+                    if message:
+                        message = message.decode('utf-8')
+                        executed_positions = json.loads(message)
+                        fills_received = True
+                        break
+
+        except Exception as loop_err:
+            raise loop_err
+        finally:
+            time.sleep(1)
+
+    return executed_positions

@@ -5,15 +5,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 import logging
 import json
-import pandas as pd
-import numpy as np
 from redis import StrictRedis
 
-from ordergateway.client import DivisiblePosition
+from ordergateway.client import DivisiblePosition, execute_positions
+from constants import JSON_SERIALIZABLE_TYPES
 
 '''
 set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-python test_ordergateway.py --gateway_id bybit_01
+python test_ordergateway.py --gateway_id bybit_03
 '''
 
 param : Dict[str, str] = {
@@ -41,16 +40,6 @@ def init_redis_client() -> StrictRedis:
         raise ConnectionError(err_msg)
     
     return redis_client
-
-def execute_positions(
-    redis_client : StrictRedis, 
-    positions : List[DivisiblePosition], 
-    ordergateway_pending_orders_topic : str):
-    # https://redis.io/commands/publish/
-    _positions = [ position.to_dict() for position in positions ]
-    redis_client.set(name=ordergateway_pending_orders_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
-
-    print(f"{ordergateway_pending_orders_topic}: Orders sent {_positions}.")
 
 if __name__ == '__main__':
     parse_args()
@@ -109,32 +98,18 @@ if __name__ == '__main__':
             wait_fill_threshold_ms=60000
         )
     ]
-    execute_positions(
+
+    
+    executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
         redis_client=redis_client,
         positions=positions_2,
-        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic)
-
-    # Wait for fills
-    fills_received : bool = False
-    while not fills_received:
-        try:
-            keys = redis_client.keys()
-            for key in keys:
-                s_key : str = key.decode("utf-8")
-                if s_key==ordergateway_executions_topic:
-                    message = redis_client.get(key)
-                    if message:
-                        message = message.decode('utf-8')
-                        positions = json.loads(message)
-
-                        for position in positions:
-                            print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}")
-                        fills_received = True
-                        break
-
-        except Exception as loop_err:
-            print(f"Oops {loop_err}")
-        finally:
-            time.sleep(1)
+        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+        ordergateway_executions_topic=ordergateway_executions_topic
+        )
+    if executed_positions:
+        for position in executed_positions:
+            print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}") # type: ignore
+        
+        
 
     
