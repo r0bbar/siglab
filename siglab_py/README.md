@@ -55,6 +55,10 @@ It consists of two primary components.
     
     The idea is, strategies (separate service that you'd build), see send orders to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using API exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py). Take a look at [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) for an example what you need to implement strategy side to send orders, and wait for fills.
 
+    From strategy code, you can also access ordergateway.client.DivisiblePosition by first installing **siglib_py**
+    
+    [pip install siglab-py](https://pypi.org/project/siglab-py)
+
     [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
     
     a. Execute orders in slices

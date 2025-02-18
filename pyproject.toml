@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "siglab_py"
+version = "0.1.5"
+description = "Market data fetches, TA calculations and generic order gateway."
+authors = [{name = "r0bbarh00d", email = "r0bbarh00d@gmail.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9.19"
+dependencies = [
+    "python-dotenv",
+    "dotmap",
+    "typing_extensions",
+    "arrow",
+    "tzlocal",
+    "nest_asyncio",
+    "pandas",
+    "numpy",
+    "boto3",
+    "web3",
+    "ccxt",
+    "ccxtpro",
+    "yfinance",
+    "yahoofinancials",
+    "scipy",
+    "statsmodels",
+    "scikit-learn",
+    "sklearn.preprocessing",
+    "hurst",
+    "redis",
+    "redis-py-cluster",
+    "kafka-python",
+]
+
+[project.urls]
+Homepage = "https://github.com/r0bbar/siglab/blob/master/siglab_py/README.md"

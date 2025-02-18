@@ -1,4 +1,4 @@
-dotenv
+python-dotenv
 dotmap
 typing_extensions
 arrow

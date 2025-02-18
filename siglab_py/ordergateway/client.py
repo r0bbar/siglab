@@ -3,8 +3,8 @@ from typing import List, Dict, Any
 
 from ccxt.base.types import Position
 
-from constants import JSON_SERIALIZABLE_TYPES
-from exchanges.any_exchange import AnyExchange
+from ..exchanges.any_exchange import AnyExchange
+from ..constants import JSON_SERIALIZABLE_TYPES
 
 '''
 Example,
