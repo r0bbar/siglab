@@ -14,23 +14,23 @@ It consists of two primary components.
 
     TAs computed (This is an expanding list):
 
-        a. Basic SMA/EMAs (And slopes)
+        + Basic SMA/EMAs (And slopes)
 
-        b. ATR
+        + ATR
 
-        c. Boillenger bands (Yes incorrect spelling sorry)
+        + Boillenger bands (Yes incorrect spelling sorry)
 
-        d. FVG
+        + FVG
         
-        e. Hurst Exponent
+        + Hurst Exponent
 
-        f. RSI, MFI
+        + RSI, MFI
 
-        g. MACD
+        + MACD
 
-        h. Fibonacci
+        + Fibonacci
         
-        i. Inflections points: where 'close' crosses EMA from above or below.
+        + Inflections points: where 'close' crosses EMA from above or below.
 
 
     [market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) fetches the candles.
@@ -63,12 +63,12 @@ It consists of two primary components.
 
     [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
     
-    a. Execute orders in slices
+    + Execute orders in slices
 
-    b. Round order price and amount to exchange precision 
+    + Round order price and amount to exchange precision 
        (ccxt price_to_precision and amount_to_precision)
 
-    c. Hung limit orders will be cancelled. Remainder are sent as market orders.
+    + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
     The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
 
@@ -78,8 +78,8 @@ It consists of two primary components.
 
     Further, a note on entry vs exit:
     
-    a. When you Enter into a position: You are thinking in USD. You'd want to deploy $xxx to buy BTC for example.
+    + When you Enter into a position: You are thinking in USD. You'd want to deploy $xxx to buy BTC for example.
 
-    b. When you Exit from a position: You'd unwind the BTC you have, back into USD.
+    + When you Exit from a position: You'd unwind the BTC you have, back into USD.
 
     That's a strategy concern, and gateway.py don't handle that for you.
