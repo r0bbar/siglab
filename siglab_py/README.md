@@ -14,23 +14,23 @@ It consists of two primary components.
 
     TAs computed (This is an expanding list):
 
-        + Basic SMA/EMAs (And slopes)
+    + Basic SMA/EMAs (And slopes)
 
-        + ATR
+    + ATR
 
-        + Boillenger bands (Yes incorrect spelling sorry)
+    + Boillenger bands (Yes incorrect spelling sorry)
 
-        + FVG
-        
-        + Hurst Exponent
+    + FVG
+    
+    + Hurst Exponent
 
-        + RSI, MFI
+    + RSI, MFI
 
-        + MACD
+    + MACD
 
-        + Fibonacci
-        
-        + Inflections points: where 'close' crosses EMA from above or below.
+    + Fibonacci
+    
+    + Inflections points: where 'close' crosses EMA from above or below.
 
 
     [market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) fetches the candles.
