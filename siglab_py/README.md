@@ -1,4 +1,4 @@
-**siglab_py** allows engineers/traders to quickly setup a trading desk: From back tests to trading.
+[**siglab_py**](https://pypi.org/project/siglab-py) allows engineers/traders to quickly setup a trading desk: From back tests to trading.
 
 ![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
@@ -60,8 +60,6 @@ It consists of two primary components.
     ```
     pip install siglab-py
     ```
-
-    [siglab-py](https://pypi.org/project/siglab-py)
 
     [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
     
