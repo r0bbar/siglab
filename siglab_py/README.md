@@ -109,6 +109,8 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
++ For limit orders, a more positive **leg_room_bps** means you'd be executing more aggressively (i.e. so your orders get filled). This means Buy at higher price, or Sell at lower price. Limit price is calculated by applying **leg_room_bps** on top of best Bid/Ask, depending on order's side.
+
 + Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially** (Details below)
 
 The idea is, strategies (separate service that you'd build), would send orders (JSON) to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
