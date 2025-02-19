@@ -56,7 +56,7 @@ Two examples shows usage of market_data_util and analytic_util in back tests.
 
 The idea is, strategies (separate service that you'd build), see send orders to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py). Take a look at [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) for an example what you need to implement strategy side to send orders, and wait for fills.
 
-From strategy code, you can also access ordergateway.client.DivisiblePosition and **execute_positions** by first installing [**siglib_py**](https://pypi.org/project/siglab-py)
+From strategy code, you can also access ordergateway.client.**DivisiblePosition** and **execute_positions** by first installing [**siglib_py**](https://pypi.org/project/siglab-py)
 
 ```
 pip install siglab-py
@@ -72,8 +72,6 @@ pip install siglab-py
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
-
-Take look at [**DivisiblePosition**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py)
     
 A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades? You'd like the two legs to be executed concurrently.), "slices" are executed sequentially. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
