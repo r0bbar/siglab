@@ -3,6 +3,11 @@ from typing import Union, Dict
 '''
 https://gist.github.com/raphaelgabbarelli/bc5a41d93789046f9c71e4685f1463e7
 https://www.youtube.com/watch?v=CFEYKrP0vxs
+
+If boto3 import complains: AttributeError: module 'lib' has no attribute 'X509_V_FLAG_CB_ISSUER_CHECK'
+    python3 -m pip install pip --upgrade
+    pip install pyopenssl --upgrade
+    https://stackoverflow.com/questions/73830524/attributeerror-module-lib-has-no-attribute-x509-v-flag-cb-issuer-check
 '''
 import boto3
 import base64
