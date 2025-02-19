@@ -109,6 +109,8 @@ if executed_positions:
         print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}") # type: ignore
 ```
 
+(Remember: set PYTHONPATH=C:\dev\siglab\siglab_py)
+
 From strategy code, you can also access ordergateway.client.**DivisiblePosition** and **execute_positions** by first installing [**siglib_py**](https://pypi.org/project/siglab-py)
 
 ```
@@ -125,8 +127,6 @@ pip install siglab-py
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
-
-(Remember: set PYTHONPATH=C:\dev\siglab\siglab_py)
     
 A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in parallel (Think of delta neutral spread trades? You'd like the two legs to be executed concurrently.), "slices" are executed sequentially. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
