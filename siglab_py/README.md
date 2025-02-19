@@ -34,7 +34,7 @@ TAs computed (This is an expanding list):
 + Inflections points: where 'close' crosses EMA from above or below.
 
 
-[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) fetches the candles.
+[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers (Yahoo Finance for example) - With sliding window implementation, as all exchanges restrict how many candles you can get in a single fetch.
 
 The code which computes the TA is in [analytic_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py).
 
@@ -54,9 +54,9 @@ Two examples shows usage of market_data_util and analytic_util in back tests.
 
 [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges. But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like IBKR. To trade exchanges not supported by ccxt or tradfi brokerages of your choice, extend AnyExchange.
 
-The idea is, strategies (separate service that you'd build), see send orders to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py). Take a look at [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) for an example what you need to implement strategy side to send orders, and wait for fills.
+The idea is, strategies (separate service that you'd build), see send orders to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py). Take a look at [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) for an example what you need to implement strategy side to send orders, and wait for fills.
 
-From strategy code, you can also access ordergateway.client.DivisiblePosition by first installing [**siglib_py**](https://pypi.org/project/siglab-py)
+From strategy code, you can also access ordergateway.client.DivisiblePosition and **execute_positions** by first installing [**siglib_py**](https://pypi.org/project/siglab-py)
 
 ```
 pip install siglab-py
@@ -79,8 +79,10 @@ A note on position slicing ... When strategies want to enter into position(s), y
 
 Further, a note on entry vs exit:
 
-+ When you Enter into a position: You are thinking in USD. You'd want to deploy $xxx to buy BTC for example.
++ When you Enter into a position: You are thinking in USD. You'd want to deploy $xxx to buy BTC for example. Traders generally think of "amount" in USD. 
 
-+ When you Exit from a position: You'd unwind the BTC you have, back into USD.
++ When you Exit from a position: You'd unwind the BTC you have, back into USD. Traders generally think of amount in base currency. BTC for example.
+
+DivisiblePosition.amount is always in base currency. Not USD, not number of contracts. 
 
 That's a strategy concern, and gateway.py don't handle that for you.
