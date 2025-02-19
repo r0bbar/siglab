@@ -81,7 +81,7 @@ expected_columns : List[str] = ['exchange', 'symbol', 'timestamp_ms', 'open', 'h
 assert(pd_candles.columns.to_list()==expected_columns)
 ```
 
-Two examples shows usage of market_data_util and analytic_util in back tests.
+Further examples on usage of market_data_util and analytic_util in back tests.
 
 ### Examples 1: Fibonacci
     https://medium.com/@norman-lm-fung/debunking-myth-fibonacci-618-ea957c795d5a
