@@ -12,7 +12,7 @@ from ccxt.deribit import deribit
 from ccxt.base.exchange import Exchange
 
 # @unittest.skip("Skip all integration tests.")
-class MarketDataGizmoTests(unittest.TestCase):
+class MarketDataUtilTests(unittest.TestCase):
 
     def test_fetch_candles_yahoo(self):
         start_date : datetime = datetime(2024, 1,1)
