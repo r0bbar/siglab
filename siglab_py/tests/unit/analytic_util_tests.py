@@ -6,6 +6,10 @@ from util.analytic_util import compute_candles_stats
 
 import pandas as pd
 
+'''
+Manual checks against for example Tradingview here: \siglab\siglab_py\tests\manual
+'''
+
 # @unittest.skip("Skip all integration tests.")
 class AnalyticUtilTests(unittest.TestCase):
 
