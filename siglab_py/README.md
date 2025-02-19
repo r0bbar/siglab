@@ -45,7 +45,7 @@ end_date : datetime = datetime(2024,12,31)
 param = {
     'apiKey' : None,
     'secret' : None,
-    'password' : None,    # Other exchanges dont require this! This is saved in exchange.password!
+    'password' : None,
     'subaccount' : None,
     'rateLimit' : 100,    # In ms
     'options' : {
@@ -68,6 +68,7 @@ The code which computes technical indicators is in [analytic_util.compute_candle
 
 ```
 from siglab_py.util.analytic_util import compute_candles_stats
+
 pd_candles : pd.DataFrame = pd.read_csv(csv_path)
 compute_candles_stats(
     pd_candles=pd_candles,
