@@ -172,8 +172,6 @@ pip install siglab-py
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
 + Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially** (Details below)
-
-The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
     
 A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in **Parallel** (Think of delta neutral spread trades? Example above we long SUSHI perp, short DYDX. You'd like the two legs to be executed concurrently.), "slices" are executed **Sequentially**. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
@@ -186,3 +184,6 @@ Further, a note on entry vs exit:
 **DivisiblePosition.amount** is always in base currency. Not USD. Not number of contracts.
 
 That's a strategy concern, and gateway.py don't handle that for you.
+
+### Final Note
+The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
