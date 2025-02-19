@@ -124,6 +124,8 @@ pip install siglab-py
 + Round order price and amount to exchange precision 
     (ccxt price_to_precision and amount_to_precision)
 
++ If you're trading contracts, [gateway.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) will handle contract multipliers for you.
+
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
@@ -136,6 +138,6 @@ Further, a note on entry vs exit:
 
 + When you Exit from a position: You'd unwind the BTC you have, back into USD. Traders generally think of amount in base currency. BTC for example.
 
-DivisiblePosition.amount is always in base currency. Not USD, not number of contracts. 
+**DivisiblePosition.amount** is always in base currency. Not USD. Not number of contracts.
 
 That's a strategy concern, and gateway.py don't handle that for you.
