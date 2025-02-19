@@ -36,7 +36,7 @@ TAs computed (This is an expanding list):
 
 [market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers (Yahoo Finance for example) - With sliding window implementation, as all exchanges restrict how many candles you can get in a single fetch.
 
-The code which computes the TA is in [analytic_util.compute_candles_stats](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py).
+The code which computes technical indicators is in [analytic_util.compute_candles_stats](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py).
 
 Two examples shows usage of market_data_util and analytic_util in back tests.
 
