@@ -97,7 +97,21 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges. But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like IBKR. To trade exchanges not supported by ccxt or tradfi brokerages of your choice, extend AnyExchange.
 
-The idea is, strategies (separate service that you'd build), see send orders to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
+
+[**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
+
++ Execute orders in slices
+
++ Round order price and amount to exchange precision 
+    (ccxt price_to_precision and amount_to_precision)
+
++ If you're trading contracts, [gateway.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) will handle contract multipliers for you.
+
++ Hung limit orders will be cancelled. Remainder are sent as market orders.
+
++ Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially** (Details below)
+
+The idea is, strategies (separate service that you'd build), would send orders (JSON) to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
 
 The simplest example [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) on what you need to implement strategy side to send orders, and wait for fills is:
 
@@ -159,19 +173,6 @@ From strategy code, you can also access ordergateway.client.**DivisiblePosition*
 ```
 pip install siglab-py
 ```
-
-[**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
-
-+ Execute orders in slices
-
-+ Round order price and amount to exchange precision 
-    (ccxt price_to_precision and amount_to_precision)
-
-+ If you're trading contracts, [gateway.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) will handle contract multipliers for you.
-
-+ Hung limit orders will be cancelled. Remainder are sent as market orders.
-
-+ Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially** (Details below)
     
 A note on position slicing ... When strategies want to enter into position(s), you don't send "Orders". From [client side](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) you should actually be sending a list of DivisiblePosition ("slice" is a property of "DivisiblePosition"). While "positions" are executed in **Parallel** (Think of delta neutral spread trades? Example above we long SUSHI perp, short DYDX. You'd like the two legs to be executed concurrently.), "slices" are executed **Sequentially**. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
