@@ -150,8 +150,6 @@ def execute_positions(
     _positions = [ position.to_dict() for position in positions ]
     redis_client.set(name=ordergateway_pending_orders_topic, value=json.dumps(_positions).encode('utf-8'), ex=60*15)
 
-    print(f"{ordergateway_pending_orders_topic}: Orders sent {_positions}.")
-
     # Wait for fills
     fills_received : bool = False
     while not fills_received:
@@ -165,6 +163,8 @@ def execute_positions(
                         message = message.decode('utf-8')
                         executed_positions = json.loads(message)
                         fills_received = True
+
+                        redis_client.delete(key)
                         break
 
         except Exception as loop_err:
