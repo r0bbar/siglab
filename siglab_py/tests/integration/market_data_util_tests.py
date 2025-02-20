@@ -89,16 +89,11 @@ class MarketDataUtilTests(unittest.TestCase):
         param = {
             'apiKey' : None,
             'secret' : None,
-            'password' : None,    # Other exchanges dont require this! This is saved in exchange.password!
+            'password' : None,
             'subaccount' : None,
             'rateLimit' : 100,    # In ms
             'options' : {
-                'defaultType': 'swap', # Should test linear instead
-                'leg_room_bps' : 5,
-                'trade_fee_bps' : 3,
-
-                'list_ts_field' : 'listTime' # list_ts_field: Response field in exchange.markets[symbol] to indiate timestamp of symbol's listing date in ms. For bybit, markets['launchTime'] is list date. For okx, it's markets['listTime'].
-            }
+                'defaultType': 'swap'            }
         }
 
         exchange : Exchange = okx(param)
