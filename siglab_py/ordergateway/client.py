@@ -4,8 +4,8 @@ import json
 import time
 from redis import StrictRedis
 
-from exchanges.any_exchange import AnyExchange
-from constants import JSON_SERIALIZABLE_TYPES
+from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.constants import JSON_SERIALIZABLE_TYPES
 
 '''
 Example,

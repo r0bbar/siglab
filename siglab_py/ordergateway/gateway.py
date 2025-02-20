@@ -22,8 +22,8 @@ from util.aws_util import AwsKmsUtil
 
 import ccxt.pro as ccxtpro
 
-from exchanges.any_exchange import AnyExchange
-from ordergateway.client import Order, DivisiblePosition
+from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.ordergateway.client import Order, DivisiblePosition
 
 '''
 Usage:
