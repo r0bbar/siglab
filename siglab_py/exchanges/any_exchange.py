@@ -6,6 +6,7 @@ Concrete implementation will:
 a. Inherit from AnyExchange, thus ccxt Exchange class
 b. Override ccxt basic functions
     - load_markets
+    - fetch_position
     - fetch_balance
     - create_order
     - update_order

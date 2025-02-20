@@ -528,6 +528,18 @@ async def execute_one_position(
         finally:
             i += 1
 
+    position.filled_amount = position.get_filled_amount()
+    position.average_cost = position.get_average_cost()
+
+    balances = await exchange.fetch_balance() # type: ignore
+    if param['default_type']!='spot':
+        updated_position = await exchange.fetch_position(symbol=position.ticker) # type: ignore
+        amount = updated_position['contracts'] * position.multiplier # in base ccy
+    else:
+        base_ccy : str = position.ticker.split("/")[0]
+        amount = balances[base_ccy]['total']
+    position.pos = amount
+
 async def work(
     param : Dict,
     exchange : AnyExchange,
@@ -581,7 +593,7 @@ async def work(
 
                                 i = 0
                                 for position in positions:
-                                    log(f"{i} {position.ticker}, {position.side} # executions: {len(position.get_executions())}, filled_amount: {position.get_filled_amount()}, average_cost: {position.get_average_cost()}, order_dispatch_elapsed_ms: {order_dispatch_elapsed_ms}")
+                                    log(f"{i} {position.ticker}, {position.side} # executions: {len(position.get_executions())}, filled_amount: {position.filled_amount}, average_cost: {position.average_cost}, pos: {position.pos}, order_dispatch_elapsed_ms: {order_dispatch_elapsed_ms}")
                                     i += 1
 
                                 start = time.time()
