@@ -3,6 +3,10 @@
 
 ![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
+The **top** part of above diagram is to illustrate **candles_provider** pull candles into Redis. **candles_ta_provider** picks up the candles from Redis, then publish candles with TA calculated, back into Redis. Same for **order_book_provider**, orderbooks fetched are published to Redis for strategies consumption.
+
+The **bottom** part of the diagram says: **Trading Strategy** (You write this) publish orders (JSON format) to Redis (Blue arrows). These pending orders are picked up by **gateway.py** from Redis. **gateway.py** then send them to Exchanges (Red arrow). Executions come back to **gateway.py**, which publishes them to Redis (Green arrow). **Trading Strategy** picks up executions from Redis and update position cache.
+
 It consists of two primary components.
 
 ## 1. Under [**market_data_providers**](https://github.com/r0bbar/siglab/tree/master/siglab_py/market_data_providers)
