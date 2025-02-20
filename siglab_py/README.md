@@ -187,7 +187,7 @@ JSON format gateway.py will publish to Redis, and received by client.py executio
                 "stopPrice": null,
                 "multiplier": 1
             },
-            "filled_amount": 10,        <-- aggregates computed by gateway.py
+            "filled_amount": 10,        <-- aggregates computed by gateway.py by summing filled amount of slices
             "average_cost": 0.88979,    <-- aggregates computed by gateway.py
             "pos" : 10                  <-- gateway.py: From exchange.fetch_position (if default_type!=spot. This is in base ccy, we handled multiplier for you), exchange.fetch_balance (if default_type==spot)
         }
