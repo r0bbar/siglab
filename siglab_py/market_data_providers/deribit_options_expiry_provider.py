@@ -14,7 +14,9 @@ from redis import StrictRedis
 import pandas as pd
 
 from util.market_data_util import timestamp_to_datetime_cols, fetch_deribit_btc_option_expiries, fetch_ohlcv_one_candle
-
+'''
+https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
+'''
 param : Dict = {
     'market' : 'BTC',
 

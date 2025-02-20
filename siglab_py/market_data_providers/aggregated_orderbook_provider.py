@@ -12,6 +12,8 @@ import numpy as np
 from redis import StrictRedis
 
 '''
+https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
+
 From command prompt:
     python aggregated_orderbook.py --normalized_symbol BTC/USDT:USDT --sliding_window_num_intervals 1200 --update_imabalce_csv_intervals 100 --dump_imbalance_to_disk Y --publish_imbalance_to_redis N
     or
