@@ -282,5 +282,5 @@ Further, a note on entry vs exit:
 
 That's a strategy concern, and gateway.py don't handle that for you.
 
-### Final Note
+### Closing thoughts
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
