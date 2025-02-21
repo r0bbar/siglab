@@ -270,7 +270,7 @@ When strategies want to enter into position(s), you don't send "Orders". From [c
 
 #### Last slice
 
-And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
+Last slice amount is clipped to **remainder** of whatever that needs to add up to DivisiblePosition.amount. And also, amount on last slice need be >= min amount specified by exchanges, otherwise that last slice will be skipped.
 
 Further, a note on entry vs exit:
 
