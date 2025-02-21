@@ -1,5 +1,5 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
-... allows engineers/traders to quickly setup a trading desk: From back tests to trading. The repo include "infrastructure" code necessary. By infrastructure, I mean everything from fetching candles, orderbooks, to calculation of technical indicators and finally orders execution. Personally I'd rather focus on strategy code, than "Infrastructure".
+... allows engineers/traders to quickly setup a trading desk: From back tests to trading. The repo include "infrastructure" code necessary. By infrastructure, I mean everything from fetching candles, orderbooks, to calculation of technical indicators and finally orders execution. Personally I'd rather focus on strategy, than "Infrastructure".
 
 ![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
