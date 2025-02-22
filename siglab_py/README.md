@@ -1,5 +1,5 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
-... allows engineers/traders to quickly setup a trading desk: From back tests to trading. The repo include "infrastructure" code necessary. By infrastructure, I mean everything from fetching candles, orderbooks, to calculation of technical indicators and finally orders execution. Personally I'd rather focus on strategy, than "Infrastructure".
+... allows engineers/traders to quickly setup a trading desk: From back tests to trading. The repo include "infrastructure" code necessary. By infrastructure, I mean everything from fetching candles, orderbooks, to calculation of technical indicators and finally orders execution. 
 
 ![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
@@ -75,7 +75,7 @@ The code which computes technical indicators is in [analytic_util.compute_candle
 
 ```
 from siglab_py.util.analytic_util import compute_candles_stats
-
+csv_path = "..."
 pd_candles : pd.DataFrame = pd.read_csv(csv_path)
 compute_candles_stats(
     pd_candles=pd_candles,
