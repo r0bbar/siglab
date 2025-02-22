@@ -622,6 +622,8 @@ async def work(
 
         except Exception as loop_error:
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+        finally:
+            await asyncio.sleep(1)
 
 async def main():
     parse_args()
