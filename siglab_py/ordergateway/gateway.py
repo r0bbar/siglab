@@ -207,6 +207,10 @@ sh = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
+fh = logging.FileHandler(f"ordergateway.log")
+fh.setLevel(log_level)
+fh.setFormatter(formatter)     
+logger.addHandler(fh)
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
