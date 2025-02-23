@@ -182,7 +182,7 @@ param : Dict = {
     "incoming_orders_topic_regex" : r"ordergateway_pending_orders_$GATEWAY_ID$", 
     "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
 
-    "fetch_order_status_poll_freq_ms" : 500,
+    "loop_freq_ms" : 500,
 
     'mds' : {
         'topics' : {
@@ -333,7 +333,7 @@ async def watch_orders_task(
         except Exception as loop_err:
             print(f"watch_orders_task error: {loop_err}")
         
-        await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+        await asyncio.sleep(int(param['loop_freq_ms']/1000))
 
 async def execute_one_position(
     exchange : AnyExchange,
@@ -463,7 +463,7 @@ async def execute_one_position(
                             log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
                             break
 
-                    await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+                    await asyncio.sleep(int(param['loop_freq_ms']/1000))
             
             
 
@@ -515,7 +515,7 @@ async def execute_one_position(
 
                             log(f"Waiting for resent market order to close {order_id} ...")
 
-                            await asyncio.sleep(int(param['fetch_order_status_poll_freq_ms']/1000))
+                            await asyncio.sleep(int(param['loop_freq_ms']/1000))
 
                         log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
@@ -623,7 +623,7 @@ async def work(
         except Exception as loop_error:
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
         finally:
-            await asyncio.sleep(1)
+            await asyncio.sleep(int(param['loop_freq_ms']/1000))
 
 async def main():
     parse_args()
