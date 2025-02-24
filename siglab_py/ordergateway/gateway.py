@@ -12,6 +12,7 @@ import hashlib
 from collections import deque
 import logging
 import json
+import uuid
 from io import StringIO
 import re
 from re import Pattern
@@ -178,6 +179,7 @@ class LogLevel(Enum):
 
 param : Dict = {
     'gateway_id' : '---',
+    'dry_run' : False,
 
     "incoming_orders_topic_regex" : r"ordergateway_pending_orders_$GATEWAY_ID$", 
     "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
@@ -212,6 +214,35 @@ fh.setLevel(log_level)
 fh.setFormatter(formatter)     
 logger.addHandler(fh)
 
+DUMMY_EXECUTION : Dict[str, Any] = {
+    "clientOrderId": None,
+    "timestamp": None,
+    "datetime": None,
+    "symbol": None,
+    "type": None,
+    "side": None,
+    "price": None,
+    "average": None,
+    "cost": None,
+    "amount": None,
+    "filled": None,
+    "remaining": None,
+    "status": "closed",
+    "fee": {
+        "cost": None,
+        "currency": "USDT"
+    },
+    "trades": [],
+    "reduceOnly": False,
+    "fees": [
+        {
+            "cost": 0,
+            "currency": "USDT"
+        }
+    ],
+    "multiplier": None
+}
+
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
         logger.info(f"{datetime.now()} {message}")
@@ -226,6 +257,7 @@ def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
 
     parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
+    parser.add_argument("--dry_run", help="Y or N (default, for testing). If Y, orders won't be dispatched to exchange, gateway will fake reply.", default='N')
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
@@ -237,6 +269,15 @@ def parse_args():
 
     args = parser.parse_args()
     param['gateway_id'] = args.gateway_id
+
+    if args.dry_run:
+        if args.dry_run=='Y':
+            param['dry_run'] = True
+        else:
+            param['dry_run'] = False
+    else:
+        param['dry_run'] = False
+
     param['default_type'] = args.default_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
 
@@ -320,7 +361,7 @@ async def instantiate_exchange(
 
     '''
     Is this necessary? The added trouble is for example bybit.authenticate requires arg 'url'. binance doesn't. And fetch_balance already test credentials.
-    
+
     try:
         await exchange.authenticate() # type: ignore
     except Exception as swallow_this_error:
@@ -364,43 +405,77 @@ async def execute_one_position(
     i = 0
     for slice in slices:
         try:
+            dt_now : datetime = datetime.now()
+
             slice_amount_in_base_ccy : float = slice.amount
             rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After devided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
             rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
             rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
             rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
-            limit_price : float = 0
-            rounded_limit_price : float = 0
+            orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
+            if position.side=='buy':
+                asks = [ ask[0] for ask in orderbook['asks'] ]
+                best_asks = min(asks)
+                limit_price : float= best_asks * (1 + position.leg_room_bps/10000)
+            else:
+                bids = [ bid[0] for bid in orderbook['bids'] ]
+                best_bid = max(bids)
+                limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
+                
+            rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
+            rounded_limit_price = float(rounded_limit_price)
+            
             if position.order_type=='limit':
-                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
-                if position.side=='buy':
-                    asks = [ ask[0] for ask in orderbook['asks'] ]
-                    best_asks = min(asks)
-                    limit_price = best_asks * (1 + position.leg_room_bps/10000)
+                if not param['dry_run']:
+                    executed_order = await exchange.create_order( # type: ignore
+                        symbol = position.ticker,
+                        type = position.order_type,
+                        amount = rounded_slice_amount_in_base_ccy,
+                        price = rounded_limit_price,
+                        side = position.side
+                    )
                 else:
-                    bids = [ bid[0] for bid in orderbook['bids'] ]
-                    best_bid = max(bids)
-                    limit_price = best_bid * (1 - position.leg_room_bps/10000)
-                    
-                rounded_limit_price = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
-                rounded_limit_price = float(rounded_limit_price)
-
-                executed_order = await exchange.create_order( # type: ignore
-                    symbol = position.ticker,
-                    type = position.order_type,
-                    amount = rounded_slice_amount_in_base_ccy,
-                    price = rounded_limit_price,
-                    side = position.side
-                )
+                    executed_order = DUMMY_EXECUTION.copy()
+                    executed_order['clientOrderId'] = str(uuid.uuid4())
+                    executed_order['timestamp'] = dt_now.timestamp()
+                    executed_order['datetime'] = dt_now
+                    executed_order['symbol'] = position.ticker
+                    executed_order['type'] = position.order_type
+                    executed_order['side'] = position.side
+                    executed_order['price'] = rounded_limit_price
+                    executed_order['average'] = rounded_limit_price
+                    executed_order['cost'] = 0
+                    executed_order['amount'] = rounded_slice_amount_in_base_ccy
+                    executed_order['filled'] = rounded_slice_amount_in_base_ccy
+                    executed_order['remaining'] = 0
+                    executed_order['status'] = 'closed'
+                    executed_order['multiplier'] = position.multiplier
 
             else:
-                executed_order = await exchange.create_order( # type: ignore
-                    symbol = position.ticker,
-                    type = position.order_type,
-                    amount = rounded_slice_amount_in_base_ccy,
-                    side = position.side
-                )
+                if not param['dry_run']:
+                    executed_order = await exchange.create_order( # type: ignore
+                        symbol = position.ticker,
+                        type = position.order_type,
+                        amount = rounded_slice_amount_in_base_ccy,
+                        side = position.side
+                    )
+                else:
+                    executed_order = DUMMY_EXECUTION.copy()
+                    executed_order['clientOrderId'] = str(uuid.uuid4())
+                    executed_order['timestamp'] = dt_now.timestamp()
+                    executed_order['datetime'] = dt_now
+                    executed_order['symbol'] = position.ticker
+                    executed_order['type'] = position.order_type
+                    executed_order['side'] = position.side
+                    executed_order['price'] = rounded_limit_price
+                    executed_order['average'] = rounded_limit_price
+                    executed_order['cost'] = 0
+                    executed_order['amount'] = rounded_slice_amount_in_base_ccy
+                    executed_order['filled'] = rounded_slice_amount_in_base_ccy
+                    executed_order['remaining'] = 0
+                    executed_order['status'] = 'closed'
+                    executed_order['multiplier'] = position.multiplier
 
             executed_order['slice_id'] = i
 
