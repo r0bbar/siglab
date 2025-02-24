@@ -268,7 +268,7 @@ def init_redis_client() -> StrictRedis:
     
     return redis_client
 
-def instantiate_exchange(
+async def instantiate_exchange(
     gateway_id : str,
     api_key : str,
     secret : str,
@@ -316,6 +316,17 @@ def instantiate_exchange(
     else:
         raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
+    await exchange.load_markets() # type: ignore
+
+    '''
+    Is this necessary? The added trouble is for example bybit.authenticate requires arg 'url'. binance doesn't. And fetch_balance already test credentials.
+    
+    try:
+        await exchange.authenticate() # type: ignore
+    except Exception as swallow_this_error:
+        pass
+    '''
+
     return exchange
 
 async def watch_orders_task(
@@ -341,12 +352,6 @@ async def execute_one_position(
     param : Dict,
     executions : Dict[str, Dict[str, Any]]
 ):
-    await exchange.load_markets() # type: ignore
-    try:
-        await exchange.authenticate() # type: ignore
-    except Exception as swallow_this_error:
-        pass # @todo, perhaps a better way for handling this?
-
     market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
     if not market:
         raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
@@ -658,7 +663,7 @@ async def main():
     
     redis_client : StrictRedis = init_redis_client()
 
-    exchange : Union[AnyExchange, None] = instantiate_exchange(
+    exchange : Union[AnyExchange, None] = await instantiate_exchange(
         gateway_id=param['gateway_id'],
         api_key=api_key,
         secret=secret,
