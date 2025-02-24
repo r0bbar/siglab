@@ -282,5 +282,9 @@ Further, a note on entry vs exit:
 
 That's a strategy concern, and gateway.py don't handle that for you.
 
+#### Dry Run
+
+[**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has a parameter 'dry_run'. If set to True, it won't actually send orders out to exchange. Instead, it'd respond by faking some fills. This is for integration testing.
+
 ### Closing thoughts
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
