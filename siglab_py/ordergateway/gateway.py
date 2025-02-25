@@ -351,10 +351,44 @@ async def instantiate_exchange(
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
         exchange = ccxtpro.deribit(exchange_params)  # type: ignore
     elif exchange_name=='hyperliquid':
-        # swap
-        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
-        # You can skip first 6 min: https://www.youtube.com/watch?v=UuBr331wxr4&t=363s
-        exchange = ccxtpro.hyperliquid(exchange_params)  # type: ignore
+        '''
+        https://app.hyperliquid.xyz/API
+        
+        defaultType from ccxt: swap
+            https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
+        
+        How to integrate? You can skip first 6 min: https://www.youtube.com/watch?v=UuBr331wxr4&t=363s
+
+        Example, 
+            API credentials created under "\ More \ API":
+                    Ledger Arbitrum Wallet Address: 0xAAAAA <-- This is your Ledger Arbitrum wallet address with which you connect to Hyperliquid. 
+                    API Wallet Address 0xBBBBB <-- Generated
+                    privateKey 0xCCCCC
+
+        Basic connection via CCXT:
+            import asyncio
+            import ccxt.pro as ccxtpro
+
+            async def main():
+                rate_limit_ms = 100
+                exchange_params = {
+                    "walletAddress" : "0xAAAAA", # Ledger Arbitrum Wallet Address here! Not the generated address.
+                    "privateKey" : "0xCCCCC"
+                }
+                exchange = ccxtpro.hyperliquid(exchange_params) 
+                balances = await exchange.fetch_balance()
+                print(balances)
+
+            asyncio.run(main())
+        '''
+        exchange = ccxtpro.hyperliquid(
+            {
+                "walletAddress" : api_key,
+                "privateKey" : secret,
+                'enableRateLimit'  : True,
+                'rateLimit' : rate_limit_ms
+            }
+        )  # type: ignore
     else:
         raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
