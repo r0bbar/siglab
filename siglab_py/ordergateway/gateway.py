@@ -353,7 +353,7 @@ async def instantiate_exchange(
     elif exchange_name=='hyperliquid':
         # swap
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
-        # https://www.youtube.com/watch?v=UuBr331wxr4&t=363s
+        # You can skip first 6 min: https://www.youtube.com/watch?v=UuBr331wxr4&t=363s
         exchange = ccxtpro.hyperliquid(exchange_params)  # type: ignore
     else:
         raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
