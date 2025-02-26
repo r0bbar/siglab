@@ -653,7 +653,8 @@ async def execute_one_position(
     balances = await exchange.fetch_balance() # type: ignore
     if param['default_type']!='spot':
         updated_position = await exchange.fetch_position(symbol=position.ticker) # type: ignore
-        amount = updated_position['contracts'] * position.multiplier # in base ccy
+        # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
+        amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
     else:
         base_ccy : str = position.ticker.split("/")[0]
         amount = balances[base_ccy]['total']
