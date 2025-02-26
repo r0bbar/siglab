@@ -102,7 +102,7 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 ## 2. Under [**ordergateway**](https://github.com/r0bbar/siglab/tree/master/siglab_py/ordergateway)
 
-[**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges. But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like IBKR. To trade exchanges not supported by [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md) or tradfi brokerages of your choice, extend AnyExchange.
+[**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges (CEX: binance, okx, bybit. DEX: hyperliquid and soon vertexprotocol). But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like IBKR. To trade exchanges not supported by [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md) or tradfi brokerages of your choice, extend AnyExchange.
 
 
 [**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has logic to ...
