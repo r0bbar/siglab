@@ -123,7 +123,51 @@ class DivisiblePosition(Order):
         return filled_amount
 
     def get_average_cost(self) -> float:
-        average_cost = sum([ self.executions[order_id]['average'] * self.executions[order_id]['amount'] for order_id in self.executions ])
+        '''
+        Example hyperliquid don't have 'average' in response JSON:
+
+        {
+            'info': {
+                'order': {
+                        'coin': 'SUSHI', 
+                        'side': 'B', 
+                        'limitPx': '0.79252', 
+                        'sz': '0.0', 
+                        'oid': xxx, 
+                        'timestamp': xxx, 
+                        'origSz': '30.0'
+                    }, 
+                    'status': 'filled', 
+                    'statusTimestamp': xxx}, 
+                    'id': 'xxx', 
+                    'clientOrderId': None, 
+                    'timestamp': xxx, 
+                    'datetime': '2025-02-26T01:00:00.522Z', 
+                    'lastTradeTimestamp': None, 
+                    'lastUpdateTimestamp': xxx, 
+                    'symbol': 'SUSHI/USDC:USDC', 
+                    'type': None, 
+                    'timeInForce': None, 
+                    'postOnly': None, 
+                    'reduceOnly': None, 
+                    'side': 'buy', 
+                    'price': 0.79252, 
+                    'triggerPrice': None, 
+                    'amount': 30.0, 
+                    'cost': 23.7756, 
+                    'average': None, <-- No average cost?
+                    'filled': 30.0, 
+                    'remaining': 0.0, 
+                    'status': 'closed', 
+                    'fee': None, 
+                    'trades': [], 
+                    'fees': [], 
+                    'stopPrice': None, 
+                    'takeProfitPrice': None, 
+                    'stopLossPrice': None
+                }
+        '''
+        average_cost = sum([ (self.executions[order_id]['average'] if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
         average_cost = average_cost / sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
         return average_cost
 
