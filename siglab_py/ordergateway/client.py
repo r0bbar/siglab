@@ -31,13 +31,15 @@ class Order:
         side : str,  # buy/sell
         amount : float,
         order_type : str, # market/limit
-        leg_room_bps : float = 0
+        leg_room_bps : float = 0,
+        fees_ccy : Union[str, None] = None
     ) -> None:
         self.ticker = ticker
         self.side = side.strip().lower()
         self.amount = amount
         self.order_type = order_type.strip().lower()
         self.leg_room_bps = leg_room_bps
+        self.fees_ccy = fees_ccy
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         return {
@@ -45,7 +47,8 @@ class Order:
             "side" : self.side,
             "amount" : self.amount,
             "order_type" : self.order_type,
-            "leg_room_bps" : self.leg_room_bps
+            "leg_room_bps" : self.leg_room_bps,
+            "fees_ccy" : self.fees_ccy
         }
 
 '''
@@ -60,15 +63,17 @@ class DivisiblePosition(Order):
         amount : float,
         order_type : str, # market/limit
         leg_room_bps : float,
+        fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1
     ) -> None:
-        super().__init__(ticker, side, amount, order_type, leg_room_bps)
+        super().__init__(ticker, side, amount, order_type, leg_room_bps, fees_ccy)
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
         self.multiplier = 1
         self.filled_amount : Union[float, None] = None
         self.average_cost : Union[float, None] = None
+        self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
 
         self.executions : Dict[str, Dict[str, Any]] = {}
@@ -86,6 +91,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=slice_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        fees_ccy=self.fees_ccy,
                         order_type=self.order_type)
                     
                 else:
@@ -95,6 +101,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=remaining_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        fees_ccy=self.fees_ccy,
                         order_type=self.order_type)
 
                 slices.append(slice)
@@ -170,6 +177,12 @@ class DivisiblePosition(Order):
         average_cost = sum([ (self.executions[order_id]['average'] if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
         average_cost = average_cost / sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
         return average_cost
+
+    def get_fees(self) -> float:
+        fees : float = 0
+        if self.fees_ccy:
+            fees = sum([ float(self.executions[order_id]['fee']['cost'])  for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
+        return fees
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         rv = super().to_dict()

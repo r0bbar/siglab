@@ -649,6 +649,7 @@ async def execute_one_position(
 
     position.filled_amount = position.get_filled_amount()
     position.average_cost = position.get_average_cost()
+    position.fees = position.get_fees()
 
     balances = await exchange.fetch_balance() # type: ignore
     if param['default_type']!='spot':
