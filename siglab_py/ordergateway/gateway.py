@@ -432,7 +432,7 @@ async def execute_one_position(
     if not market:
         raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
 
-    min_amount = float(market['limits']['amount']['min']) # type: ignore
+    min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # type: ignore
     multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
     position.multiplier = multiplier
 
