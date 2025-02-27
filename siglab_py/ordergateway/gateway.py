@@ -422,6 +422,22 @@ async def watch_orders_task(
         
         await asyncio.sleep(int(param['loop_freq_ms']/1000))
 
+async def send_heartbeat(exchange):
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            first_ws_url = next(iter(exchange.clients))
+            client = exchange.clients[first_ws_url]
+            message = exchange.ping(client)
+            await client.send(message)
+            log('Heartbeat sent')
+        except Exception as hb_error:
+            log(f'Failed to send heartbeat: {hb_error}')
+        finally:
+            await asyncio.sleep(30)
+
 async def execute_one_position(
     exchange : AnyExchange,
     position : DivisiblePosition,
@@ -674,9 +690,11 @@ async def work(
 
     # This is how we avoid reprocess same message twice. We check message hash and cache it.
     processed_hash_queue = deque(maxlen=10)
-
+    
     executions : Dict[str, Dict[str, Any]] = {}
     asyncio.create_task(watch_orders_task(exchange, executions))
+
+    asyncio.create_task(send_heartbeat(exchange))
 
     while True:
         try:
