@@ -719,6 +719,7 @@ async def work(
                                         amount=order['amount'],
                                         order_type=order['order_type'],
                                         leg_room_bps=order['leg_room_bps'],
+                                        fees_ccy=order['fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms']
                                     )
