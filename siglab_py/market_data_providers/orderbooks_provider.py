@@ -290,6 +290,9 @@ async def _handle_ticker(
     task : ThreadTask
     ):
     exchange = await instantiate_exhange(exchange_name=exchange_name, old_exchange=None)
+
+    asyncio.create_task(send_heartbeat(exchange))
+    
     ob = OrderBook(ticker=ticker, exchange_name=exchange_name)
     candles_publish_topic = candles_publish_topic.replace("$SYMBOL$", ticker)
     candles_publish_topic = candles_publish_topic.replace("$EXCHANGE$", exchange_name)
@@ -318,6 +321,21 @@ async def _handle_ticker(
             exchange = await instantiate_exhange(exchange_name=exchange_name, old_exchange=exchange) # type: ignore Otherwise, Error: Argument of type "Coroutine[Any, Any, Exchange] | Exchange" cannot be assigned to parameter "old_exchange" of type "Exchange | None" in function "instantiate_exhange"
             ob = OrderBook(ticker=ticker, exchange_name=exchange_name)
 
+async def send_heartbeat(exchange):
+
+    await asyncio.sleep(10)
+
+    while True:
+        try:
+            first_ws_url = next(iter(exchange.clients))
+            client = exchange.clients[first_ws_url]
+            message = exchange.ping(client)
+            await client.send(message)
+            log('Heartbeat sent')
+        except Exception as hb_error:
+            log(f'Failed to send heartbeat: {hb_error}')
+        finally:
+            await asyncio.sleep(30)
     
 async def main():
     parse_args()
