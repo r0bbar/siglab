@@ -141,6 +141,8 @@ JSON format client.py execution_positions will publish to Redis (Key: ordergatew
         ]
 ```
 
+If you specify "fees_ccy" (Default to None) in DivisiblePosition, response JSON will gather transaction costs from executions.
+
 JSON format gateway.py will publish to Redis, and received by client.py execution_positions (Key: ordergateway_executions_$GATEWAY_ID$)
 
 ```
