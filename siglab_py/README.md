@@ -118,7 +118,7 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 + For limit orders, a more positive **leg_room_bps** means you'd be executing more aggressively (i.e. so your orders get filled). This means Buy at higher price, or Sell at lower price. Limit price is calculated by applying **leg_room_bps** on top of best Bid/Ask, depending on order's side.
 
-+ Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially**. Atm, there's no synchronization if you're executing multiple positions. So, one position may have executed 3/10 slices. The second position may have already executed 6/10 slices. Also we haven't added random delay in slice execution, if some of you may want to make it less obvious this is bot execution ...? 
++ Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially**. Atm, there's no synchronization if you're executing multiple positions. So, first position may have executed 3/10 slices. The second position may have already executed 6/10 slices. If you're entering or unwinding delta neutral positions, burden of making sure both legs of the trade is being executed at same pace is on strategy implementation. Also we haven't added random delay in slice execution, if some of you may want to make it less obvious this is bot execution ...? 
 
 The idea is, strategies (separate service that you'd build), would send orders (JSON) to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
 
