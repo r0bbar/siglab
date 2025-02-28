@@ -184,7 +184,8 @@ param : Dict = {
     "incoming_orders_topic_regex" : r"ordergateway_pending_orders_$GATEWAY_ID$", 
     "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
 
-    "loop_freq_ms" : 500,
+    "default_fees_ccy" : None,
+    "loop_freq_ms" : 500, # reduce this if you need trade faster
 
     'mds' : {
         'topics' : {
@@ -261,6 +262,9 @@ def parse_args():
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
+    parser.add_argument("--default_fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=500)
+
     parser.add_argument("--encrypt_decrypt_with_aws_kms", help="Y or N. If encrypt_decrypt_with_aws_kms=N, pass in apikey, secret and passphrase unencrypted (Not recommended, for testing only). If Y, they will be decrypted using AMS KMS key.", default='N')
     parser.add_argument("--aws_kms_key_id", help="AWS KMS key ID", default=None)
     parser.add_argument("--apikey", help="Exchange apikey", default=None)
@@ -280,6 +284,8 @@ def parse_args():
 
     param['default_type'] = args.default_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
+    param['default_fees_ccy'] = args.default_fees_ccy
+    param['loop_freq_ms'] = int(args.loop_freq_ms)
 
     if args.encrypt_decrypt_with_aws_kms:
         if args.encrypt_decrypt_with_aws_kms=='Y':
@@ -719,7 +725,7 @@ async def work(
                                         amount=order['amount'],
                                         order_type=order['order_type'],
                                         leg_room_bps=order['leg_room_bps'],
-                                        fees_ccy=order['fees_ccy'],
+                                        fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms']
                                     )
