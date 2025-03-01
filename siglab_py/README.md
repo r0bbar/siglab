@@ -132,6 +132,7 @@ JSON format client.py execution_positions will publish to Redis (Key: ordergatew
                 "amount": 10,
                 "order_type": "limit",
                 "leg_room_bps": 5,
+                "reduce_only" : False,
                 "slices": 5,
                 "wait_fill_threshold_ms": 15000,
                 "executions": {},
@@ -154,6 +155,7 @@ JSON format gateway.py will publish to Redis, and received by client.py executio
         "amount": 10,
         "order_type": "limit",
         "leg_room_bps": 5,
+        "reduce_only" : False,
         "slices": 5,
         "wait_fill_threshold_ms": 15000,
         "executions": {

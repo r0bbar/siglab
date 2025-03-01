@@ -483,6 +483,9 @@ async def execute_one_position(
             rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
             rounded_limit_price = float(rounded_limit_price)
             
+            order_params = {
+                'reduceOnly': slice.reduce_only
+            }
             if position.order_type=='limit':
                 if not param['dry_run']:
                     executed_order = await exchange.create_order( # type: ignore
@@ -490,7 +493,8 @@ async def execute_one_position(
                         type = position.order_type,
                         amount = rounded_slice_amount_in_base_ccy,
                         price = rounded_limit_price,
-                        side = position.side
+                        side = position.side,
+                        params = order_params
                     )
                 else:
                     executed_order = DUMMY_EXECUTION.copy()
@@ -515,7 +519,8 @@ async def execute_one_position(
                         symbol = position.ticker,
                         type = position.order_type,
                         amount = rounded_slice_amount_in_base_ccy,
-                        side = position.side
+                        side = position.side,
+                        params = order_params
                     )
                 else:
                     executed_order = DUMMY_EXECUTION.copy()
@@ -725,6 +730,7 @@ async def work(
                                         amount=order['amount'],
                                         order_type=order['order_type'],
                                         leg_room_bps=order['leg_room_bps'],
+                                        reduce_only=order['reduce_only'],
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms']

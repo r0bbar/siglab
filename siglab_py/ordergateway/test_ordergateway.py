@@ -69,6 +69,7 @@ if __name__ == '__main__':
             side = 'buy',
             amount = 10,
             leg_room_bps = 5,
+            reduce_only=False,
             order_type = 'limit',
             slices=5,
             wait_fill_threshold_ms=15000
@@ -81,6 +82,7 @@ if __name__ == '__main__':
             side = 'buy',
             amount = 10,
             leg_room_bps = 5,
+            reduce_only=False,
             order_type = 'limit',
             slices=5,
             wait_fill_threshold_ms=15000
@@ -93,6 +95,7 @@ if __name__ == '__main__':
             side = 'sell',
             amount = 0.01,
             leg_room_bps = 5,
+            reduce_only=False,
             order_type = 'limit',
             slices=1,
             wait_fill_threshold_ms=60000

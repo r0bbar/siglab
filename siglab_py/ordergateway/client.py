@@ -32,6 +32,7 @@ class Order:
         amount : float,
         order_type : str, # market/limit
         leg_room_bps : float = 0,
+        reduce_only : bool = False,
         fees_ccy : Union[str, None] = None
     ) -> None:
         self.ticker = ticker
@@ -39,6 +40,7 @@ class Order:
         self.amount = amount
         self.order_type = order_type.strip().lower()
         self.leg_room_bps = leg_room_bps
+        self.reduce_only = reduce_only
         self.fees_ccy = fees_ccy
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
@@ -48,6 +50,7 @@ class Order:
             "amount" : self.amount,
             "order_type" : self.order_type,
             "leg_room_bps" : self.leg_room_bps,
+            "reduce_only" : self.reduce_only,
             "fees_ccy" : self.fees_ccy
         }
 
@@ -63,11 +66,12 @@ class DivisiblePosition(Order):
         amount : float,
         order_type : str, # market/limit
         leg_room_bps : float,
+        reduce_only : bool = False,
         fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1
     ) -> None:
-        super().__init__(ticker, side, amount, order_type, leg_room_bps, fees_ccy)
+        super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy)
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
         self.multiplier = 1
@@ -91,6 +95,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=slice_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type)
                     
@@ -101,6 +106,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=remaining_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type)
 
