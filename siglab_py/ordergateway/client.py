@@ -182,8 +182,9 @@ class DivisiblePosition(Order):
                     'stopLossPrice': None
                 }
         '''
+        total_amount : float = sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
         average_cost = sum([ (self.executions[order_id]['average'] if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
-        average_cost = average_cost / sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
+        average_cost = average_cost / total_amount if total_amount!=0 else 0
         return average_cost
 
     def get_fees(self) -> float:
