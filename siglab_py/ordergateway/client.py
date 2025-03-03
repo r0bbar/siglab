@@ -133,6 +133,8 @@ class DivisiblePosition(Order):
     def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
         filled_amount = sum([ self.executions[order_id]['filled'] * self.multiplier for order_id in self.executions ])
+        if self.side=='sell':
+            filled_amount = -1 * filled_amount
         return filled_amount
 
     def get_average_cost(self) -> float:
