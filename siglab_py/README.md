@@ -142,6 +142,8 @@ JSON format client.py execution_positions will publish to Redis (Key: ordergatew
         ]
 ```
 
+Set "reduce_only" to True when you're entering into position. Set it to False when you're closing open position.
+
 If you specify "fees_ccy" (Default to None) in DivisiblePosition, response JSON will gather transaction costs from executions.
 Alternatively, set gateway.py's parameter "default_fees_ccy" to for example USDT (If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases.)
 
