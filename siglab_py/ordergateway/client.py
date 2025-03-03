@@ -35,6 +35,9 @@ class Order:
         reduce_only : bool = False,
         fees_ccy : Union[str, None] = None
     ) -> None:
+        if amount<=0:
+            raise ValueError(f"amount must be >0!")
+            
         self.ticker = ticker
         self.side = side.strip().lower()
         self.amount = amount
@@ -71,6 +74,9 @@ class DivisiblePosition(Order):
         slices : int = 1,
         wait_fill_threshold_ms : float = -1
     ) -> None:
+        if amount<=0:
+            raise ValueError(f"amount must be >0!")
+
         super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy)
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
