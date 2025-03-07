@@ -37,14 +37,66 @@ API
         amend order https://openapi.futunn.com/futu-api-doc/en/trade/modify-order.html
 
 '''
+from typing import List, Union
 import futu as ft
 from futu import *
 
 from any_exchange import AnyExchange
 
 class Futubull(AnyExchange):
-    pass
+    def load_markets(self, reload=False, params={}):
+        '''
+        Mimic CCXT load_markets https://github.com/ccxt/ccxt/blob/master/python/ccxt/base/exchange.py
 
+        Examplem,
+            {
+                ... more pairs ...
+                'ETH/USDC:USDC': {
+                    'id': 'ETH-USDC-SWAP',
+                    'lowercaseId': None,
+                    'symbol': 'ETH/USDC:USDC',
+                    'base': 'ETH',
+                    'quote': 'USDC',
+                    'settle': 'USDC',
+                    'baseId': 'ETH',
+                    'quoteId': 'USDC',
+                    'settleId': 'USDC',
+                    'type': 'swap',
+                    'spot': False,
+                    'margin': False,
+                    'swap': True,
+                    'future': False,
+                    'option': False,
+                    'index': None,
+                    'active': True,
+                    'contract': True,
+                    'linear': True,
+                    'inverse': False,
+                    'subType': 'linear',
+                    'taker': 0.0005,
+                    'maker': 0.0002,
+                    'contractSize': 0.001,
+                    'expiry': None,
+                    'expiryDatetime': None,
+                    'strike': None,
+                    'optionType': None,
+                    'precision': {'amount': 1.0, 'price': 0.01, 'cost': None, 'base': None, 'quote': None},
+                    'limits': {'leverage': {'min': 1.0, 'max': 50.0}, 'amount': {'min': 1.0, 'max': None}, 'price': {'min': None, 'max': None}, 'cost': {'min': None, 'max': None}},
+                    'marginModes': {'cross': None, 'isolated': None},
+                    'created': 1666076197702
+                },
+                ... more pairs ...
+            }
+
+        gateway.py will call:
+            1. multiplier = market['contractSize']
+            2. price_to_precision -> market['precision']['price']
+            3. amount_to_precision  -> market['precision']['amount']
+        '''
+        pass
+    
+    def fetch_ohlcv(self, symbol: str, timeframe='1m', since: Union[int, None] = None, limit: Union[int, None] = None, params={}) -> List[list]:
+        return [[]]
 
 '''
 Examples from Futu https://openapi.futunn.com/futu-api-doc/en
@@ -69,7 +121,10 @@ if ret == RET_OK:
 else:
     print('error:', data)
 
-ret, data, page_req_key = quote_ctx.request_history_kline('HK.00700', start='2025-03-06', end='2025-03-07', max_count=5) # 5 per page, request the first page
+'''
+KLType: https://openapi.futunn.com/futu-api-doc/en/quote/quote.html#66
+'''
+ret, data, page_req_key = quote_ctx.request_history_kline('HK.00700', start='2024-01-01', end='2025-03-07', ktype=KLType.K_60M, max_count=100)
 if ret == RET_OK:
     assert isinstance(data, pd.DataFrame)
     print(data)
