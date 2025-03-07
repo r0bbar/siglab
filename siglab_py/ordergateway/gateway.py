@@ -210,10 +210,6 @@ sh = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
-fh = logging.FileHandler(f"ordergateway.log")
-fh.setLevel(log_level)
-fh.setFormatter(formatter)     
-logger.addHandler(fh)
 
 DUMMY_EXECUTION : Dict[str, Any] = {
     "clientOrderId": None,
@@ -775,6 +771,11 @@ async def work(
 
 async def main():
     parse_args()
+
+    fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log")
+    fh.setLevel(log_level)
+    fh.setFormatter(formatter)     
+    logger.addHandler(fh)
 
     if not param['apikey']:
         log("Loading credentials from .env")
