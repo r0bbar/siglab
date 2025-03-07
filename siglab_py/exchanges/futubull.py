@@ -37,14 +37,30 @@ API
         amend order https://openapi.futunn.com/futu-api-doc/en/trade/modify-order.html
 
 '''
-from typing import List, Union
+from typing import List, Dict, Union, Any
 import futu as ft
 from futu import *
 
 from any_exchange import AnyExchange
 
 class Futubull(AnyExchange):
-    def load_markets(self, reload=False, params={}):
+    def __init__(self, *args: Dict[str, Any]) -> None:
+        super().__init__(*args)
+        
+        params : Dict[str, Any] = args[0] # Type "object" is not assignable to declared type "Dict[Unknown, Unknown]"
+        self.host_addr = params['daemon']['host']
+        self.port = params['daemon']['port']
+        self.market = params['market']
+        self.security_type = params['security_type']
+        self.quote_ctx = OpenQuoteContext(host=self.host_addr, port=self.port)
+        self.trd_ctx = OpenSecTradeContext(
+                filter_trdmarket=params['trdmarket'], 
+                host=self.host_addr, port=self.port, 
+                security_firm=params['security_firm']
+            )
+        self.markets : Dict = {}
+
+    def load_markets(self, reload=False, params={}):  # type: ignore
         '''
         Mimic CCXT load_markets https://github.com/ccxt/ccxt/blob/master/python/ccxt/base/exchange.py
 
@@ -83,20 +99,128 @@ class Futubull(AnyExchange):
                     'precision': {'amount': 1.0, 'price': 0.01, 'cost': None, 'base': None, 'quote': None},
                     'limits': {'leverage': {'min': 1.0, 'max': 50.0}, 'amount': {'min': 1.0, 'max': None}, 'price': {'min': None, 'max': None}, 'cost': {'min': None, 'max': None}},
                     'marginModes': {'cross': None, 'isolated': None},
-                    'created': 1666076197702
+                    'created': 1666076197702,
+                    'info' : {
+                        ... raw exchange response here ...
+                    }
                 },
                 ... more pairs ...
             }
 
         gateway.py will call:
-            1. multiplier = market['contractSize']
+            1. multiplier = market['contractSize'] (Note this is contract size for futures, not same as 'Lot Size')
             2. price_to_precision -> market['precision']['price']
-            3. amount_to_precision  -> market['precision']['amount']
+            3. amount_to_precision  -> market['precision']['amount']    <-- This is 'Lot Size'
         '''
-        pass
-    
-    def fetch_ohlcv(self, symbol: str, timeframe='1m', since: Union[int, None] = None, limit: Union[int, None] = None, params={}) -> List[list]:
+        
+        ret, data = self.quote_ctx.get_stock_basicinfo(self.market, self.security_type)
+        if ret == RET_OK:
+            for index, row in data.iterrows(): # type: ignore
+                symbol = row['code']
+
+                name = row['name']
+                stock_type = row['stock_type']
+                stock_child_type = row['stock_child_type']
+                stock_owner = row['stock_owner']
+                option_type = row['option_type']
+                strike_time = row['strike_time']
+                strike_price = row['strike_price']
+                suspension = row['suspension']
+                stock_id = row['stock_id']
+                listing_date = row['listing_date']
+                delisting = bool(row['delisting'])
+                main_contract = bool(row['main_contract'])
+                last_trade_time = row['last_trade_time']
+                exchange_type = row['exchange_type']
+                lot_size = row['lot_size']
+                
+                # No additional information from 'get_stock_basicinfo'
+                # ret, detail = self.quote_ctx.get_stock_basicinfo(self.market, self.security_type, [ symbol ])
+
+                info : Dict = {
+                    'symbol' : symbol,
+                    'name' : name,
+                    'stock_type' : stock_type,
+                    'stock_child_type' : stock_child_type,
+                    'stock_owner' : stock_owner,
+                    'option_type' : option_type,
+                    'strike_time' : strike_time,
+                    'strike_price' : strike_price,
+                    'suspension' : suspension,
+                    'stock_id' : stock_id,
+                    'listing_date' : listing_date,
+                    'delisting' : delisting,
+                    'main_contract' : main_contract,
+                    'last_trade_time' : last_trade_time,
+                    'exchange_type' : exchange_type,
+                    'lot_size' : lot_size
+                }
+                self.markets[symbol] = {
+                    'symbol' : symbol,
+                    'id' : symbol,
+
+                    'base': None,
+                    'quote': None,
+                    'settle': None,
+                    'baseId': None,
+                    'quoteId': None,
+                    'settleId': None,
+
+                    'type': self.security_type,
+                    'spot': False,
+                    'margin': False,
+                    'swap': False,
+                    'future': False,
+                    'option': False,
+                    'index': None,
+                    'active': not delisting,
+                    'contract': False,
+                    'linear': False,
+                    'inverse': False,
+                    'subType': False,
+                    'taker': 0,
+                    'maker': 0,
+                    'contractSize': 0,
+                    'expiry': strike_time,
+                    'expiryDatetime': strike_time,
+                    'strike': strike_price,
+                    'optionType': option_type,
+
+                    'precision': {
+                        'amount': lot_size, 
+                        'price': 0.01, 
+                        'cost': None, 
+                        'base': None, 
+                        'quote': None
+                    },
+
+                    'limits': {
+                        'leverage': {'min': 1, 'max': 5}, 
+                        'amount': {'min': 1.0, 'max': None}, 
+                        'price': {'min': None, 'max': None}, 
+                        'cost': {'min': None, 'max': None}
+                    },
+                    'marginModes': {'cross': None, 'isolated': None},
+
+                    'info' : info
+                }
+        return self.markets
+
+    def fetch_ohlcv(self, symbol: str, timeframe='1m', since: Union[int, None] = None, limit: Union[int, None] = None, params={}) -> List[list]:  # type: ignore
         return [[]]
+
+params : Dict = {
+    'trdmarket' : TrdMarket.HK,
+    'security_firm' : SecurityFirm.FUTUSECURITIES,
+    'market' : Market.HK, 
+    'security_type' : SecurityType.STOCK,
+    'daemon' : {
+        'host' : '127.0.0.1',
+        'port' : 11111
+    }
+}
+exchange = Futubull(params)
+markets = exchange.load_markets()
 
 '''
 Examples from Futu https://openapi.futunn.com/futu-api-doc/en
@@ -140,6 +264,7 @@ while page_req_key != None:
     else:
         print('error:', data)
 
+# For any real time data, you need subscribe https://openapi.futunn.com/futu-api-doc/en/intro/authority.html#5331
 ret_sub, err_message = quote_ctx.subscribe(['HK.00700'], [SubType.K_DAY], subscribe_push=False)
 if ret_sub == RET_OK:
     ret, data = quote_ctx.get_cur_kline('HK.00700', 2, SubType.K_DAY, AuType.QFQ)
