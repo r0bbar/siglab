@@ -16,6 +16,6 @@ b. Override ccxt basic functions
     - order price rounding: price_to_precision
     ... etc
 '''
-class AnyExchange(Exception):
+class AnyExchange(Exchange):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
