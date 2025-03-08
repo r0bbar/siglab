@@ -15,6 +15,12 @@ b. Override ccxt basic functions
     - order amount rounding: amount_to_precision
     - order price rounding: price_to_precision
     ... etc
+
+    Besides above, it's very common below are required from algo's
+    - fetch_time()
+    - fetch_order_book
+    - fetch_positions
+    
 '''
 class AnyExchange(Exchange):
     def __init__(self, *args: object) -> None:
