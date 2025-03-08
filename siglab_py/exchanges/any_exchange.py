@@ -17,7 +17,7 @@ b. Override ccxt basic functions
     ... etc
 
     Besides above, it's very common below are required from algo's
-    - fetch_time()
+    - fetch_time
     - fetch_order_book
     - fetch_positions
     
