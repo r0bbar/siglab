@@ -15,6 +15,8 @@ from yahoofinancials import YahooFinancials
 # yfinance allows intervals '1m', '5m', '15m', '1h', '1d', '1wk', '1mo'. yahoofinancials not as flexible
 import yfinance as yf
 
+from exchanges.futubull import Futubull
+
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(
         lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000))
@@ -172,15 +174,15 @@ class YahooExchange:
             # From yf, "DateTime" in UTC
             # The requested range must be within the last 730 days. Otherwise API will return empty DataFrame.
             pd_candles = yf.download(tickers=symbol, start=start_date_str, end=end_date_str, interval=candle_size)
-            pd_candles.reset_index(inplace=True)
-            pd_candles.rename(columns={ 'Date' : 'datetime', 'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
-            pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
-            if pd_candles['datetime'].dt.tz is None:
-                pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC')
-            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz)
-            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
-            pd_candles['timestamp_ms'] = pd_candles.datetime.values.astype(np.int64) // 10**6
-            pd_candles = pd_candles.sort_values(by=['timestamp_ms'], ascending=[True])
+            pd_candles.reset_index(inplace=True) # type: ignore
+            pd_candles.rename(columns={ 'Date' : 'datetime', 'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True) # type: ignore
+            pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']) # type: ignore
+            if pd_candles['datetime'].dt.tz is None: # type: ignore
+                pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC') # type: ignore
+            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz) # type: ignore
+            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)  # type: ignore
+            pd_candles['timestamp_ms'] = pd_candles.datetime.values.astype(np.int64) // 10**6 # type: ignore
+            pd_candles = pd_candles.sort_values(by=['timestamp_ms'], ascending=[True]) # type: ignore
             
             fix_column_types(pd_candles)
             pd_candles['symbol'] = symbol
@@ -249,6 +251,18 @@ def fetch_candles(
                             symbols=normalized_symbols,
                             candle_size=candle_size
                         )
+    elif type(exchange) is Futubull:
+        exchange_candles = exchange.fetch_candles(
+                            start_ts=start_ts,
+                            end_ts=end_ts,
+                            symbols=normalized_symbols,
+                            candle_size=candle_size
+                        )
+        for symbol in exchange_candles:
+            pd_candles = exchange_candles[symbol]
+            if not pd_candles is None:
+                fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
+        return exchange_candles
     elif issubclass(exchange.__class__, CcxtExchange):
         return _fetch_candles_ccxt(
             start_ts=start_ts,

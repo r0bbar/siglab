@@ -1,15 +1,19 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Union
 from pathlib import Path
 
 from util.market_data_util import *
+from exchanges.futubull import Futubull
 
 from ccxt.binance import binance
 from ccxt.bybit import bybit
 from ccxt.okx import okx
 from ccxt.deribit import deribit
 from ccxt.base.exchange import Exchange
+
+from futu import *
+
 
 # @unittest.skip("Skip all integration tests.")
 class MarketDataUtilTests(unittest.TestCase):
@@ -115,4 +119,37 @@ class MarketDataUtilTests(unittest.TestCase):
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
         
+    def test_fetch_candles_futubull(self):
+        end_date : datetime = datetime.today()
+        start_date : datetime = end_date - timedelta(days=365*3)
 
+        params : Dict = {
+            'trdmarket' : TrdMarket.HK,
+            'security_firm' : SecurityFirm.FUTUSECURITIES,
+            'market' : Market.HK, 
+            'security_type' : SecurityType.STOCK,
+            'daemon' : {
+                'host' : '127.0.0.1',
+                'port' : 11111
+            }
+        }
+        exchange = Futubull(params)
+        
+        symbol = "HK.00700"
+        pd_candles: Union[pd.DataFrame, None] = fetch_candles(
+                start_ts=int(start_date.timestamp()),
+                end_ts=int(end_date.timestamp()),
+                exchange=exchange,
+                normalized_symbols=[ symbol ],
+                candle_size='1d'
+            )[symbol]
+
+        assert pd_candles is not None
+
+        if pd_candles is not None:
+            assert len(pd_candles) > 0, "No candles returned."
+            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute'}
+            assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
+            assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
+            assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
+        
