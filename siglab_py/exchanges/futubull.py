@@ -46,7 +46,7 @@ import pandas as pd
 import futu as ft
 from futu import *
 
-from exchanges.any_exchange import AnyExchange
+from siglab_py.exchanges.any_exchange import AnyExchange
 
 class Futubull(AnyExchange):
     def __init__(self, *args: Dict[str, Any]) -> None:
