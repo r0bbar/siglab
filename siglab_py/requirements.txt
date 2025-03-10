@@ -10,6 +10,7 @@ boto3
 web3
 ccxt
 ccxtpro
+futu-api
 yfinance
 yahoofinancials
 scipy # pypy in-compatible
