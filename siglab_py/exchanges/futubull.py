@@ -8,7 +8,9 @@ Subscribe L2 data: https://openapi.futunn.com/futu-api-doc/en/intro/authority.ht
 
 Investor Protection: https://www.futuhk.com/en
 
-Margin Trading: https://www.futunn.com/en/learn/detail-what-is-margin-trading-62010-220679271
+Margin Trading: 
+    https://www.futunn.com/en/learn/detail-what-is-margin-trading-62010-220679271
+    Margin rate 6.8% annual https://www.futuhk.com/en/support/topic2_417
 
 Download Futu OpenD
     https://www.futuhk.com/en/support/topic1_464?global_content=%7B%22promote_id%22%3A13765%2C%22sub_promote_id%22%3A10%7D
