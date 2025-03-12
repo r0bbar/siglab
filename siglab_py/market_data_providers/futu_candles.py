@@ -14,7 +14,7 @@ from siglab_py.util.analytic_util import compute_candles_stats
 
 '''
 Usage:
-    python futu_candles.py --symbol HK.00700 --end_date 2025-03-11 --start_date 2024-03-11 --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y
+    python futu_candles.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y
 
 This script is NOT pypy compatible.
 
