@@ -15,7 +15,7 @@ from yahoofinancials import YahooFinancials
 # yfinance allows intervals '1m', '5m', '15m', '1h', '1d', '1wk', '1mo'. yahoofinancials not as flexible
 import yfinance as yf
 
-from exchanges.futubull import Futubull
+from siglab_py.exchanges.futubull import Futubull
 
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(
