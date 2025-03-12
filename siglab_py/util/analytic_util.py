@@ -10,7 +10,7 @@ from hurst import compute_Hc # compatible with pypy
 from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
 
-from util.market_data_util import fix_column_types
+from siglab_py.util.market_data_util import fix_column_types
 
 # Fibonacci
 MAGIC_FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.00, 1.618, 2.618, 3.618, 4.236]
