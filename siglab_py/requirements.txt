@@ -13,10 +13,6 @@ ccxtpro
 futu-api
 yfinance
 yahoofinancials
-scipy # pypy in-compatible
-statsmodels # pypy in-compatible
-scikit-learn
-sklearn.preprocessing
 hurst
 redis
 redis-py-cluster

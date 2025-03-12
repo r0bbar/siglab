@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "siglab_py"
-version = "0.1.17"
+version = "0.1.25"
 description = "Market data fetches, TA calculations and generic order gateway."
 authors = [{name = "r0bbarh00d", email = "r0bbarh00d@gmail.com"}]
 license = {text = "MIT"}
@@ -25,10 +25,6 @@ dependencies = [
     "ccxtpro",
     "yfinance",
     "yahoofinancials",
-    "scipy",
-    "statsmodels",
-    "scikit-learn",
-    "sklearn.preprocessing",
     "hurst",
     "redis",
     "redis-py-cluster",
