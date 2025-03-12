@@ -463,8 +463,12 @@ async def execute_one_position(
             slice_amount_in_base_ccy : float = slice.amount
             rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After devided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
             rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
-            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
             rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+
+            if rounded_slice_amount_in_base_ccy==0:
+                log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
+                continue
 
             orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
             if position.side=='buy':
@@ -604,7 +608,6 @@ async def execute_one_position(
                     await asyncio.sleep(int(param['loop_freq_ms']/1000))
             
             
-
             # Cancel hung limit order, resend as market
             if order_status!='closed':
                 # If no update from websocket, do one last fetch via REST
