@@ -42,6 +42,7 @@ API
 
 '''
 from datetime import datetime, timedelta
+import pytz
 from typing import List, Dict, Union, Any, NoReturn
 import pandas as pd
 
@@ -261,6 +262,23 @@ class Futubull(AnyExchange):
                 '''
                 time_key = row['time_key']
                 dt = datetime.strptime(time_key, "%Y-%m-%d %H:%M:%S")
+                
+                if self.market in [ Market.HK, Market.SH, Market.SZ ]:
+                    tz = pytz.timezone('Asia/Shanghai')
+                    dt = tz.localize(dt)
+                elif self.market == Market.US:
+                    tz = pytz.timezone('US/Eastern')
+                    dt = tz.localize(dt)
+                elif self.market == Market.CA:
+                    tz = pytz.timezone('US/Eastern')
+                    dt = tz.localize(dt)
+                elif self.market == Market.AU:
+                    tz = pytz.timezone('Australia/Sydney')
+                    dt = tz.localize(dt)
+                else:
+                    # @todo:  HK SH SZ US AU CA FX
+                    raise ValueError(f"Unsupported market {self.market}")
+
                 timestamp_ms = int(dt.timestamp() * 1000)
                 open = row['open']
                 high = row['high']
