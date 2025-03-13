@@ -14,9 +14,11 @@ from siglab_py.util.analytic_util import compute_candles_stats
 
 '''
 Usage:
-    python futu_candles.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
+    python futu_candles.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible N
 
-This script is NOT pypy compatible.
+This script is pypy compatible. Set "pypy_compatible" to True, in which case "compute_candles_stats" will skip calculation for TAs which requires: scipy, statsmodels, scikit-learn, sklearn.preprocessing
+    python futu_candles.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible Y
 
 If debugging from VSCode, launch.json:
 
@@ -37,7 +39,8 @@ If debugging from VSCode, launch.json:
                         "--trdmarket", "HK",
                         "--security_firm", "FUTUSECURITIES",
                         "--security_type", "STOCK",
-                        "--compute_ta", "Y"
+                        "--compute_ta", "Y",
+                        "--pypy_compatible", "N"
                     ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -116,6 +119,8 @@ def parse_args():
     parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
     parser.add_argument("--boillenger_std_multiples", help="Boillenger bands: # std", default=2)
 
+    parser.add_argument("--pypy_compatible", help="pypy_compatible: If Y, analytic_util will import statsmodels.api (slopes and divergence calc). In any case, partition_sliding_window requires scipy.stats.linregress and cannot be used with pypy. Y or N (default).", default='N')
+
     args = parser.parse_args()
     param['symbol'] = args.symbol.strip().upper()
 
@@ -139,6 +144,14 @@ def parse_args():
     param['ma_long_intervals'] = int(args.ma_long_intervals)
     param['ma_short_intervals'] = int(args.ma_short_intervals)
     param['boillenger_std_multiples'] = int(args.boillenger_std_multiples)
+
+    if args.pypy_compatible:
+        if args.pypy_compatible=='Y':
+            param['pypy_compatible'] = True
+        else:
+            param['pypy_compatible'] = False
+    else:
+        param['pypy_compatible'] = False
 
 async def main():
     parse_args()
@@ -174,7 +187,7 @@ async def main():
                                     boillenger_std_multiples=param['boillenger_std_multiples'], 
                                     sliding_window_how_many_candles=param['ma_long_intervals'], 
                                     slow_fast_interval_ratio=(param['ma_long_intervals']/param['ma_short_intervals']),
-                                    pypy_compat=False
+                                    pypy_compat=param['pypy_compatible']
                                 )
         compute_candles_stats_elapsed_ms = int((time.time() - start) *1000)
         log(f"TA calculated, took {compute_candles_stats_elapsed_ms} ms")
