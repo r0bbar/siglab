@@ -119,8 +119,8 @@ def parse_args():
 
     parser.add_argument("--compute_ta", help="Compute technical indicators?. Y or N (default).", default='N')
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
-    parser.add_argument("--ma_long_intervals", help="Window size in number of intervals for higher timeframe", default=24)
-    parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
+    parser.add_argument("--ma_long_intervals", help="Sliding Window size in number of intervals for higher timeframe", default=24)
+    parser.add_argument("--ma_short_intervals", help="Sliding Window size in number of intervals for lower timeframe", default=8)
     parser.add_argument("--boillenger_std_multiples", help="Boillenger bands: # std", default=2)
 
     parser.add_argument("--pypy_compatible", help="pypy_compatible: If Y, analytic_util will import statsmodels.api (slopes and divergence calc). In any case, partition_sliding_window requires scipy.stats.linregress and cannot be used with pypy. Y or N (default).", default='N')
