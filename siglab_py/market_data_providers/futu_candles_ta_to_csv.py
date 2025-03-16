@@ -19,6 +19,8 @@ Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python futu_candles_ta_to_csv.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible N
 
+    python futu_candles_ta_to_csv.py --symbol AAPL --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market US --trdmarket US --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible N
+
 This script is pypy compatible. Set "pypy_compatible" to True, in which case "compute_candles_stats" will skip calculation for TAs which requires: scipy, statsmodels, scikit-learn, sklearn.preprocessing
     python futu_candles_ta_to_csv.py --symbol HK.00700 --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market HK --trdmarket HK --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible Y
 
@@ -166,8 +168,8 @@ async def main():
     exchange = Futubull(param)
 
     pd_candles: Union[pd.DataFrame, None] = fetch_candles(
-            start_ts=int(start_date.timestamp()),
-            end_ts=int(end_date.timestamp()),
+            start_ts=int(param['start_date'].timestamp()),
+            end_ts=int(param['end_date'].timestamp()),
             exchange=exchange,
             normalized_symbols=[ param['symbol'] ],
             candle_size='1d'
