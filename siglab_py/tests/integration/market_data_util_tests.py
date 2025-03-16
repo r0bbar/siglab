@@ -81,7 +81,7 @@ class MarketDataUtilTests(unittest.TestCase):
 
         if pd_candles is not None:
             assert len(pd_candles) > 0, "No candles returned."
-            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute'}
+            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'}
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
@@ -114,7 +114,7 @@ class MarketDataUtilTests(unittest.TestCase):
 
         if pd_candles is not None:
             assert len(pd_candles) > 0, "No candles returned."
-            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute'}
+            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'}
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
@@ -148,7 +148,7 @@ class MarketDataUtilTests(unittest.TestCase):
 
         if pd_candles is not None:
             assert len(pd_candles) > 0, "No candles returned."
-            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute'}
+            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'}
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
