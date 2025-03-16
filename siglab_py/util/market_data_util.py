@@ -35,6 +35,10 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['minute'] = pd_candles['datetime'].dt.minute
     pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
 
+    pd_candles['week_of_month'] = pd_candles['timestamp_ms'].apply(
+        lambda x: timestamp_to_week_of_month(x)
+    )
+
     pd_candles['apac_trading_hr'] = pd_candles['timestamp_ms'].apply(
         lambda x: "APAC" in timestamp_to_active_trading_regions(x)
     )
@@ -80,6 +84,16 @@ def timestamp_to_active_trading_regions(
         active_trading_regions.append("AMER")
 
     return active_trading_regions
+
+def timestamp_to_week_of_month(timestamp_ms: int) -> int:
+    """
+    Returns:
+        int: Week of the month (0 = first week, 1 = second week, etc.).
+    """
+    dt = datetime.fromtimestamp(timestamp_ms / 1000)
+    day_of_month = dt.day
+    week_of_month = (day_of_month - 1) // 7
+    return week_of_month
 
 def fix_column_types(pd_candles : pd.DataFrame):
     pd_candles['open'] = pd_candles['open'].astype(float)
