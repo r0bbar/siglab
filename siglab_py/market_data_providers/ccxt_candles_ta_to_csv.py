@@ -18,10 +18,10 @@ from ccxt.kraken import kraken
 from ccxt.hyperliquid import hyperliquid
 
 from siglab_py.exchanges.futubull import Futubull
-# from siglab_py.util.market_data_util import fetch_candles
-from util.market_data_util import fetch_candles
-# from siglab_py.util.analytic_util import compute_candles_stats
-from util.analytic_util import compute_candles_stats
+from siglab_py.util.market_data_util import fetch_candles
+# from util.market_data_util import fetch_candles
+from siglab_py.util.analytic_util import compute_candles_stats
+# from util.analytic_util import compute_candles_stats
 
 '''
 Usage:
