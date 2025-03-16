@@ -1,10 +1,12 @@
 import sys
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 from typing import Dict, Union
 from enum import Enum
 import asyncio
+import pandas as pd
 
 from futu import *
 
@@ -156,7 +158,7 @@ def parse_args():
 async def main():
     parse_args()
 
-    fh = logging.FileHandler(f"futu_candles.log")
+    fh = logging.FileHandler(f"futu_candles_ta_to_csv.log")
     fh.setLevel(log_level)
     fh.setFormatter(formatter)     
     logger.addHandler(fh) # type: ignore
