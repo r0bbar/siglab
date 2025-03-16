@@ -65,7 +65,7 @@ param : Dict = {
         'host' : '127.0.0.1',
         'port' : 11111
     },
-    'output_filename' : 'candles_$SYMBOL$.csv'
+    'output_filename' : 'candles_ta_$SYMBOL$.csv'
 }
 
 class LogLevel(Enum):
