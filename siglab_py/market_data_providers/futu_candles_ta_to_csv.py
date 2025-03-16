@@ -176,7 +176,7 @@ async def main():
             end_ts=int(param['end_date'].timestamp()),
             exchange=exchange,
             normalized_symbols=[ param['symbol'] ],
-            candle_size='1d'
+            candle_size=param['candle_size']
         )[param['symbol']]
 
     assert pd_candles is not None
