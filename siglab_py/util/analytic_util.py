@@ -94,6 +94,7 @@ def compute_candles_stats(
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
     pd_candles['std'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).std()
 
+    pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     
     pd_candles['chop_against_ema'] = (
