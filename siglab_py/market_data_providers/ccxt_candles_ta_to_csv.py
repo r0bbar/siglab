@@ -26,7 +26,7 @@ from siglab_py.util.analytic_util import compute_candles_stats
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python ccxt_candles_ta_to_csv.py --exchange_name bybit --symbol BTC/USDT:USDT --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --default_type linear --compute_ta Y --pypy_compatible N
+    python ccxt_candles_ta_to_csv.py --exchange_name bybit --symbol BTC/USDT:USDT --end_date "2025-03-11 0:0:0" --start_date "2021-03-11 0:0:0" --default_type linear --compute_ta Y --pypy_compatible N
 
     (Remember: python -mpip install siglab_py)
 
@@ -34,6 +34,17 @@ This script is pypy compatible. Set "pypy_compatible" to True, in which case "co
     pypy ccxt_candles_ta_to_csv.py --exchange_name bybit --symbol BTC/USDT:USDT --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --default_type linear --compute_ta Y --pypy_compatible Y
 
     (Remember: pypy -mpip install siglab_py)
+
+Other arguments:
+    candle_size: default 1h (Hourly candles). You can specify 1d, 1m ...etc
+    ma_long_intervals (default 24), ma_short_intervals (default 8): 
+        analytic_util.compute_candles_stats employ sliding windows to calculate things like std (Standard Deviation), EMA/SMAs, and actually most other technical indicators.
+        compute_candles_stats calculate certain things, for example EMA, in two levels: 'long' vs 'short'
+        'long' refers to 'higher timeframe' - this uses a bigger sliding window specified by 'ma_long_intervals'
+        'short' refers to 'lower timeframes' - this uses a smaller sliding window specified by 'ma_short_intervals'
+
+    compute_ta: Whether you wish to compute technical indicators? Y or N (Default)
+    pypy_compatible: Some technical indicators requires python libraries that's not pypy compatible, such as statsmodels.api (slopes and divergence calc) and scipy.stats.linregress. Set to Y, then analytic_util.compute_candles_stats will skip calculations which requires these libraries. 
 
 If debugging from VSCode, launch.json:
 
