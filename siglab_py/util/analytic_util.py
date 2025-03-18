@@ -99,8 +99,8 @@ def compute_candles_stats(
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype(int)
 
     pd_candles['chop_against_ema'] = (
-        (pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA
-        (~pd_candles['is_green'] & (pd_candles['close'] < pd_candles['ema_close']))   # Case 2: Red candle and close < EMA
+        (~pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA
+        (pd_candles['is_green'] & (pd_candles['close'] < pd_candles['ema_close']))   # Case 2: Red candle and close < EMA
     )
 
     pd_candles['ema_volume_short_periods'] = pd_candles['volume'].ewm(span=sliding_window_how_many_candles/slow_fast_interval_ratio, adjust=False).mean()
