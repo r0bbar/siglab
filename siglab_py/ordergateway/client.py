@@ -138,7 +138,7 @@ class DivisiblePosition(Order):
 
     def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
-        filled_amount = sum([ self.executions[order_id]['filled'] if 'filled' in self.executions[order_id] else 0 * self.multiplier for order_id in self.executions ])
+        filled_amount = sum([ self.executions[order_id]['filled'] if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] else 0 * self.multiplier for order_id in self.executions ])
         if self.side=='sell':
             filled_amount = -1 * filled_amount
         return filled_amount
@@ -189,14 +189,14 @@ class DivisiblePosition(Order):
                 }
         '''
         total_amount : float = sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
-        average_cost = sum([ (self.executions[order_id]['average'] if 'average' in self.executions[order_id] else 0 if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
+        average_cost = sum([ (self.executions[order_id]['average'] if 'average' in self.executions[order_id] and self.executions[order_id]['average'] else 0 if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
         average_cost = average_cost / total_amount if total_amount!=0 else 0
         return average_cost
 
     def get_fees(self) -> float:
         fees : float = 0
         if self.fees_ccy:
-            fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] else 0)  for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
+            fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0)  for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
         return fees
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
