@@ -86,11 +86,17 @@ def compute_candles_stats(
 
     pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
 
+    close_short_periods_rolling = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio))
+    close_long_periods_rolling = pd_candles['close'].rolling(window=sliding_window_how_many_candles)
+    close_short_periods_ewm = pd_candles['close'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False)
+    close_long_periods_ewm = pd_candles['close'].ewm(span=sliding_window_how_many_candles, adjust=False)
+
+
     pd_candles['pct_change_close'] = pd_candles['close'].pct_change() * 100
-    pd_candles['sma_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
-    pd_candles['sma_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).mean()
-    pd_candles['ema_short_periods'] = pd_candles['close'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False).mean()
-    pd_candles['ema_long_periods'] = pd_candles['close'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    pd_candles['sma_short_periods'] = close_short_periods_rolling.mean()
+    pd_candles['sma_long_periods'] = close_long_periods_rolling.mean()
+    pd_candles['ema_short_periods'] = close_short_periods_ewm.mean()
+    pd_candles['ema_long_periods'] = close_long_periods_ewm.mean()
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
     pd_candles['std'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).std()
 
@@ -106,15 +112,15 @@ def compute_candles_stats(
     pd_candles['ema_volume_short_periods'] = pd_candles['volume'].ewm(span=sliding_window_how_many_candles/slow_fast_interval_ratio, adjust=False).mean()
     pd_candles['ema_volume_long_periods'] = pd_candles['volume'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
 
-    pd_candles['max_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).max()
-    pd_candles['max_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).max()
-    pd_candles['idmax_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x : x.idxmax())
-    pd_candles['idmax_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmax())
+    pd_candles['max_short_periods'] = close_short_periods_rolling.max()
+    pd_candles['max_long_periods'] = close_long_periods_rolling.max()
+    pd_candles['idmax_short_periods'] = close_short_periods_rolling.apply(lambda x : x.idxmax())
+    pd_candles['idmax_long_periods'] = close_long_periods_rolling.apply(lambda x : x.idxmax())
 
-    pd_candles['min_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).min()
-    pd_candles['min_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).min()
-    pd_candles['idmin_short_periods'] = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x : x.idxmin())
-    pd_candles['idmin_long_periods'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmin())
+    pd_candles['min_short_periods'] = close_short_periods_rolling.min()
+    pd_candles['min_long_periods'] = close_long_periods_rolling.min()
+    pd_candles['idmin_short_periods'] = close_short_periods_rolling.apply(lambda x : x.idxmin())
+    pd_candles['idmin_long_periods'] = close_long_periods_rolling.apply(lambda x : x.idxmin())
 
 
     # ATR https://medium.com/codex/detecting-ranging-and-trending-markets-with-choppiness-index-in-python-1942e6450b58 
