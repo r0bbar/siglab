@@ -188,7 +188,7 @@ class DivisiblePosition(Order):
                     'stopLossPrice': None
                 }
         '''
-        total_amount : float = sum([ self.executions[order_id]['amount'] for order_id in self.executions ])
+        total_amount : float = sum([ self.executions[order_id]['amount'] if 'average' in self.executions[order_id] and self.executions[order_id]['average'] else 0 for order_id in self.executions ])
         average_cost = sum([ (self.executions[order_id]['average'] if 'average' in self.executions[order_id] and self.executions[order_id]['average'] else 0 if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
         average_cost = average_cost / total_amount if total_amount!=0 else 0
         return average_cost
