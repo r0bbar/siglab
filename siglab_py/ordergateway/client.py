@@ -46,6 +46,9 @@ class Order:
         self.reduce_only = reduce_only
         self.fees_ccy = fees_ccy
 
+        self.dispatched_amount : float = 0 # This is amount in base ccy, with rounding + multiplier applied (So for contracts with multiplier!=1, this is no longer amount in base ccy.)
+        self.dispatched_price : Union[None, float] = None
+
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         return {
             "ticker" : self.ticker,
@@ -54,7 +57,9 @@ class Order:
             "order_type" : self.order_type,
             "leg_room_bps" : self.leg_room_bps,
             "reduce_only" : self.reduce_only,
-            "fees_ccy" : self.fees_ccy
+            "fees_ccy" : self.fees_ccy,
+            "dispatched_amount" : self.dispatched_amount,
+            "dispatched_price" : self.dispatched_price
         }
 
 '''
@@ -86,6 +91,7 @@ class DivisiblePosition(Order):
         self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
 
+        self.dispatched_slices : List[Order] = []
         self.executions : Dict[str, Dict[str, Any]] = {}
 
     def to_slices(self) -> List[Order]:
@@ -136,60 +142,172 @@ class DivisiblePosition(Order):
     def get_executions(self) -> Dict[str, Dict[str, Any]]:
         return self.executions
 
+    '''
+    The purpose of patch_executions is to fix erroneous exchange response where filled, amount or average None when status already 'closed'.
+
+    Example hyperliquid don't have 'average' in response JSON:
+        {
+            'info': {
+                'order': {
+                    'coin': 'SUSHI', 
+                    'side': 'B', 
+                    'limitPx': '0.79252', 
+                    'sz': '0.0', 
+                    'oid': xxx, 
+                    'timestamp': xxx, 
+                    'origSz': '30.0'
+                }, 
+                'status': 'filled', 
+                'statusTimestamp': xxx}, 
+                'id': 'xxx', 
+                'clientOrderId': None, 
+                'timestamp': xxx, 
+                'datetime': 'xxx', 
+                'lastTradeTimestamp': None, 
+                'lastUpdateTimestamp': xxx, 
+                'symbol': 'SUSHI/USDC:USDC', 
+                'type': None, 
+                'timeInForce': None, 
+                'postOnly': None, 
+                'reduceOnly': None, 
+                'side': 'buy', 
+                'price': 0.79252, 
+                'triggerPrice': None, 
+                'amount': 30.0, 
+                'cost': 23.7756, 
+                'average': None, <-- No average cost?
+                'filled': 30.0, 
+                'remaining': 0.0, 
+                'status': 'closed', 
+                'fee': None, 
+                'trades': [], 
+                'fees': [], 
+                'stopPrice': None, 
+                'takeProfitPrice': None, 
+                'stopLossPrice': None
+            }
+
+        A second example, sometimes even 'amount', 'filled' and 'average' both None, but status is 'filled':
+            [
+                {
+                    'info': {
+                        'order': {
+                            'coin': 'BTC', 
+                            'side': 'A', 
+                            'limitPx': '84389.0', 
+                            'sz': '0.0',
+                            'oid': xxx, 
+                            'timestamp': xxx, 
+                            'origSz': '0.01184'
+                        },
+                        'status': 'filled', 
+                        'statusTimestamp': xxx
+                    }, 
+                    'id': 'xxx',
+                    'clientOrderId': None, 
+                    'timestamp': xxx, 
+                    'datetime': 'xxx', 
+                    'lastTradeTimestamp': None, 
+                    'lastUpdateTimestamp': None, 
+                    'symbol': 'BTC/USDC:USDC', 
+                    'type': None, 
+                    'timeInForce': None,
+                    'postOnly': None, 
+                    'reduceOnly': None, 
+                    'side': 'sell', 
+                    'price': 84389.0,
+                    'triggerPrice': None, 
+                    'amount': None, <-- No amount!?!
+                    'cost': None, 
+                    'average': None, <-- No average!?!
+                    'filled': None,    <-- No filled!?!
+                    'remaining': 0.0, 
+                    'status': 'closed', 
+                    'fee': None, 'trades': [], 'fees':
+                    [], 'stopPrice': None, 'takeProfitPrice': None, 'stopLossPrice': None}
+                ]
+        '''
+    def patch_executions(self):
+        i : int = 0
+        for order_id in self.executions:
+            execution = self.executions[order_id]
+            execution['patch'] = {}
+            execution['patch']['average'] = None
+            execution['patch']['filled'] = 0
+            execution['patch']['amount'] = 0
+
+            corresponding_slice = self.dispatched_slices[i]
+
+            status = execution['status']
+            if status and status.strip().lower()=='closed':
+                if 'average' in execution:
+                    if not execution['average']:
+                        if 'price' in execution and execution['price']:
+                            execution['patch']['average'] = execution['price']
+                        else:
+                            execution['patch']['average'] = corresponding_slice.dispatched_price
+                    else:
+                        execution['patch']['average'] = execution['average']
+
+                if 'filled' in execution:
+                    if not execution['filled']:
+                        execution['patch']['filled'] = corresponding_slice.dispatched_amount
+                    else:
+                        execution['patch']['filled'] = execution['filled']
+
+                if 'amount' in execution:
+                    if not execution['amount']:
+                        execution['patch']['amount'] = corresponding_slice.dispatched_amount
+                    else:
+                        execution['patch']['amount'] = execution['amount']
+
+            i += 1
+        
     def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
-        filled_amount = sum([ self.executions[order_id]['filled'] if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] else 0 * self.multiplier for order_id in self.executions ])
+        filled_amount = sum(
+                    [ 
+                        (
+                            self.executions[order_id]['filled'] 
+                            if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
+                            else self.executions[order_id]['patch']['dispatched_amount']
+                        )  * self.multiplier 
+                        for order_id in self.executions 
+                    ]
+                )
         if self.side=='sell':
             filled_amount = -1 * filled_amount
         return filled_amount
 
     def get_average_cost(self) -> float:
-        '''
-        Example hyperliquid don't have 'average' in response JSON:
-
-        {
-            'info': {
-                'order': {
-                        'coin': 'SUSHI', 
-                        'side': 'B', 
-                        'limitPx': '0.79252', 
-                        'sz': '0.0', 
-                        'oid': xxx, 
-                        'timestamp': xxx, 
-                        'origSz': '30.0'
-                    }, 
-                    'status': 'filled', 
-                    'statusTimestamp': xxx}, 
-                    'id': 'xxx', 
-                    'clientOrderId': None, 
-                    'timestamp': xxx, 
-                    'datetime': '2025-02-26T01:00:00.522Z', 
-                    'lastTradeTimestamp': None, 
-                    'lastUpdateTimestamp': xxx, 
-                    'symbol': 'SUSHI/USDC:USDC', 
-                    'type': None, 
-                    'timeInForce': None, 
-                    'postOnly': None, 
-                    'reduceOnly': None, 
-                    'side': 'buy', 
-                    'price': 0.79252, 
-                    'triggerPrice': None, 
-                    'amount': 30.0, 
-                    'cost': 23.7756, 
-                    'average': None, <-- No average cost?
-                    'filled': 30.0, 
-                    'remaining': 0.0, 
-                    'status': 'closed', 
-                    'fee': None, 
-                    'trades': [], 
-                    'fees': [], 
-                    'stopPrice': None, 
-                    'takeProfitPrice': None, 
-                    'stopLossPrice': None
-                }
-        '''
-        total_amount : float = sum([ self.executions[order_id]['amount'] if 'average' in self.executions[order_id] and self.executions[order_id]['average'] else 0 for order_id in self.executions ])
-        average_cost = sum([ (self.executions[order_id]['average'] if 'average' in self.executions[order_id] and self.executions[order_id]['average'] else 0 if self.executions[order_id]['average'] else self.executions[order_id]['price']) * self.executions[order_id]['amount'] for order_id in self.executions ])
+        total_amount : float = sum(
+            [ 
+                self.executions[order_id]['amount'] 
+                if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
+                else self.executions[order_id]['patch']['dispatched_amount']
+                for order_id in self.executions 
+            ]
+        )
+        
+        average_cost = sum(
+            [ 
+                (
+                    self.executions[order_id]['average'] 
+                    if 'average' in self.executions[order_id] and self.executions[order_id]['average'] 
+                    else (
+                        self.executions[order_id]['price'] 
+                        if self.executions[order_id]['price'] 
+                        else self.executions[order_id]['patch']['dispatched_price']
+                    )
+                ) * 
+                (
+                    self.executions[order_id]['amount'] 
+                    if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
+                    else self.executions[order_id]['patch']['dispatched_amount']
+                )
+                for order_id in self.executions 
+            ]
+        )
         average_cost = average_cost / total_amount if total_amount!=0 else 0
         return average_cost
 

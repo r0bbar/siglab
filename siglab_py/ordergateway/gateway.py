@@ -660,6 +660,10 @@ async def execute_one_position(
 
                         log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
+            slice.dispatched_price = rounded_limit_price
+            slice.dispatched_amount = rounded_slice_amount_in_base_ccy
+            position.dispatched_slices.append(slice)
+
             log(f"Executed slice #{i}", log_level=LogLevel.INFO)
             log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
             if position.order_type=='limit':
@@ -673,6 +677,7 @@ async def execute_one_position(
         finally:
             i += 1
 
+    position.patch_executions()
     position.filled_amount = position.get_filled_amount()
     position.average_cost = position.get_average_cost()
     position.fees = position.get_fees()
