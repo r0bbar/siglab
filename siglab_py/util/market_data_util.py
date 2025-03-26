@@ -19,9 +19,9 @@ from siglab_py.exchanges.futubull import Futubull
 
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['timestamp_ms'] = pd_candles['timestamp_ms'].apply(
-        lambda x: int(x.timestamp()) if isinstance(x, pd.Timestamp) else (int(x / 1000) if len(str(int(x)))==13 else int(x)) 
+        lambda x: int(x.timestamp()) if isinstance(x, pd.Timestamp) else (int(x) if len(str(int(x)))==13 else int(x*1000)) 
     )
-    pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(lambda x: datetime.fromtimestamp(int(x)))
+    pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(lambda x: datetime.fromtimestamp(int(x/1000)))
     pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
     pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
     pd_candles['datetime_utc'] = pd_candles['timestamp_ms'].apply(
@@ -37,17 +37,17 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
 
     pd_candles['week_of_month'] = pd_candles['timestamp_ms'].apply(
-        lambda x: timestamp_to_week_of_month(x)
+        lambda x: timestamp_to_week_of_month(int(x/1000))
     )
 
     pd_candles['apac_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "APAC" in timestamp_to_active_trading_regions(x)
+        lambda x: "APAC" in timestamp_to_active_trading_regions(int(x/1000))
     )
     pd_candles['emea_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "EMEA" in timestamp_to_active_trading_regions(x)
+        lambda x: "EMEA" in timestamp_to_active_trading_regions(int(x/1000))
     )
     pd_candles['amer_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "AMER" in timestamp_to_active_trading_regions(x)
+        lambda x: "AMER" in timestamp_to_active_trading_regions(int(x/1000))
     )
 
 def timestamp_to_active_trading_regions(
