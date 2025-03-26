@@ -91,6 +91,9 @@ class DivisiblePosition(Order):
         self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
 
+        self.done : bool = False
+        self.execution_err : str = ""
+
         self.dispatched_slices : List[Order] = []
         self.executions : Dict[str, Dict[str, Any]] = {}
 
@@ -324,7 +327,10 @@ class DivisiblePosition(Order):
         rv['executions'] = self.executions
         rv['filled_amount'] = self.filled_amount
         rv['average_cost'] = self.average_cost
+        rv['fees'] = self.fees
         rv['pos'] = self.pos
+        rv['done'] = self.done
+        rv['execution_err'] = self.execution_err
         return rv
 
 def execute_positions(

@@ -1,4 +1,3 @@
-from ctypes import ArgumentError
 import sys
 import traceback
 import os
@@ -392,7 +391,7 @@ async def instantiate_exchange(
             }
         )  # type: ignore
     else:
-        raise ArgumentError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
+        raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
     await exchange.load_markets() # type: ignore
 
@@ -446,251 +445,258 @@ async def execute_one_position(
     param : Dict,
     executions : Dict[str, Dict[str, Any]]
 ):
-    market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
-    if not market:
-        raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
+    try:
+        market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
+        if not market:
+            raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
 
-    min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # type: ignore
-    multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
-    position.multiplier = multiplier
+        min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # type: ignore
+        multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+        position.multiplier = multiplier
 
-    slices : List[Order] = position.to_slices()
-    i = 0
-    for slice in slices:
-        try:
-            dt_now : datetime = datetime.now()
+        slices : List[Order] = position.to_slices()
+        i = 0
+        for slice in slices:
+            try:
+                dt_now : datetime = datetime.now()
 
-            slice_amount_in_base_ccy : float = slice.amount
-            rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
-            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
-            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                slice_amount_in_base_ccy : float = slice.amount
+                rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
+                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
+                rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
+                rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
-            if rounded_slice_amount_in_base_ccy==0:
-                log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
-                continue
+                if rounded_slice_amount_in_base_ccy==0:
+                    log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
+                    continue
 
-            orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
-            if position.side=='buy':
-                asks = [ ask[0] for ask in orderbook['asks'] ]
-                best_asks = min(asks)
-                limit_price : float= best_asks * (1 + position.leg_room_bps/10000)
-            else:
-                bids = [ bid[0] for bid in orderbook['bids'] ]
-                best_bid = max(bids)
-                limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
-                
-            rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
-            rounded_limit_price = float(rounded_limit_price)
-            
-            order_params = {
-                'reduceOnly': slice.reduce_only
-            }
-            if position.order_type=='limit':
-                if not param['dry_run']:
-                    executed_order = await exchange.create_order( # type: ignore
-                        symbol = position.ticker,
-                        type = position.order_type,
-                        amount = rounded_slice_amount_in_base_ccy,
-                        price = rounded_limit_price,
-                        side = position.side,
-                        params = order_params
-                    )
+                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
+                if position.side=='buy':
+                    asks = [ ask[0] for ask in orderbook['asks'] ]
+                    best_asks = min(asks)
+                    limit_price : float= best_asks * (1 + position.leg_room_bps/10000)
                 else:
-                    executed_order = DUMMY_EXECUTION.copy()
-                    executed_order['clientOrderId'] = str(uuid.uuid4())
-                    executed_order['timestamp'] = dt_now.timestamp()
-                    executed_order['datetime'] = dt_now
-                    executed_order['symbol'] = position.ticker
-                    executed_order['type'] = position.order_type
-                    executed_order['side'] = position.side
-                    executed_order['price'] = rounded_limit_price
-                    executed_order['average'] = rounded_limit_price
-                    executed_order['cost'] = 0
-                    executed_order['amount'] = rounded_slice_amount_in_base_ccy
-                    executed_order['filled'] = rounded_slice_amount_in_base_ccy
-                    executed_order['remaining'] = 0
-                    executed_order['status'] = 'closed'
-                    executed_order['multiplier'] = position.multiplier
-
-            else:
-                if not param['dry_run']:
-                    executed_order = await exchange.create_order( # type: ignore
-                        symbol = position.ticker,
-                        type = position.order_type,
-                        amount = rounded_slice_amount_in_base_ccy,
-                        side = position.side,
-                        params = order_params
-                    )
-                else:
-                    executed_order = DUMMY_EXECUTION.copy()
-                    executed_order['clientOrderId'] = str(uuid.uuid4())
-                    executed_order['timestamp'] = dt_now.timestamp()
-                    executed_order['datetime'] = dt_now
-                    executed_order['symbol'] = position.ticker
-                    executed_order['type'] = position.order_type
-                    executed_order['side'] = position.side
-                    executed_order['price'] = rounded_limit_price
-                    executed_order['average'] = rounded_limit_price
-                    executed_order['cost'] = 0
-                    executed_order['amount'] = rounded_slice_amount_in_base_ccy
-                    executed_order['filled'] = rounded_slice_amount_in_base_ccy
-                    executed_order['remaining'] = 0
-                    executed_order['status'] = 'closed'
-                    executed_order['multiplier'] = position.multiplier
-
-            executed_order['slice_id'] = i
-
-            '''
-            Format of executed_order:
-                executed_order
-                {'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}, 'id': '2245241151525347328', 'clientOrderId': 'xxx', 'timestamp': None, 'datetime': None, 'lastTradeTimestamp': None, 'lastUpdateTimestamp': None, 'symbol': 'SUSHI/USDT:USDT', 'type': 'limit', 'timeInForce': None, 'postOnly': None, 'side': 'buy', 'price': None, 'stopLossPrice': None, 'takeProfitPrice': None, 'triggerPrice': None, 'average': None, 'cost': None, 'amount': None, 'filled': None, 'remaining': None, 'status': None, 'fee': None, 'trades': [], 'reduceOnly': False, 'fees': [], 'stopPrice': None}
-                special variables:
-                function variables:
-                'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}
-                'id': '2245241151525347328'
-                'clientOrderId': 'xxx'
-                'timestamp': None
-                'datetime': None
-                'lastTradeTimestamp': None
-                'lastUpdateTimestamp': None
-                'symbol': 'SUSHI/USDT:USDT'
-                'type': 'limit'
-                'timeInForce': None
-                'postOnly': None
-                'side': 'buy'
-                'price': None
-                'stopLossPrice': None
-                'takeProfitPrice': None
-                'triggerPrice': None
-                'average': None
-                'cost': None
-                'amount': None
-                'filled': None
-                'remaining': None
-                'status': None
-                'fee': None
-                'trades': []
-                'reduceOnly': False
-                'fees': []
-                'stopPrice': None
-            '''
-            order_id = executed_order['id']
-            order_status = executed_order['status']
-            filled_amount = executed_order['filled']
-            remaining_amount = executed_order['remaining']
-            executed_order['multiplier'] = multiplier
-            position.append_execution(order_id, executed_order)
-
-            log(f"Order dispatched: {order_id}. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
-
-            if not order_status or order_status!='closed':
-                start_time = time.time()
-                wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
-
-                elapsed_sec = time.time() - start_time
-                while elapsed_sec < wait_threshold_sec:
-                    order_update = None
-                    if order_id in executions:
-                        order_update = executions[order_id]
+                    bids = [ bid[0] for bid in orderbook['bids'] ]
+                    best_bid = max(bids)
+                    limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
                     
-                    if order_update:
-                        order_status = order_update['status']
-                        filled_amount = order_update['filled']
-                        remaining_amount = order_update['remaining']
-                        order_update['multiplier'] = multiplier
-                        position.append_execution(order_id, order_update)
+                rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
+                rounded_limit_price = float(rounded_limit_price)
+                
+                order_params = {
+                    'reduceOnly': slice.reduce_only
+                }
+                if position.order_type=='limit':
+                    if not param['dry_run']:
+                        executed_order = await exchange.create_order( # type: ignore
+                            symbol = position.ticker,
+                            type = position.order_type,
+                            amount = rounded_slice_amount_in_base_ccy,
+                            price = rounded_limit_price,
+                            side = position.side,
+                            params = order_params
+                        )
+                    else:
+                        executed_order = DUMMY_EXECUTION.copy()
+                        executed_order['clientOrderId'] = str(uuid.uuid4())
+                        executed_order['timestamp'] = dt_now.timestamp()
+                        executed_order['datetime'] = dt_now
+                        executed_order['symbol'] = position.ticker
+                        executed_order['type'] = position.order_type
+                        executed_order['side'] = position.side
+                        executed_order['price'] = rounded_limit_price
+                        executed_order['average'] = rounded_limit_price
+                        executed_order['cost'] = 0
+                        executed_order['amount'] = rounded_slice_amount_in_base_ccy
+                        executed_order['filled'] = rounded_slice_amount_in_base_ccy
+                        executed_order['remaining'] = 0
+                        executed_order['status'] = 'closed'
+                        executed_order['multiplier'] = position.multiplier
 
-                        if remaining_amount <= 0:
-                            log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
-                            break
+                else:
+                    if not param['dry_run']:
+                        executed_order = await exchange.create_order( # type: ignore
+                            symbol = position.ticker,
+                            type = position.order_type,
+                            amount = rounded_slice_amount_in_base_ccy,
+                            side = position.side,
+                            params = order_params
+                        )
+                    else:
+                        executed_order = DUMMY_EXECUTION.copy()
+                        executed_order['clientOrderId'] = str(uuid.uuid4())
+                        executed_order['timestamp'] = dt_now.timestamp()
+                        executed_order['datetime'] = dt_now
+                        executed_order['symbol'] = position.ticker
+                        executed_order['type'] = position.order_type
+                        executed_order['side'] = position.side
+                        executed_order['price'] = rounded_limit_price
+                        executed_order['average'] = rounded_limit_price
+                        executed_order['cost'] = 0
+                        executed_order['amount'] = rounded_slice_amount_in_base_ccy
+                        executed_order['filled'] = rounded_slice_amount_in_base_ccy
+                        executed_order['remaining'] = 0
+                        executed_order['status'] = 'closed'
+                        executed_order['multiplier'] = position.multiplier
 
-                    await asyncio.sleep(int(param['loop_freq_ms']/1000))
-            
-            
-            # Cancel hung limit order, resend as market
-            if order_status!='closed':
-                # If no update from websocket, do one last fetch via REST
-                order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
-                order_status = order_update['status']
-                filled_amount = order_update['filled']
-                remaining_amount = order_update['remaining']
-                order_update['multiplier'] = multiplier
-                position.append_execution(order_id, order_update)
+                executed_order['slice_id'] = i
 
-                if order_status!='closed': 
+                '''
+                Format of executed_order:
+                    executed_order
+                    {'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}, 'id': '2245241151525347328', 'clientOrderId': 'xxx', 'timestamp': None, 'datetime': None, 'lastTradeTimestamp': None, 'lastUpdateTimestamp': None, 'symbol': 'SUSHI/USDT:USDT', 'type': 'limit', 'timeInForce': None, 'postOnly': None, 'side': 'buy', 'price': None, 'stopLossPrice': None, 'takeProfitPrice': None, 'triggerPrice': None, 'average': None, 'cost': None, 'amount': None, 'filled': None, 'remaining': None, 'status': None, 'fee': None, 'trades': [], 'reduceOnly': False, 'fees': [], 'stopPrice': None}
+                    special variables:
+                    function variables:
+                    'info': {'clOrdId': 'xxx', 'ordId': '2245241151525347328', 'sCode': '0', 'sMsg': 'Order placed', 'tag': 'xxx', 'ts': '1739415800635'}
+                    'id': '2245241151525347328'
+                    'clientOrderId': 'xxx'
+                    'timestamp': None
+                    'datetime': None
+                    'lastTradeTimestamp': None
+                    'lastUpdateTimestamp': None
+                    'symbol': 'SUSHI/USDT:USDT'
+                    'type': 'limit'
+                    'timeInForce': None
+                    'postOnly': None
+                    'side': 'buy'
+                    'price': None
+                    'stopLossPrice': None
+                    'takeProfitPrice': None
+                    'triggerPrice': None
+                    'average': None
+                    'cost': None
+                    'amount': None
+                    'filled': None
+                    'remaining': None
+                    'status': None
+                    'fee': None
+                    'trades': []
+                    'reduceOnly': False
+                    'fees': []
+                    'stopPrice': None
+                '''
+                order_id = executed_order['id']
+                order_status = executed_order['status']
+                filled_amount = executed_order['filled']
+                remaining_amount = executed_order['remaining']
+                executed_order['multiplier'] = multiplier
+                position.append_execution(order_id, executed_order)
+
+                log(f"Order dispatched: {order_id}. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+
+                if not order_status or order_status!='closed':
+                    start_time = time.time()
+                    wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+
+                    elapsed_sec = time.time() - start_time
+                    while elapsed_sec < wait_threshold_sec:
+                        order_update = None
+                        if order_id in executions:
+                            order_update = executions[order_id]
+                        
+                        if order_update:
+                            order_status = order_update['status']
+                            filled_amount = order_update['filled']
+                            remaining_amount = order_update['remaining']
+                            order_update['multiplier'] = multiplier
+                            position.append_execution(order_id, order_update)
+
+                            if remaining_amount <= 0:
+                                log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
+                                break
+
+                        await asyncio.sleep(int(param['loop_freq_ms']/1000))
+                
+                
+                # Cancel hung limit order, resend as market
+                if order_status!='closed':
+                    # If no update from websocket, do one last fetch via REST
+                    order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
                     order_status = order_update['status']
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
+                    order_update['multiplier'] = multiplier
+                    position.append_execution(order_id, order_update)
 
-                    await exchange.cancel_order(order_id, position.ticker)  # type: ignore
-                    position.get_execution(order_id)['status'] = 'canceled'
-                    log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
-                    
-                    rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
-                    rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
-                    rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
-                    if rounded_slice_amount_in_base_ccy>0:
-                        executed_resent_order = await exchange.create_order(  # type: ignore
-                            symbol=position.ticker,
-                            type='market',
-                            amount=remaining_amount,
-                            side=position.side
-                        )
+                    if order_status!='closed': 
+                        order_status = order_update['status']
+                        filled_amount = order_update['filled']
+                        remaining_amount = order_update['remaining']
 
-                        order_id = executed_resent_order['id']
-                        order_status = executed_resent_order['status']
-                        executed_resent_order['multiplier'] = multiplier
-                        position.append_execution(order_id, executed_resent_order)
+                        await exchange.cancel_order(order_id, position.ticker)  # type: ignore
+                        position.get_execution(order_id)['status'] = 'canceled'
+                        log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
+                        
+                        rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
+                        rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+                        rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                        if rounded_slice_amount_in_base_ccy>0:
+                            executed_resent_order = await exchange.create_order(  # type: ignore
+                                symbol=position.ticker,
+                                type='market',
+                                amount=remaining_amount,
+                                side=position.side
+                            )
 
-                        while not order_status or order_status!='closed':
-                            order_update = None
-                            if order_id in executions:
-                                order_update = executions[order_id]
+                            order_id = executed_resent_order['id']
+                            order_status = executed_resent_order['status']
+                            executed_resent_order['multiplier'] = multiplier
+                            position.append_execution(order_id, executed_resent_order)
 
-                            if order_update:
-                                order_id = order_update['id']
-                                order_status = order_update['status']
-                                filled_amount = order_update['filled']
-                                remaining_amount = order_update['remaining']
+                            while not order_status or order_status!='closed':
+                                order_update = None
+                                if order_id in executions:
+                                    order_update = executions[order_id]
 
-                            log(f"Waiting for resent market order to close {order_id} ...")
+                                if order_update:
+                                    order_id = order_update['id']
+                                    order_status = order_update['status']
+                                    filled_amount = order_update['filled']
+                                    remaining_amount = order_update['remaining']
 
-                            await asyncio.sleep(int(param['loop_freq_ms']/1000))
+                                log(f"Waiting for resent market order to close {order_id} ...")
 
-                        log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+                                await asyncio.sleep(int(param['loop_freq_ms']/1000))
 
-            slice.dispatched_price = rounded_limit_price
-            slice.dispatched_amount = rounded_slice_amount_in_base_ccy
-            position.dispatched_slices.append(slice)
+                            log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
-            log(f"Executed slice #{i}", log_level=LogLevel.INFO)
-            log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
-            if position.order_type=='limit':
-                log(f"{position.ticker}, limit_price: {limit_price}, rounded_limit_price, {rounded_limit_price}", log_level=LogLevel.INFO)
+                slice.dispatched_price = rounded_limit_price
+                slice.dispatched_amount = rounded_slice_amount_in_base_ccy
+                position.dispatched_slices.append(slice)
 
-        except Exception as slice_err:
-            log(
-                f"Failed to execute #{i} slice: {slice.to_dict()}. {slice_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
-                log_level=LogLevel.ERROR
-                )
-        finally:
-            i += 1
+                log(f"Executed slice #{i}", log_level=LogLevel.INFO)
+                log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
+                if position.order_type=='limit':
+                    log(f"{position.ticker}, limit_price: {limit_price}, rounded_limit_price, {rounded_limit_price}", log_level=LogLevel.INFO)
 
-    position.patch_executions()
-    position.filled_amount = position.get_filled_amount()
-    position.average_cost = position.get_average_cost()
-    position.fees = position.get_fees()
+            except Exception as slice_err:
+                log(
+                    f"Failed to execute #{i} slice: {slice.to_dict()}. {slice_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
+                    log_level=LogLevel.ERROR
+                    )
+            finally:
+                i += 1
 
-    balances = await exchange.fetch_balance() # type: ignore
-    if param['default_type']!='spot':
-        updated_position = await exchange.fetch_position(symbol=position.ticker) # type: ignore
-        # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
-        amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
-    else:
-        base_ccy : str = position.ticker.split("/")[0]
-        amount = balances[base_ccy]['total']
-    position.pos = amount
+        position.patch_executions()
+        position.filled_amount = position.get_filled_amount()
+        position.average_cost = position.get_average_cost()
+        position.fees = position.get_fees()
+
+        balances = await exchange.fetch_balance() # type: ignore
+        if param['default_type']!='spot':
+            updated_position = await exchange.fetch_position(symbol=position.ticker) # type: ignore
+            # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
+            amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
+        else:
+            base_ccy : str = position.ticker.split("/")[0]
+            amount = balances[base_ccy]['total']
+        position.pos = amount
+
+        position.done = True
+
+    except Exception as position_execution_err:
+        position.done = False
+        position.execution_err = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
 
 async def work(
     param : Dict,
