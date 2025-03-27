@@ -1,6 +1,7 @@
 import sys
 import traceback
 import os
+import random
 from dotenv import load_dotenv
 from enum import Enum
 import argparse
@@ -185,6 +186,7 @@ param : Dict = {
 
     "default_fees_ccy" : None,
     "loop_freq_ms" : 500, # reduce this if you need trade faster
+    "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
 
     'mds' : {
         'topics' : {
@@ -605,7 +607,9 @@ async def execute_one_position(
                                 log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
                                 break
 
-                        await asyncio.sleep(int(param['loop_freq_ms']/1000))
+                        loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
+                        loop_freq_sec : int = int(param['loop_freq_ms']/1000)
+                        await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
                 
                 
                 # Cancel hung limit order, resend as market
