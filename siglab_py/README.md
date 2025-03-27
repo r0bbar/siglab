@@ -100,9 +100,9 @@ Further examples on usage of market_data_util and analytic_util in back tests.
     https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
 
 [**ccxt_candles_ta_to_csv**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/ccxt_candles_ta_to_csv.py) 
-A simple command line utility to fetch candles from crypto exchanges, using [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md)under the hood. Calculation of TA (Technical indicators) optional.
+A simple command line utility to fetch candles from crypto exchanges and dump it to csv. The utility uses [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md)under the hood. Calculation of TA (Technical indicators) optional.
 
-[**futu_candles_ta_to_csv.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/futu_candles_ta_to_csv.py), [Futubull version of the same](https://www.futunn.com/).
+[**futu_candles_ta_to_csv.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/futu_candles_ta_to_csv.py), [Futubull version of the same](https://www.futunn.com/). You need Futubull brokerage account for this to work.
 
 
 
