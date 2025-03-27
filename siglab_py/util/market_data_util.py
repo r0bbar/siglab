@@ -298,6 +298,10 @@ def fetch_candles(
     validation_max_gaps : int = 10,
     validation_max_end_date_intervals : int = 1
 ) -> Dict[str, Union[pd.DataFrame, None]]:
+    
+    if end_ts>datetime.now().timestamp():
+        end_ts = int(datetime.now().timestamp())
+
     if type(exchange) is YahooExchange:
         return exchange.fetch_candles(
                             start_ts=start_ts,
@@ -331,10 +335,7 @@ def fetch_candles(
             exchange=exchange,
             normalized_symbols=normalized_symbols,
             candle_size=candle_size,
-            logger=logger,
-            num_candles_limit=num_candles_limit,
-            cache_dir=cache_dir,
-            list_ts_field=list_ts_field
+            num_candles_limit=num_candles_limit
         )
     return { '' : None }
 
@@ -344,44 +345,23 @@ def _fetch_candles_ccxt(
     exchange,
     normalized_symbols : List[str],
     candle_size : str,
-    num_candles_limit : int = 100,
-    logger = None,
-    cache_dir : Union[str, None] = None,
-    list_ts_field : Union[str, None] = None
-) -> Dict[str, Union[pd.DataFrame, None]]:
-  ticker = normalized_symbols[0]
-  pd_candles = _fetch_candles(
-              symbol = ticker,
-              exchange = exchange,
-              start_ts = start_ts,
-              end_ts = end_ts,
-              candle_size = candle_size,
-          )
-  return {
-      ticker : pd_candles
-  }
-
-def _fetch_candles(
-    symbol : str,
-    exchange : CcxtExchange,
-    start_ts : int,
-    end_ts : int,
-    candle_size : str = '1d',
     num_candles_limit : int = 100
-):
+) -> Dict[str, Union[pd.DataFrame, None]]:
+    ticker = normalized_symbols[0]
+
     def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
-        one_timeframe = f"1{timeframe[-1]}"
-        candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
-        if candles and len(candles)>0:
-            candles.sort(key=lambda x : x[0], reverse=False)
+            one_timeframe = f"1{timeframe[-1]}"
+            candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
+            if candles and len(candles)>0:
+                candles.sort(key=lambda x : x[0], reverse=False)
 
-        return candles
-
+            return candles
+        
     all_candles = []
     params = {}
     this_cutoff = start_ts
-    while this_cutoff<=end_ts:
-        candles = _fetch_ohlcv(exchange=exchange, symbol=symbol, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
+    while this_cutoff<end_ts:
+        candles = _fetch_ohlcv(exchange=exchange, symbol=ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
         if candles and len(candles)>0:
             all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
 
@@ -391,11 +371,17 @@ def _fetch_candles(
                 record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
 
             this_cutoff = record_ts  + 1
+        else:
+            this_cutoff += 1
+
     columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
-    pd_all_candles = pd.DataFrame([ [ exchange.name, symbol, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
+    pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
     fix_column_types(pd_all_candles)
     pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
-    return pd_all_candles
+
+    return {
+        ticker : pd_all_candles
+    }
 
 def fetch_deribit_btc_option_expiries(
     market: str = 'BTC'
