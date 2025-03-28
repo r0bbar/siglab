@@ -102,7 +102,7 @@ def compute_candles_stats(
 
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
-    pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype(int)
+    pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
 
     pd_candles['chop_against_ema'] = (
         (~pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA
