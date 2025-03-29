@@ -669,6 +669,7 @@ async def execute_one_position(
                 position.dispatched_slices.append(slice)
 
                 log(f"Executed slice #{i}", log_level=LogLevel.INFO)
+                log(f"{json.dumps(slice.to_dict(), indent=4)}")
                 log(f"{position.ticker}, multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy, {rounded_slice_amount_in_base_ccy}", log_level=LogLevel.INFO)
                 if position.order_type=='limit':
                     log(f"{position.ticker}, limit_price: {limit_price}, rounded_limit_price, {rounded_limit_price}", log_level=LogLevel.INFO)
@@ -698,6 +699,9 @@ async def execute_one_position(
         position.pos = amount
 
         position.done = True
+
+        log(f"Executions:")
+        log(f"{json.dumps(position.get_executions(), indent=4)}")
 
     except Exception as position_execution_err:
         position.done = False
