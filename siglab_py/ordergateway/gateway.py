@@ -439,7 +439,7 @@ async def send_heartbeat(exchange):
         except Exception as hb_error:
             log(f'Failed to send heartbeat: {hb_error}')
         finally:
-            await asyncio.sleep(30)
+            await asyncio.sleep(20)
 
 async def execute_one_position(
     exchange : AnyExchange,
