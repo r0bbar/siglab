@@ -267,7 +267,7 @@ executed_positions : Union[Dict, None] = execute_positions(
         )
 if executed_positions:
     for position in executed_positions:
-        print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}") # type: ignore
+        print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}, done: {position['done']}, execution_err: {position['execution_err']}") # type: ignore
 ```
 
 (Remember: set PYTHONPATH=C:\dev\siglab\siglab_py)

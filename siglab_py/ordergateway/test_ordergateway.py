@@ -93,7 +93,7 @@ if __name__ == '__main__':
         DivisiblePosition(
             ticker = 'BTC/USDC:USDC',
             side = 'sell',
-            amount = 0.00184,
+            amount = 0.00100,
             leg_room_bps = 5,
             reduce_only=True,
             order_type = 'limit',
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         )
     if executed_positions:
         for position in executed_positions:
-            print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}") # type: ignore
+            print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}, done: {position['done']}, execution_err: {position['execution_err']}") # type: ignore
         
         
 
