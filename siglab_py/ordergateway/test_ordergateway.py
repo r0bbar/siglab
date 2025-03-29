@@ -12,7 +12,7 @@ from constants import JSON_SERIALIZABLE_TYPES
 
 '''
 set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-python test_ordergateway.py --gateway_id bybit_03
+python test_ordergateway.py --gateway_id hyperliquid_01
 '''
 
 param : Dict[str, str] = {
@@ -91,21 +91,22 @@ if __name__ == '__main__':
 
     positions_3 : List[DivisiblePosition] = [
         DivisiblePosition(
-            ticker = 'BTC/USDT:USDT',
+            ticker = 'BTC/USDC:USDC',
             side = 'sell',
-            amount = 0.01,
+            amount = 0.00184,
             leg_room_bps = 5,
-            reduce_only=False,
+            reduce_only=True,
             order_type = 'limit',
             slices=1,
-            wait_fill_threshold_ms=60000
+            wait_fill_threshold_ms=60000,
+            fees_ccy='USDC'
         )
     ]
 
     
     executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
         redis_client=redis_client,
-        positions=positions_2,
+        positions=positions_3,
         ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
         ordergateway_executions_topic=ordergateway_executions_topic
         )
