@@ -678,6 +678,7 @@ async def execute_one_position(
                     f"Failed to execute #{i} slice: {slice.to_dict()}. {slice_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
                     log_level=LogLevel.ERROR
                     )
+                raise slice_err
             finally:
                 i += 1
 
