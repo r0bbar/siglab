@@ -18,9 +18,20 @@ import yfinance as yf
 from siglab_py.exchanges.futubull import Futubull
 
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
-    pd_candles['timestamp_ms'] = pd_candles['timestamp_ms'].apply(
-        lambda x: int(x.timestamp()) if isinstance(x, pd.Timestamp) else (int(x) if len(str(int(x)))==13 else int(x*1000)) 
-    )
+    def _fix_timestamp_ms(x):
+        if isinstance(x, pd.Timestamp):
+            return int(x.value // 10**6)
+        elif isinstance(x, np.datetime64):
+            return int(x.astype('int64') // 10**6)
+        elif isinstance(x, (int, float)):
+            x = int(x)
+            if len(str(abs(x))) == 13:
+                return x
+            else:
+                return int(x * 1000)
+        else:
+            raise ValueError(f"Unsupported type {type(x)} for timestamp conversion")
+    pd_candles['timestamp_ms'] = pd_candles['timestamp_ms'].apply(_fix_timestamp_ms)
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(lambda x: datetime.fromtimestamp(int(x/1000)))
     pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
     pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
