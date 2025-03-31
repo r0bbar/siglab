@@ -720,6 +720,11 @@ async def execute_one_position(
                 i += 1
 
         position.patch_executions()
+
+        log(f"Dispatched slices:")
+        for dispatched_slice in position.dispatched_slices:
+            log(f"{json.dumps(dispatched_slice.to_dict(), indent=4)}")
+
         position.filled_amount = position.get_filled_amount()
         position.average_cost = position.get_average_cost()
         position.fees = position.get_fees()
