@@ -810,7 +810,7 @@ async def work(
 
                                 i = 0
                                 for position in positions:
-                                    log(f"{i} {position.ticker}, {position.side} # executions: {len(position.get_executions())}, filled_amount: {position.filled_amount}, average_cost: {position.average_cost}, pos: {position.pos}, order_dispatch_elapsed_ms: {order_dispatch_elapsed_ms}")
+                                    log(f"{i} {position.ticker}, {position.side} # executions: {len(position.get_executions())}, filled_amount: {position.filled_amount}, average_cost: {position.average_cost}, pos: {position.pos}, done: {position.done}, error: {position.execution_err}, order_dispatch_elapsed_ms: {order_dispatch_elapsed_ms}")
                                     i += 1
 
                                 start = time.time()
