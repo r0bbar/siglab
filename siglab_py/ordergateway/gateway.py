@@ -25,13 +25,21 @@ import ccxt.pro as ccxtpro
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import Order, DivisiblePosition
+from siglab_py.util import notification_util
+from siglab_py.constants import LogLevel # type: ignore
 
 '''
 Usage:
-    python gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
+    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100
 
     --default_type defaults to linear
     --rate_limit_ms defaults to 100
+
+    --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
+    How to get Slack webhook urls? https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
+
+    Another example:
+        python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/yyy --slack_alert_url=https://hooks.slack.com/services/zzz
 
 This script is pypy compatible:
     pypy gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
@@ -82,7 +90,11 @@ To debug from vscode, launch.json:
                     "--aws_kms_key_id", "",
                     "--apikey", "xxx",
                     "--secret", "xxx",
-                    "--passphrase", "xxx"
+                    "--passphrase", "xxx",
+
+                    "--slack_info_url", "https://hooks.slack.com/services/xxx",
+                    "--slack_critial_url", "https://hooks.slack.com/services/xxx",
+                    "--slack_alert_url", "https://hooks.slack.com/services/xxx",
                 ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -188,6 +200,17 @@ param : Dict = {
     "loop_freq_ms" : 500, # reduce this if you need trade faster
     "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
 
+    'notification' : {
+        'footer' : None,
+
+        # slack webhook url's for notifications
+        'slack' : {
+            'info' : { 'webhook_url' : None },
+            'critical' : { 'webhook_url' : None },
+            'alert' : { 'webhook_url' : None },
+        }
+    },
+
     'mds' : {
         'topics' : {
             
@@ -268,6 +291,10 @@ def parse_args():
     parser.add_argument("--secret", help="Exchange secret", default=None)
     parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
 
+    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
+    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
+    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+
     args = parser.parse_args()
     param['gateway_id'] = args.gateway_id
 
@@ -296,6 +323,11 @@ def parse_args():
     param['apikey'] = args.apikey
     param['secret'] = args.secret
     param['passphrase'] = args.passphrase
+
+    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
+    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
+    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['footer'] = f"From gateway {param['gateway_id']}"
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -445,7 +477,8 @@ async def execute_one_position(
     exchange : AnyExchange,
     position : DivisiblePosition,
     param : Dict,
-    executions : Dict[str, Dict[str, Any]]
+    executions : Dict[str, Dict[str, Any]],
+    notification_params : Dict[str, Any]
 ):
     try:
         market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
@@ -703,6 +736,8 @@ async def execute_one_position(
         log(f"Executions:")
         log(f"{json.dumps(position.get_executions(), indent=4)}")
 
+        notification_util.dispatch_notification(title=f"{param['gateway_id']} execute_one_position {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
+
     except Exception as position_execution_err:
         position.done = False
         position.execution_err = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
@@ -710,7 +745,8 @@ async def execute_one_position(
 async def work(
     param : Dict,
     exchange : AnyExchange,
-    redis_client : StrictRedis
+    redis_client : StrictRedis,
+    notification_params : Dict[str, Any]
 ):
     incoming_orders_topic_regex : str = param['incoming_orders_topic_regex']
     incoming_orders_topic_regex = incoming_orders_topic_regex.replace("$GATEWAY_ID$", param['gateway_id'])
@@ -758,7 +794,7 @@ async def work(
                                 ]
 
                                 start = time.time()
-                                pending_executions = [ execute_one_position(exchange, position, param, executions) for position in positions ]
+                                pending_executions = [ execute_one_position(exchange, position, param, executions, notification_params) for position in positions ]
                                 await asyncio.gather(*pending_executions)
                                 order_dispatch_elapsed_ms = int((time.time() - start) *1000)
 
@@ -819,6 +855,8 @@ async def main():
         secret : str = param['secret']
         passphrase : str = param['passphrase']
 
+    notification_params : Dict[str, Any] = param['notification']
+
     if encrypt_decrypt_with_aws_kms:
         aws_kms_key_id = str(os.getenv('AWS_KMS_KEY_ID'))
 
@@ -842,7 +880,8 @@ async def main():
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance() # type: ignore
         log(f"{param['gateway_id']}: account balances {balances}")
+        notification_util.dispatch_notification(title=f"{param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
 
-        await work(param=param, exchange=exchange, redis_client=redis_client)
+        await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)
 
 asyncio.run(main())
