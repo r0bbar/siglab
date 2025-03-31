@@ -747,8 +747,10 @@ async def execute_one_position(
         notification_util.dispatch_notification(title=f"{param['gateway_id']} execute_one_position {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
 
     except Exception as position_execution_err:
+        err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+        log(f"Execution failed: {err_msg}")
         position.done = False
-        position.execution_err = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+        position.execution_err = err_msg
 
 async def work(
     param : Dict,
