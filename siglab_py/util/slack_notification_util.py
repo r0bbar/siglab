@@ -30,7 +30,7 @@ def slack_dispatch_notification(
         return
 
     data = {
-        "username": "x",
+        "username": "",
         "type": "section",
         "blocks": [
             {
