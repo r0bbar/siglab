@@ -451,7 +451,7 @@ async def watch_orders_task(
                 order_id = order_update['id']
                 executions[order_id] = order_update
 
-            log(f"order updates: {order_updates}", log_level=LogLevel.INFO)
+            log(f"order updates: {json.dumps(order_updates, indent=4)}", log_level=LogLevel.INFO)
         except Exception as loop_err:
             print(f"watch_orders_task error: {loop_err}")
         
@@ -637,7 +637,7 @@ async def execute_one_position(
                             position.append_execution(order_id, order_update)
 
                             if remaining_amount <= 0:
-                                log(f"Limit order fully filled: {order_id}", log_level=LogLevel.INFO)
+                                log(f"Limit order fully filled: {order_id}, order_update: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
                                 break
 
                         loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
@@ -653,6 +653,9 @@ async def execute_one_position(
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
                     order_update['multiplier'] = multiplier
+
+                    log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
+                                
                     position.append_execution(order_id, order_update)
 
                     if order_status!='closed': 
