@@ -734,7 +734,7 @@ async def execute_one_position(
         position.done = True
 
         log(f"Executions:")
-        log(f"{json.dumps(position.get_executions(), indent=4)}")
+        log(f"{json.dumps(position.to_dict(), indent=4)}")
 
         notification_util.dispatch_notification(title=f"{param['gateway_id']} execute_one_position {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
 
