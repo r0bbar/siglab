@@ -126,6 +126,8 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 
 + Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially**. Atm, there's no synchronization if you're executing multiple positions. So, first position may have executed 3/10 slices. The second position may have already executed 6/10 slices. If you're entering or unwinding delta neutral positions, burden of making sure both legs of the trade is being executed at same pace is on strategy implementation. Also we haven't added random delay in slice execution, if some of you may want to make it less obvious this is bot execution ...? 
 
++ Slack notifications on executions and errors.
+
 The idea is, strategies (separate service that you'd build), would send orders (JSON) to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
 
 JSON format client.py execution_positions will publish to Redis (Key: ordergateway_pending_orders_$GATEWAY_ID$):
@@ -267,7 +269,8 @@ executed_positions : Union[Dict, None] = execute_positions(
         )
 if executed_positions:
     for position in executed_positions:
-        print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}, done: {position['done']}, execution_err: {position['execution_err']}") # type: ignore
+        print(f"{position['ticker']} {position['side']} amount: {position['amount']} leg_room_bps: {position['leg_room_bps']} slices: {position['slices']}, filled_amount: {position['filled_amount']}, average_cost: {position['average_cost']}, # executions: {len(position['executions'])}, done: {position['done']}, execution_err: {position['execution_err']}
+        ") # type: ignore
 ```
 
 (Remember: set PYTHONPATH=C:\dev\siglab\siglab_py)
