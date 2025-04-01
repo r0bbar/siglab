@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from tabulate import tabulate
 
-from siglab_py.util import slack_notification_util
+from util.slack_notification_util import slack_dispatch_notification
 
 from siglab_py.constants import LogLevel
 
@@ -22,7 +22,7 @@ def dispatch_notification(
     else:
         _message = message
 
-    slack_notification_util.slack_dispatch_notification(title, _message, footer, params, log_level)
+    slack_dispatch_notification(title, _message, footer, params, log_level)
 
 if __name__ == '__main__':
     params : Dict[str, Any] = {

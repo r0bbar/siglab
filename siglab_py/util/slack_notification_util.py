@@ -17,11 +17,11 @@ def slack_dispatch_notification(
 ):
     slack_params = params['slack']
 
-    if log_level==LogLevel.INFO or log_level==LogLevel.DEBUG:
+    if log_level.value==LogLevel.INFO.value or log_level.value==LogLevel.DEBUG.value:
         webhook_url = slack_params['info']['webhook_url']
-    elif log_level==LogLevel.CRITICAL:
+    elif log_level.value==LogLevel.CRITICAL.value:
         webhook_url = slack_params['critical']['webhook_url']
-    elif log_level==LogLevel.ERROR:
+    elif log_level.value==LogLevel.ERROR.value:
         webhook_url = slack_params['alert']['webhook_url']
     else:
         webhook_url = slack_params['info']['webhook_url']
