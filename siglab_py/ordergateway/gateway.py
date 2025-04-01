@@ -25,8 +25,10 @@ import ccxt.pro as ccxtpro
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import Order, DivisiblePosition
-from siglab_py.util import notification_util
 from siglab_py.constants import LogLevel # type: ignore
+from util.notification_util import dispatch_notification
+
+current_filename = os.path.basename(__file__)
 
 '''
 Usage:
@@ -200,6 +202,8 @@ param : Dict = {
     "loop_freq_ms" : 500, # reduce this if you need trade faster
     "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
 
+    'current_filename' : current_filename,
+
     'notification' : {
         'footer' : None,
 
@@ -327,7 +331,8 @@ def parse_args():
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
     param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
-    param['notification']['footer'] = f"From gateway {param['gateway_id']}"
+
+    param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -744,14 +749,17 @@ async def execute_one_position(
         log(f"Executions:")
         log(f"{json.dumps(position.to_dict(), indent=4)}")
 
-        notification_util.dispatch_notification(title=f"{param['gateway_id']} execute_one_position {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
 
     except Exception as position_execution_err:
         err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
         log(f"Execution failed: {err_msg}")
+
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR) # type: ignore
+
         position.done = False
         position.execution_err = err_msg
-
+        
 async def work(
     param : Dict,
     exchange : AnyExchange,
@@ -890,7 +898,7 @@ async def main():
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance() # type: ignore
         log(f"{param['gateway_id']}: account balances {balances}")
-        notification_util.dispatch_notification(title=f"{param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
 
         await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)
 

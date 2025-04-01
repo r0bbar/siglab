@@ -1,5 +1,6 @@
 import json
 from typing import Any, Dict, Union
+from datetime import datetime, timezone
 import pandas as pd
 import numpy as np
 from tabulate import tabulate
@@ -21,6 +22,9 @@ def dispatch_notification(
         _message = tabulate(message, headers='keys', tablefmt='orgtbl') # type: ignore
     else:
         _message = message
+
+    utc_time = datetime.now(timezone.utc)
+    footer = f"UTC {utc_time} {footer}"
 
     slack_dispatch_notification(title, _message, footer, params, log_level)
 
