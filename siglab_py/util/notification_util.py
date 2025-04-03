@@ -14,19 +14,24 @@ def dispatch_notification(
         message : Union[str, Dict, pd.DataFrame],
         footer : str,
         params : Dict[str, Any],
-        log_level : LogLevel = LogLevel.INFO
+        log_level : LogLevel = LogLevel.INFO,
+        logger = None
         ):
-    if isinstance(message, Dict):
-        _message = json.dumps(message, indent=2, separators=(' ', ':'))
-    elif isinstance(message, pd.DataFrame):
-        _message = tabulate(message, headers='keys', tablefmt='orgtbl') # type: ignore
-    else:
-        _message = message
+    try:
+        if isinstance(message, Dict):
+            _message = json.dumps(message, indent=2, separators=(' ', ':'))
+        elif isinstance(message, pd.DataFrame):
+            _message = tabulate(message, headers='keys', tablefmt='orgtbl') # type: ignore
+        else:
+            _message = message
 
-    utc_time = datetime.now(timezone.utc)
-    footer = f"UTC {utc_time} {footer}"
+        utc_time = datetime.now(timezone.utc)
+        footer = f"UTC {utc_time} {footer}"
 
-    slack_dispatch_notification(title, _message, footer, params, log_level)
+        slack_dispatch_notification(title, _message, footer, params, log_level)
+    except Exception as any_notification_error:
+        if logger:
+            logger.info(f"Failed to dispatch notification: {any_notification_error}")
 
 if __name__ == '__main__':
     params : Dict[str, Any] = {
