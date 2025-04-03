@@ -749,13 +749,13 @@ async def execute_one_position(
         log(f"Executions:")
         log(f"{json.dumps(position.to_dict(), indent=4)}")
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
     except Exception as position_execution_err:
         err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
         log(f"Execution failed: {err_msg}")
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR) # type: ignore
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
 
         position.done = False
         position.execution_err = err_msg
@@ -898,7 +898,7 @@ async def main():
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance() # type: ignore
         log(f"{param['gateway_id']}: account balances {balances}")
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
         await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)
 
