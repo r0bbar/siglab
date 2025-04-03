@@ -749,7 +749,16 @@ async def execute_one_position(
         log(f"Executions:")
         log(f"{json.dumps(position.to_dict(), indent=4)}")
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+        notification_summary = {
+            'ticker' : position.ticker,
+            'side' : position.side,
+            'num_executions' : len(position.get_executions()),
+            'filled_amount' : position.filled_amount,
+            'average_cost' : position.average_cost,
+            'pos' : position.pos,
+            'done' : position.done
+        }
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=notification_summary, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
     except Exception as position_execution_err:
         err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
