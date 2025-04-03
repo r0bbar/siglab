@@ -13,9 +13,13 @@ def slack_dispatch_notification(
         message : str,
         footer : str,
         params : Dict[str, Any],
-        log_level : LogLevel = LogLevel.INFO
+        log_level : LogLevel = LogLevel.INFO,
+        max_message_len : int = 1800
 ):
     slack_params = params['slack']
+
+    # Slack slack ... https://stackoverflow.com/questions/60344831/slack-api-invalid-block
+    message = message[:max_message_len]
 
     if log_level.value==LogLevel.INFO.value or log_level.value==LogLevel.DEBUG.value:
         webhook_url = slack_params['info']['webhook_url']
