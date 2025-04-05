@@ -101,8 +101,24 @@ def compute_candles_stats(
     pd_candles['std'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).std()
 
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
+
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
+
+    '''
+    To annualize volatility:
+        if candle_interval == '1m':
+            annualization_factor = np.sqrt(365 * 24 * 60)  # 1-minute candles
+        elif candle_interval == '1h':
+            annualization_factor = np.sqrt(365 * 24)       # 1-hour candles
+        elif candle_interval == '1d':
+            annualization_factor = np.sqrt(365)            # 1-day candles
+        pd_candles['annualized_volatility'] = (
+            pd_candles['interval_historical_volatility'] * annualization_factor
+        )
+    '''
+    pd_candles['log_return'] = np.log(pd_candles['close'] / pd_candles['close'].shift(1))
+    pd_candles['interval_historical_volatility'] = pd_candles['log_return'].rolling(window=sliding_window_how_many_candles).std()
 
     pd_candles['chop_against_ema'] = (
         (~pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA
