@@ -494,6 +494,8 @@ async def execute_one_position(
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier
 
+        log(f"{position.ticker} min_amount: {min_amount}, multiplier: {multiplier}") 
+
         slices : List[Order] = position.to_slices()
         i = 0
         for slice in slices:
