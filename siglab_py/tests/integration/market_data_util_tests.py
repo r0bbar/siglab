@@ -100,7 +100,7 @@ class MarketDataUtilTests(unittest.TestCase):
                 'defaultType': 'swap'            }
         }
 
-        exchange : Exchange = okx(param)
+        exchange : Exchange = okx(param) # type: ignore
         normalized_symbols = [ 'BTC/USDT:USDT' ]
         pd_candles: Union[pd.DataFrame, None] = fetch_candles(
             start_ts=start_date.timestamp(),
