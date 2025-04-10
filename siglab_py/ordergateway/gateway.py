@@ -643,9 +643,9 @@ async def execute_one_position(
                 log(f"Order dispatched: {order_id}. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
                 if not order_status or order_status!='closed':
-                    start_time = time.time()
                     wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
-
+                    
+                    start_time = time.time()
                     elapsed_sec = time.time() - start_time
                     while elapsed_sec < wait_threshold_sec:
                         order_update = None
@@ -667,7 +667,8 @@ async def execute_one_position(
                         loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
                         await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
 
-                        log(f"{position.ticker} waiting for order update ...")
+                        elapsed_sec = time.time() - start_time
+                        log(f"{position.ticker} waiting for order update ... elapsed_sec: {elapsed_sec}")
                 
                 
                 # Cancel hung limit order, resend as market
@@ -703,7 +704,11 @@ async def execute_one_position(
                             executed_resent_order['multiplier'] = multiplier
                             position.append_execution(order_id, executed_resent_order)
 
-                            while not order_status or order_status!='closed':
+                            wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+
+                            start_time = time.time()
+                            elapsed_sec = time.time() - start_time
+                            while (not order_status or order_status!='closed') and (elapsed_sec < wait_threshold_sec):
                                 order_update = None
                                 if order_id in executions:
                                     order_update = executions[order_id]
@@ -714,11 +719,22 @@ async def execute_one_position(
                                     filled_amount = order_update['filled']
                                     remaining_amount = order_update['remaining']
 
-                                log(f"Waiting for resent market order to close {order_id} ...")
+                                elapsed_sec = time.time() - start_time
+                                log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec}")
 
-                                await asyncio.sleep(max(1, param['loop_freq_ms']/1000))
+                                loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
+                                loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
+                                await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
 
-                            log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+                            if (not order_status or order_status!='closed'):
+                                # If no update from websocket, do one last fetch via REST
+                                order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                                order_status = order_update['status']
+                                filled_amount = order_update['filled']
+                                remaining_amount = order_update['remaining']
+                                order_update['multiplier'] = multiplier
+
+                            log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
                         log(f"{position.ticker} {order_id} status (From REST): {json.dumps(order_update, indent=4)}")
 
