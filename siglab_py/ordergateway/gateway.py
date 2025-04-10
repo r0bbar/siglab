@@ -661,7 +661,7 @@ async def execute_one_position(
                                 break
 
                         loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
-                        loop_freq_sec : int = await asyncio.sleep(param['loop_freq_ms']/1000)
+                        loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
                         await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
 
                         log(f"{position.ticker} waiting for order update ...")
