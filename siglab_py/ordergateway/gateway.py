@@ -737,8 +737,8 @@ async def execute_one_position(
                     )
                 raise slice_err
             finally:
-                i += 1
                 log(f"{position.ticker} done slice# {i}")
+                i += 1
                 
         log(f"{position.ticker} patch_executions")
         position.patch_executions()
