@@ -511,6 +511,8 @@ async def execute_one_position(
         i = 0
         for slice in slices:
             try:
+                log(f"{position.ticker} sending slice# {i}")
+
                 dt_now : datetime = datetime.now()
 
                 slice_amount_in_base_ccy : float = slice.amount
@@ -736,7 +738,9 @@ async def execute_one_position(
                 raise slice_err
             finally:
                 i += 1
-
+                log(f"{position.ticker} done slice# {i}")
+                
+        log(f"{position.ticker} patch_executions")
         position.patch_executions()
 
         log(f"Dispatched slices:")
