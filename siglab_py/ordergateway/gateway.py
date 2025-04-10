@@ -460,7 +460,7 @@ async def watch_orders_task(
         except Exception as loop_err:
             print(f"watch_orders_task error: {loop_err}")
         
-        await asyncio.sleep(int(param['loop_freq_ms']/1000))
+        await asyncio.sleep(param['loop_freq_ms']/1000)
 
 async def send_heartbeat(exchange):
 
@@ -661,8 +661,10 @@ async def execute_one_position(
                                 break
 
                         loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
-                        loop_freq_sec : int = int(param['loop_freq_ms']/1000)
+                        loop_freq_sec : int = await asyncio.sleep(param['loop_freq_ms']/1000)
                         await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
+
+                        log(f"{position.ticker} waiting for order update ...")
                 
                 
                 # Cancel hung limit order, resend as market
@@ -716,7 +718,7 @@ async def execute_one_position(
 
                                 log(f"Waiting for resent market order to close {order_id} ...")
 
-                                await asyncio.sleep(int(param['loop_freq_ms']/1000))
+                                await asyncio.sleep(param['loop_freq_ms']/1000)
 
                             log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
@@ -870,7 +872,7 @@ async def work(
         except Exception as loop_error:
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
         finally:
-            await asyncio.sleep(int(param['loop_freq_ms']/1000))
+            await asyncio.sleep(param['loop_freq_ms']/1000)
 
 async def main():
     parse_args()
