@@ -695,8 +695,7 @@ async def execute_one_position(
                                 symbol=position.ticker,
                                 type='market',
                                 amount=remaining_amount,
-                                side=position.side,
-                                type='market'
+                                side=position.side
                             )
 
                             order_id = executed_resent_order['id']
