@@ -679,54 +679,49 @@ async def execute_one_position(
                     remaining_amount = order_update['remaining']
                     order_update['multiplier'] = multiplier
 
+                    position.append_execution(order_id, order_update)
+
                     if order_status!='closed':
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
-                                    
-                        position.append_execution(order_id, order_update)
+                        await exchange.cancel_order(order_id, position.ticker)  # type: ignore
+                        position.get_execution(order_id)['status'] = 'canceled'
+                        log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
+                        
+                        rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
+                        rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+                        rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                        if rounded_slice_amount_in_base_ccy>0:
+                            executed_resent_order = await exchange.create_order(  # type: ignore
+                                symbol=position.ticker,
+                                type='market',
+                                amount=remaining_amount,
+                                side=position.side,
+                                type='market'
+                            )
 
-                        if order_status!='closed': 
-                            order_status = order_update['status']
-                            filled_amount = order_update['filled']
-                            remaining_amount = order_update['remaining']
+                            order_id = executed_resent_order['id']
+                            order_status = executed_resent_order['status']
+                            executed_resent_order['multiplier'] = multiplier
+                            position.append_execution(order_id, executed_resent_order)
 
-                            await exchange.cancel_order(order_id, position.ticker)  # type: ignore
-                            position.get_execution(order_id)['status'] = 'canceled'
-                            log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
-                            
-                            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
-                            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
-                            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
-                            if rounded_slice_amount_in_base_ccy>0:
-                                executed_resent_order = await exchange.create_order(  # type: ignore
-                                    symbol=position.ticker,
-                                    type='market',
-                                    amount=remaining_amount,
-                                    side=position.side
-                                )
+                            while not order_status or order_status!='closed':
+                                order_update = None
+                                if order_id in executions:
+                                    order_update = executions[order_id]
 
-                                order_id = executed_resent_order['id']
-                                order_status = executed_resent_order['status']
-                                executed_resent_order['multiplier'] = multiplier
-                                position.append_execution(order_id, executed_resent_order)
+                                if order_update:
+                                    order_id = order_update['id']
+                                    order_status = order_update['status']
+                                    filled_amount = order_update['filled']
+                                    remaining_amount = order_update['remaining']
 
-                                while not order_status or order_status!='closed':
-                                    order_update = None
-                                    if order_id in executions:
-                                        order_update = executions[order_id]
+                                log(f"Waiting for resent market order to close {order_id} ...")
 
-                                    if order_update:
-                                        order_id = order_update['id']
-                                        order_status = order_update['status']
-                                        filled_amount = order_update['filled']
-                                        remaining_amount = order_update['remaining']
+                                await asyncio.sleep(max(1, param['loop_freq_ms']/1000))
 
-                                    log(f"Waiting for resent market order to close {order_id} ...")
-
-                                    await asyncio.sleep(param['loop_freq_ms']/1000)
-
-                                log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
-                        else:
-                            log(f"{position.ticker} {order_id} status (From REST): {order_status}")
+                            log(f"Resent market order{order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
+                    else:
+                        log(f"{position.ticker} {order_id} status (From REST): {json.dumps(order_update, indent=4)}")
 
                 slice.dispatched_price = rounded_limit_price
                 slice.dispatched_amount = rounded_slice_amount_in_base_ccy
