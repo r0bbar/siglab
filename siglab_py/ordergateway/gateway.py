@@ -116,7 +116,7 @@ To debug from vscode, launch.json:
                 "order_type": "limit",
                 "leg_room_bps": 5,
                 "slices": 5,
-                "wait_fill_threshold_ms": 15000,
+                "wait_fill_threshold_ms": 5000,
                 "executions": {},
                 "filled_amount": 0,
                 "average_cost": 0
@@ -134,7 +134,7 @@ To debug from vscode, launch.json:
                 "order_type": "limit",
                 "leg_room_bps": 5,
                 "slices": 5,
-                "wait_fill_threshold_ms": 15000,
+                "wait_fill_threshold_ms": 5000,
                 "executions": {
                     "xxx": {    <-- order id from exchange
                         "info": { <-- ccxt convention, raw response from exchanges under info tag
@@ -201,6 +201,7 @@ param : Dict = {
     "default_fees_ccy" : None,
     "loop_freq_ms" : 500, # reduce this if you need trade faster
     "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
+    "wait_fill_threshold_ms" : 5000,
 
     'current_filename' : current_filename,
 
@@ -288,6 +289,7 @@ def parse_args():
 
     parser.add_argument("--default_fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=500)
+    parser.add_argument("--wait_fill_threshold_ms", help="Wait for fills for how long?", default=5000)
 
     parser.add_argument("--encrypt_decrypt_with_aws_kms", help="Y or N. If encrypt_decrypt_with_aws_kms=N, pass in apikey, secret and passphrase unencrypted (Not recommended, for testing only). If Y, they will be decrypted using AMS KMS key.", default='N')
     parser.add_argument("--aws_kms_key_id", help="AWS KMS key ID", default=None)
@@ -314,6 +316,7 @@ def parse_args():
     param['rate_limit_ms'] = int(args.rate_limit_ms)
     param['default_fees_ccy'] = args.default_fees_ccy
     param['loop_freq_ms'] = int(args.loop_freq_ms)
+    param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
 
     if args.encrypt_decrypt_with_aws_kms:
         if args.encrypt_decrypt_with_aws_kms=='Y':
@@ -834,7 +837,7 @@ async def work(
                                         reduce_only=order['reduce_only'],
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
-                                        wait_fill_threshold_ms=order['wait_fill_threshold_ms']
+                                        wait_fill_threshold_ms=order['wait_fill_threshold_ms'] if order['wait_fill_threshold_ms']>0 else param['wait_fill_threshold_ms']
                                     )
                                     for order in orders
                                 ]
