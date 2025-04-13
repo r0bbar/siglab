@@ -502,14 +502,15 @@ async def execute_one_position(
         slices : List[Order] = position.to_slices()
 
         # Residual handling in last slice
-        last_slice = slices[-1]
-        last_slice_rounded_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-        last_slice_rounded_amount_in_base_ccy = float(last_slice_rounded_amount_in_base_ccy) if last_slice_rounded_amount_in_base_ccy else 0
-        if last_slice_rounded_amount_in_base_ccy<=min_amount:
-            slices.pop()
-            slices[-1].amount += last_slice.amount
+        if len(slices)>1:
+            last_slice = slices[-1]
+            last_slice_rounded_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
+            last_slice_rounded_amount_in_base_ccy = float(last_slice_rounded_amount_in_base_ccy) if last_slice_rounded_amount_in_base_ccy else 0
+            if last_slice_rounded_amount_in_base_ccy<=min_amount:
+                slices.pop()
+                slices[-1].amount += last_slice.amount
 
-            log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount_in_base_ccy}") 
+                log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount_in_base_ccy}") 
 
         i = 0
         for slice in slices:
