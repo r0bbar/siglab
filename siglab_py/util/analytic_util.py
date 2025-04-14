@@ -120,9 +120,9 @@ def compute_candles_stats(
     pd_candles['log_return'] = np.log(pd_candles['close'] / pd_candles['close'].shift(1))
     pd_candles['interval_hist_vol'] = pd_candles['log_return'].rolling(window=sliding_window_how_many_candles).std()
     
-    time_gap = (pd_candles['timestamp'].iloc[1] - pd_candles['timestamp'].iloc[0]).total_seconds()
+    time_gap_sec = int(pd_candles['timestamp_ms'].iloc[1] - pd_candles['timestamp_ms'].iloc[0])/1000
     seconds_in_year = 365 * 24 * 60 * 60
-    candles_per_year = seconds_in_year / time_gap
+    candles_per_year = seconds_in_year / time_gap_sec
     annualization_factor = np.sqrt(candles_per_year)
     pd_candles['annualized_hist_vol'] = pd_candles['interval_hist_vol'] * annualization_factor
 
