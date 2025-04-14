@@ -51,7 +51,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'sma_short_periods', 'sma_long_periods', 'ema_short_periods', 'ema_long_periods', 'ema_close', 
             'std', 'std_percent', 
             'candle_height_percent', 'candle_height_percent_rounded', 
-            'log_return', 'interval_historical_volatility',
+            'log_return', 'interval_hist_vol', 'annualized_hist_vol',
             'chop_against_ema', 
             'ema_volume_short_periods', 'ema_volume_long_periods', 
             'max_short_periods', 'max_long_periods', 'idmax_short_periods', 'idmax_long_periods', 'min_short_periods', 'min_long_periods', 'idmin_short_periods', 'idmin_long_periods', 

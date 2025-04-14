@@ -118,7 +118,14 @@ def compute_candles_stats(
         )
     '''
     pd_candles['log_return'] = np.log(pd_candles['close'] / pd_candles['close'].shift(1))
-    pd_candles['interval_historical_volatility'] = pd_candles['log_return'].rolling(window=sliding_window_how_many_candles).std()
+    pd_candles['interval_hist_vol'] = pd_candles['log_return'].rolling(window=sliding_window_how_many_candles).std()
+    
+    time_gap = (pd_candles['timestamp'].iloc[1] - pd_candles['timestamp'].iloc[0]).total_seconds()
+    seconds_in_year = 365 * 24 * 60 * 60
+    candles_per_year = seconds_in_year / time_gap
+    annualization_factor = np.sqrt(candles_per_year)
+    pd_candles['annualized_hist_vol'] = pd_candles['interval_hist_vol'] * annualization_factor
+
 
     pd_candles['chop_against_ema'] = (
         (~pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA
