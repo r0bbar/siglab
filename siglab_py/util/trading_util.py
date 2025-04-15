@@ -14,7 +14,7 @@ Examples,
     slope = (0-50)/(2.5-1.5) = -50
     effective_tp_trailing_percent = slope * (pnl_percent_notional - 1.5%) + sl_percent_trailing
 
-Case 1. pnl_percent_notional = 0.5% (Trade starting off, only +50bps pnl. i.e. min TP)
+Case 1. pnl_percent_notional = 1.5% (Trade starting off, only +50bps pnl. i.e. min TP)
             effective_tp_trailing_percent = slope * (pnl_percent_notional - 0.5%) + sl_percent_trailing
                                             = -50 * (1.5-1.5) + 50%
                                             = 0 + 50
