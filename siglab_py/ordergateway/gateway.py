@@ -798,7 +798,7 @@ async def execute_one_position(
 
     except Exception as position_execution_err:
         err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
-        log(f"Execution failed: {err_msg}")
+        log(f"{position.ticker} Execution failed: {err_msg}")
 
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
 
