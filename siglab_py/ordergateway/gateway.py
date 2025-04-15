@@ -797,10 +797,10 @@ async def execute_one_position(
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=notification_summary, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
     except Exception as position_execution_err:
-        err_msg = f"Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
-        log(f"{position.ticker} Execution failed: {err_msg}")
+        err_msg = f"{position.ticker}  Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+        log(err_msg)
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {position.ticker} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
 
         position.done = False
         position.execution_err = err_msg
