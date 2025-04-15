@@ -12,7 +12,7 @@ class TradingUtilTests(unittest.TestCase):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
-        default_effective_sl_percent_trailing : float = 50
+        default_effective_tp_percent_trailing : float = 50
 
         pnl_percent_notional : float = 0.5 # Trade's current pnl in percent.
 
@@ -21,7 +21,7 @@ class TradingUtilTests(unittest.TestCase):
             tp_max_percent = tp_max_percent,
             sl_percent_trailing = sl_percent_trailing,
             pnl_percent_notional = pnl_percent_notional,
-            default_effective_sl_percent_trailing = default_effective_sl_percent_trailing
+            default_effective_tp_percent_trailing = default_effective_tp_percent_trailing
         )
         assert(effective_tp_trailing_percent==50) # Generous trailing SL when trading starting out and pnl small.
 
@@ -29,7 +29,7 @@ class TradingUtilTests(unittest.TestCase):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
-        default_effective_sl_percent_trailing : float = 50
+        default_effective_tp_percent_trailing : float = 50
 
         pnl_percent_notional : float = 2 # Trade's current pnl in percent.
 
@@ -38,7 +38,7 @@ class TradingUtilTests(unittest.TestCase):
             tp_max_percent = tp_max_percent,
             sl_percent_trailing = sl_percent_trailing,
             pnl_percent_notional = pnl_percent_notional,
-            default_effective_sl_percent_trailing = default_effective_sl_percent_trailing
+            default_effective_tp_percent_trailing = default_effective_tp_percent_trailing
         )
         assert(effective_tp_trailing_percent==25) # Intermediate trailing SL
 
@@ -46,7 +46,7 @@ class TradingUtilTests(unittest.TestCase):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
-        default_effective_sl_percent_trailing : float = 50
+        default_effective_tp_percent_trailing : float = 50
 
         pnl_percent_notional : float = 2.5 # Trade's current pnl in percent.
 
@@ -55,6 +55,6 @@ class TradingUtilTests(unittest.TestCase):
             tp_max_percent = tp_max_percent,
             sl_percent_trailing = sl_percent_trailing,
             pnl_percent_notional = pnl_percent_notional,
-            default_effective_sl_percent_trailing = default_effective_sl_percent_trailing
+            default_effective_tp_percent_trailing = default_effective_tp_percent_trailing
         )
         assert(effective_tp_trailing_percent==0) # Most tight trailing SL
