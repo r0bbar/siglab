@@ -800,7 +800,7 @@ async def execute_one_position(
         err_msg = f"{position.ticker}  Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
         log(err_msg)
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {position.ticker} execute_one_position failed!!! {position.ticker} {position.side} {position.amount}", message=position.get_executions(), footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {position.ticker} execute_one_position failed!!!", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
 
         position.done = False
         position.execution_err = err_msg
