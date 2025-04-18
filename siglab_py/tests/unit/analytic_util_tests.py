@@ -50,6 +50,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'is_green', 'pct_change_close', 
             'sma_short_periods', 'sma_long_periods', 'ema_short_periods', 'ema_long_periods', 'ema_close', 
             'std', 'std_percent', 
+            'normalized_close_short', 'normalized_close_long',
             'candle_height_percent', 'candle_height_percent_rounded', 
             'log_return', 'interval_hist_vol', 'annualized_hist_vol',
             'chop_against_ema', 

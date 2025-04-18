@@ -98,9 +98,12 @@ def compute_candles_stats(
     pd_candles['ema_short_periods'] = close_short_periods_ewm.mean()
     pd_candles['ema_long_periods'] = close_long_periods_ewm.mean()
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
-    pd_candles['std'] = pd_candles['close'].rolling(window=sliding_window_how_many_candles).std()
+    pd_candles['std'] = close_long_periods_rolling.std()
 
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
+
+    pd_candles['normalized_close_short'] = (pd_candles['close'] - pd_candles['sma_short_periods']) / close_short_periods_rolling.std()
+    pd_candles['normalized_close_long'] = (pd_candles['close'] - pd_candles['sma_long_periods']) / pd_candles['std']
 
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
@@ -368,12 +371,12 @@ def compute_candles_stats(
         import statsmodels.api as sm # in-compatible with pypy
 
         # Slopes
-        X = sm.add_constant(range(len(pd_candles['close'])))
-        rolling_slope = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+        X = sm.add_constant(range(len(pd_candles['normalized_close_short'])))
+        rolling_slope = pd_candles['normalized_close_short'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
         pd_candles['close_short_slope'] = rolling_slope
 
-        X = sm.add_constant(range(len(pd_candles['close'])))
-        rolling_slope = pd_candles['close'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+        X = sm.add_constant(range(len(pd_candles['normalized_close_long'])))
+        rolling_slope = pd_candles['normalized_close_long'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
         pd_candles['close_long_slope'] = rolling_slope
         
         X = sm.add_constant(range(len(pd_candles['ema_short_periods'])))
