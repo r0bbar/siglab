@@ -8,6 +8,7 @@ import numpy as np
 
 from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
+import ccxt
 
 # https://www.analyticsvidhya.com/blog/2021/06/download-financial-dataset-using-yahoo-finance-in-python-a-complete-guide/
 from yahoofinancials import YahooFinancials
@@ -16,6 +17,59 @@ from yahoofinancials import YahooFinancials
 import yfinance as yf
 
 from siglab_py.exchanges.futubull import Futubull
+from siglab_py.exchanges.any_exchange import AnyExchange
+
+def instantiate_exchange(
+    exchange_name : str,
+    api_key : Union[str, None] = None,
+    secret : Union[str, None]  = None,
+    passphrase : Union[str, None] = None,
+    default_type : Union[str, None] = 'spot',
+    rate_limit_ms : float = 100
+) -> Union[AnyExchange, None]:
+    exchange_name = exchange_name.lower().strip()
+
+    # Look at ccxt exchange.describe. under 'options' \ 'defaultType' (and 'defaultSubType') for what markets the exchange support.
+    # https://docs.ccxt.com/en/latest/manual.html#instantiation
+    exchange_params : Dict[str, Any]= {
+                        'apiKey' : api_key,
+                        'secret' : secret,
+                        'enableRateLimit'  : True,
+                        'rateLimit' : rate_limit_ms,
+                        'options' : {
+                            'defaultType' : default_type
+                        }
+                    }
+    if api_key:
+        exchange_params['apiKey'] = api_key
+    if secret:
+        exchange_params['secret'] = secret
+    if passphrase:
+        exchange_params['passphrase'] = passphrase
+
+    if exchange_name=='binance':
+        exchange = ccxt.binance(exchange_params)  # type: ignore
+    elif exchange_name=='bybit':
+        exchange = ccxt.bybit(exchange_params) # type: ignore
+    elif exchange_name=='okx':
+        exchange = ccxt.okx(exchange_params) # type: ignore
+    elif exchange_name=='deribit':
+        exchange = ccxt.deribit(exchange_params)  # type: ignore
+    elif exchange_name=='hyperliquid':
+        exchange = ccxt.hyperliquid(
+            {
+                "walletAddress" : api_key, # type: ignore
+                "privateKey" : secret, 
+                'enableRateLimit'  : True,
+                'rateLimit' : rate_limit_ms
+            }
+        )  
+    else:
+        raise ValueError(f"Unsupported exchange {exchange_name}.")
+
+    exchange.load_markets() # type: ignore
+
+    return exchange # type: ignore
 
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     def _fix_timestamp_ms(x):
