@@ -5,10 +5,12 @@ from pathlib import Path
 import math
 import pandas as pd
 import numpy as np
+import asyncio
 
 from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
 import ccxt
+import ccxt.pro as ccxtpro
 
 # https://www.analyticsvidhya.com/blog/2021/06/download-financial-dataset-using-yahoo-finance-in-python-a-complete-guide/
 from yahoofinancials import YahooFinancials
@@ -70,6 +72,102 @@ def instantiate_exchange(
     exchange.load_markets() # type: ignore
 
     return exchange # type: ignore
+
+async def async_instantiate_exchange(
+    gateway_id : str,
+    api_key : str,
+    secret : str,
+    passphrase : str,
+    default_type : str,
+    rate_limit_ms : float = 100
+) -> Union[AnyExchange, None]:
+    exchange : Union[AnyExchange, None] = None
+    exchange_name : str = gateway_id.split('_')[0]
+    exchange_name =exchange_name.lower().strip()
+
+    # Look at ccxt exchange.describe. under 'options' \ 'defaultType' (and 'defaultSubType') for what markets the exchange support.
+    # https://docs.ccxt.com/en/latest/manual.html#instantiation
+    exchange_params : Dict[str, Any]= {
+                        'apiKey' : api_key,
+                        'secret' : secret,
+                        'enableRateLimit'  : True,
+                        'rateLimit' : rate_limit_ms,
+                        'options' : {
+                            'defaultType' : default_type
+                        }
+                    }
+
+    if exchange_name=='binance':
+        # spot, future, margin, delivery, option
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
+        exchange = ccxtpro.binance(exchange_params)  # type: ignore
+    elif exchange_name=='bybit':
+        # spot, linear, inverse, futures
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/bybit.py#L1041
+        exchange = ccxtpro.bybit(exchange_params) # type: ignore
+    elif exchange_name=='okx':
+        # 'funding', spot, margin, future, swap, option
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/okx.py#L1144
+        exchange_params['password'] = passphrase
+        exchange = ccxtpro.okx(exchange_params) # type: ignore
+    elif exchange_name=='deribit':
+        # spot, swap, future
+        # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
+        exchange = ccxtpro.deribit(exchange_params)  # type: ignore
+    elif exchange_name=='hyperliquid':
+        '''
+        https://app.hyperliquid.xyz/API
+        
+        defaultType from ccxt: swap
+            https://github.com/ccxt/ccxt/blob/master/python/ccxt/hyperliquid.py#L225
+        
+        How to integrate? You can skip first 6 min: https://www.youtube.com/watch?v=UuBr331wxr4&t=363s
+
+        Example, 
+            API credentials created under "\ More \ API":
+                    Ledger Arbitrum Wallet Address: 0xAAAAA <-- This is your Ledger Arbitrum wallet address with which you connect to Hyperliquid. 
+                    API Wallet Address 0xBBBBB <-- Generated
+                    privateKey 0xCCCCC
+
+        Basic connection via CCXT:
+            import asyncio
+            import ccxt.pro as ccxtpro
+
+            async def main():
+                rate_limit_ms = 100
+                exchange_params = {
+                    "walletAddress" : "0xAAAAA", # Ledger Arbitrum Wallet Address here! Not the generated address.
+                    "privateKey" : "0xCCCCC"
+                }
+                exchange = ccxtpro.hyperliquid(exchange_params) 
+                balances = await exchange.fetch_balance()
+                print(balances)
+
+            asyncio.run(main())
+        '''
+        exchange = ccxtpro.hyperliquid(
+            {
+                "walletAddress" : api_key,
+                "privateKey" : secret,
+                'enableRateLimit'  : True,
+                'rateLimit' : rate_limit_ms
+            }
+        )  # type: ignore
+    else:
+        raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
+
+    await exchange.load_markets() # type: ignore
+
+    '''
+    Is this necessary? The added trouble is for example bybit.authenticate requires arg 'url'. binance doesn't. And fetch_balance already test credentials.
+
+    try:
+        await exchange.authenticate() # type: ignore
+    except Exception as swallow_this_error:
+        pass
+    '''
+
+    return exchange
 
 def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     def _fix_timestamp_ms(x):
