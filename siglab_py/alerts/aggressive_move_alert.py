@@ -80,18 +80,6 @@ param : Dict = {
             'alert' : { 'webhook_url' : None },
         }
     },
-
-    'mds' : {
-        'topics' : {
-            
-        },
-        'redis' : {
-            'host' : 'localhost',
-            'port' : 6379,
-            'db' : 0,
-            'ttl_ms' : 1000*60*15 # 15 min?
-        }
-    }
 }
 
 logging.Formatter.converter = time.gmtime
@@ -154,21 +142,6 @@ def parse_args():
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['exchange_name']}"
 
-def init_redis_client() -> StrictRedis:
-    redis_client : StrictRedis = StrictRedis(
-                    host = param['mds']['redis']['host'],
-                    port = param['mds']['redis']['port'],
-                    db = 0,
-                    ssl = False
-                )
-    try:
-        redis_client.keys()
-    except ConnectionError as redis_conn_error:
-        err_msg = f"Failed to connect to redis: {param['mds']['redis']['host']}, port: {param['mds']['redis']['port']}"
-        raise ConnectionError(err_msg)
-    
-    return redis_client
-
 def _reversal(
         direction : str,  # up or down
         last_candles
@@ -182,8 +155,6 @@ def _reversal(
 parse_args()
 
 notification_params : Dict[str, Any] = param['notification']
-
-redis_client : StrictRedis = init_redis_client()
 
 exchange = instantiate_exchange(
     exchange_name = param['exchange_name'],
