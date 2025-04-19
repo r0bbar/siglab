@@ -17,6 +17,21 @@ from siglab_py.constants import LogLevel # type: ignore
 current_filename = os.path.basename(__file__)
 
 '''
+Usage:
+    python aggressive_move_alert.py --exchange_name hyperliquid --default_type linear --tickers BTC/USDC:USDC,ETH/USDC:USDC --candle_size 1h --threshold_bps 500 --num_intervals 24 --reversal_num_intervals 2 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+
+    exchange_name: where you source market data from?
+    default_type: default_type: spot, linear, inverse, futures ...etc. The convention comes from CCXT https://docs.ccxt.com/en/latest/manual.html#instantiation
+    tickers: What do you want to monitor?
+    candle_size: 1m, 1h, 1d ... etc
+    threshold_bps: Level above which price swing is considered "Aggressive moves"
+    num_intervals: Number of intervals. If num_intervals=24 and candle_size=1h, then sliding window size is 1 day.
+    reversal_num_intervals: Say reversal_num_intervals=2. If two reversal candles is detected, it'd fire off another alert.
+
+    slack_info_url, slack_critial_url, slack_alert_url: How to get Slack webhook Urls? Please refer to slack_dispatch_notification.py.
+
+    This script is pypy compatible.
+
 Debug from VSCode, launch.json:
 
     {
