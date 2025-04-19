@@ -32,6 +32,7 @@ current_filename = os.path.basename(__file__)
 
 '''
 Usage:
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100
 
     --default_type defaults to linear
