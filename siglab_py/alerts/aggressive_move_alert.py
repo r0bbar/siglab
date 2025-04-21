@@ -192,7 +192,7 @@ while True:
 
             change_bps = (last_candle_close/first_candle_close-1)*10000 if last_candle_close>first_candle_close else -(first_candle_close/last_candle_close-1)*10000
             data['change_bps'] = change_bps
-            if abs(change_bps)>=param['threshold_bps']:
+            if abs(change_bps)>=param['threshold_bps'] and ticker not in aggressive_move_data_cache:
                 aggressive_move_trigger_price = first_candle_close
                 aggressive_move_price_swing = last_candle_close - first_candle_close
                 data['aggressive_move_trigger_price'] = aggressive_move_trigger_price
