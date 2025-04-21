@@ -32,6 +32,25 @@ def estimate_fib_retracement(
             
         return retracement_price
 
+def calculate_slope(
+    pd_data : pd.DataFrame,
+    src_col_name : str,
+    slope_col_name : str,
+    sliding_window_how_many_candles : int
+):
+    import statsmodels.api as sm # in-compatible with pypy
+
+    X = sm.add_constant(range(len(pd_data[src_col_name])))
+    rolling_slope = pd_data[src_col_name].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+    pd_data[slope_col_name] = rolling_slope
+    max_abs_slope = pd_data[slope_col_name].abs().rolling(window=sliding_window_how_many_candles).max()
+    pd_data[f"normalized_{slope_col_name}"] = pd_data[slope_col_name] / max_abs_slope
+    normalized_slope_rolling = pd_data[f"normalized_{slope_col_name}"].rolling(window=sliding_window_how_many_candles)
+    pd_data[f"normalized_{slope_col_name}_min"] = normalized_slope_rolling.min()
+    pd_data[f"normalized_{slope_col_name}_max"] = normalized_slope_rolling.max()
+    pd_data[f"normalized_{slope_col_name}_idmin"] = normalized_slope_rolling.apply(lambda x : x.idxmin())
+    pd_data[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
+    
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)
@@ -365,25 +384,6 @@ def compute_candles_stats(
     pd_candles['macd_minus_signal'] = pd_candles['macd'] - pd_candles['signal']
 
     if not pypy_compat:
-        def calculate_slope(
-            pd_data : pd.DataFrame,
-            src_col_name : str,
-            slope_col_name : str,
-            sliding_window_how_many_candles : int
-        ):
-            import statsmodels.api as sm # in-compatible with pypy
-
-            X = sm.add_constant(range(len(pd_candles[src_col_name])))
-            rolling_slope = pd_candles[src_col_name].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-            pd_candles[slope_col_name] = rolling_slope
-            max_abs_slope = pd_candles[slope_col_name].abs().rolling(window=sliding_window_how_many_candles).max()
-            pd_candles[f"normalized_{slope_col_name}"] = pd_candles[slope_col_name] / max_abs_slope
-            normalized_slope_rolling = pd_candles[f"normalized_{slope_col_name}"].rolling(window=sliding_window_how_many_candles)
-            pd_candles[f"normalized_{slope_col_name}_min"] = normalized_slope_rolling.min()
-            pd_candles[f"normalized_{slope_col_name}_max"] = normalized_slope_rolling.max()
-            pd_candles[f"normalized_{slope_col_name}_idmin"] = normalized_slope_rolling.apply(lambda x : x.idxmin())
-            pd_candles[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
-        
         calculate_slope(
             pd_data=pd_candles,
             src_col_name='close',
