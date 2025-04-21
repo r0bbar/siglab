@@ -459,10 +459,10 @@ async def main():
                                     with open(position_cacnle_file, 'w') as f:
                                         json.dump(executed_position_close, f)
 
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, {'TP' if tp else 'SL'} succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 else:
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']} {param['side']} {param['amount_base_ccy']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     except Exception as loop_err:
                         log(f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
@@ -470,6 +470,6 @@ async def main():
                         time.sleep(int(param['loop_freq_ms']/1000))
             
             else:
-                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Entry execution failed. {param['ticker']} {param['side']} {param['amount_base_ccy']}", message=executed_position, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Entry execution failed. {param['ticker']} {param['side']} {param['amount_base_ccy']}", message=executed_position, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
 
 asyncio.run(main())
