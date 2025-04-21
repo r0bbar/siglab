@@ -1,3 +1,4 @@
+import incremental
 import tzlocal
 from datetime import datetime, timezone
 from typing import List, Dict, Union, NoReturn, Any, Tuple
@@ -520,6 +521,20 @@ def _fetch_candles_ccxt(
 
             return candles
         
+    def _calc_increment(candle_size):
+        increment = 1
+        num_intervals = int(candle_size[0])
+        interval_type = candle_size[-1]
+        if interval_type == "m":
+            increment = 60
+        elif interval_type == "h":
+            increment = 60*60
+        elif interval_type == "d":
+            increment = 60*60*24
+        else:
+            raise ValueError(f"Invalid candle_size {candle_size}")
+        return num_intervals * increment
+    
     all_candles = []
     params = {}
     this_cutoff = start_ts
@@ -532,10 +547,10 @@ def _fetch_candles_ccxt(
             record_ts_str : str = str(record_ts)
             if len(record_ts_str)==13:
                 record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
-
-            this_cutoff = record_ts  + 1
+            
+            this_cutoff = record_ts  + _calc_increment(candle_size)
         else:
-            this_cutoff += 1
+            this_cutoff += _calc_increment(candle_size)
 
     columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
     pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
