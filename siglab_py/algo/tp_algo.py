@@ -23,6 +23,11 @@ from siglab_py.constants import LogLevel # type: ignore
 current_filename = os.path.basename(__file__)
 
 '''
+TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also trailing stops.
+
+Usage:
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
+    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --default_effective_tp_trailing_percent 100 --sl_percent 1--reversal_num_intervals 2 --slack_info_url", "https://hooks.slack.com/services/xxx --slack_critial_url", "https://hooks.slack.com/services/xxx --slack_alert_url", "https://hooks.slack.com/services/xxx
 
 Debug from VSCode, launch.json:
     {

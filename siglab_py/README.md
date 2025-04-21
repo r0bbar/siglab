@@ -219,7 +219,7 @@ JSON format gateway.py will publish to Redis, and received by client.py executio
 ]
 ```
 
-The simplest example [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) on what you need to implement strategy side to send orders, and wait for fills is:
+The simplest example [**test_ordergateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/test_ordergateway.py) (Or a full example [**tp_algo.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/tp_algo.py)) on what you need to implement strategy side to send orders, and wait for fills is:
 
 ```
 from typing import List, Union, Dict
