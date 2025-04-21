@@ -364,110 +364,120 @@ async def main():
                 while (not tp and not sl and not position_break):
                     try:
                         position_from_exchange = await exchange.fetch_position(param['ticker'])
+
                         if exchange.options['defaultType']!='spot':
-                            position_from_exchange_num_contracts = position_from_exchange['contracts']
-                            if position_from_exchange['side']=='short':
-                                position_from_exchange_num_contracts = position_from_exchange_num_contracts *-1 if position_from_exchange_num_contracts>0 else position_from_exchange_num_contracts
+                            if not position_from_exchange and param['load_entry_from_cache']:
+                                    position_break = True
 
-                            position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
+                                    err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0"
+                                    log(err_msg)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                
+                            if position_from_exchange:
+                                position_from_exchange_num_contracts = position_from_exchange['contracts']
+                                if position_from_exchange and position_from_exchange['side']=='short':
+                                    position_from_exchange_num_contracts = position_from_exchange_num_contracts *-1 if position_from_exchange_num_contracts>0 else position_from_exchange_num_contracts
 
-                            if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']:
-                                position_break = True
+                                position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                                err_msg = f"{ticker}: Position break! expected: {executed_position['position']['filled_amount']}, actual: {position_from_exchange_base_ccy}"
-                                log(err_msg)
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']:
+                                    position_break = True
 
-                        trailing_candles = await exchange.fetch_ohlcv(symbol=param['ticker'], timeframe='1h', limit=24) # type: ignore
-                        trailing_candles = trailing_candles[-param['reversal_num_intervals']:]
+                                    err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}"
+                                    log(err_msg)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
-                        reversal = _reversal(
-                            direction='up' if param['side']=='buy' else 'down',
-                            last_candles=trailing_candles[-param['reversal_num_intervals']:]
-                        )
+                        if not position_break:
+                            trailing_candles = await exchange.fetch_ohlcv(symbol=param['ticker'], timeframe='1h', limit=24) # type: ignore
+                            trailing_candles = trailing_candles[-param['reversal_num_intervals']:]
+                            
+                            reversal = _reversal(
+                                direction='up' if param['side']=='buy' else 'down',
+                                last_candles=trailing_candles[-param['reversal_num_intervals']:]
+                            )
 
-                        ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10)
-                        best_ask = min([x[0] for x in ob['asks']])
-                        best_bid = max([x[0] for x in ob['bids']])
-                        mid = (best_ask+best_bid)/2
-                        spread_bps = (best_ask/best_bid - 1) * 10000
-                        
-                        if param['side']=='buy':
-                            unrealized_pnl = (mid - entry_price) * param['amount_base_ccy']
-                        else:
-                            unrealized_pnl = (entry_price - mid) * param['amount_base_ccy']
-                        unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
+                            ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10)
+                            best_ask = min([x[0] for x in ob['asks']])
+                            best_bid = max([x[0] for x in ob['bids']])
+                            mid = (best_ask+best_bid)/2
+                            spread_bps = (best_ask/best_bid - 1) * 10000
+                            
+                            if param['side']=='buy':
+                                unrealized_pnl = (mid - entry_price) * param['amount_base_ccy']
+                            else:
+                                unrealized_pnl = (entry_price - mid) * param['amount_base_ccy']
+                            unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
 
-                        if unrealized_pnl>max_unrealized_pnl:
-                            max_unrealized_pnl = unrealized_pnl
-                            executed_position['position']['max_unrealized_pnl'] = max_unrealized_pnl
+                            if unrealized_pnl>max_unrealized_pnl:
+                                max_unrealized_pnl = unrealized_pnl
+                                executed_position['position']['max_unrealized_pnl'] = max_unrealized_pnl
 
-                            with open(position_cacnle_file, 'w') as f:
-                                json.dump(executed_position, f)
+                                with open(position_cacnle_file, 'w') as f:
+                                    json.dump(executed_position, f)
 
-                        loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100 if unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl else 0
-                        
-                        effective_tp_trailing_percent = calc_eff_trailing_sl(
-                            tp_min_percent = param['tp_min_percent'],
-                            tp_max_percent = param['tp_max_percent'],
-                            sl_percent_trailing = param['sl_percent_trailing'],
-                            pnl_percent_notional = unrealized_pnl_percent,
-                            default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent']
-                        )
+                            loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100 if unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl else 0
+                            
+                            effective_tp_trailing_percent = calc_eff_trailing_sl(
+                                tp_min_percent = param['tp_min_percent'],
+                                tp_max_percent = param['tp_max_percent'],
+                                sl_percent_trailing = param['sl_percent_trailing'],
+                                pnl_percent_notional = unrealized_pnl_percent,
+                                default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent']
+                            )
 
-                        log(f"unrealized_pnl: {round(unrealized_pnl,4)}, unrealized_pnl_percent: {round(unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
+                            log(f"unrealized_pnl: {round(unrealized_pnl,4)}, unrealized_pnl_percent: {round(unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
-                        # STEP 2. Exit
-                        if unrealized_pnl>0:
-                            if reversal and unrealized_pnl_percent >= param['tp_min_percent']:
-                                tp = True
-                            elif loss_trailing>=effective_tp_trailing_percent:
-                                tp = True
-                        else:
-                            if abs(unrealized_pnl_percent)>=param['sl_percent']:
-                                sl = True
+                            # STEP 2. Exit
+                            if unrealized_pnl>0:
+                                if reversal and unrealized_pnl_percent >= param['tp_min_percent']:
+                                    tp = True
+                                elif loss_trailing>=effective_tp_trailing_percent:
+                                    tp = True
+                            else:
+                                if abs(unrealized_pnl_percent)>=param['sl_percent']:
+                                    sl = True
 
-                        if tp or sl:
-                            exit_positions : List[DivisiblePosition] = [
-                                DivisiblePosition(
-                                    ticker = param['ticker'],
-                                    side = 'sell' if param['side']=='buy' else 'buy',
-                                    amount = param['amount_base_ccy'],
-                                    leg_room_bps = param['leg_room_bps'],
-                                    order_type = param['order_type'],
-                                    slices = param['slices'],
-                                    wait_fill_threshold_ms = param['wait_fill_threshold_ms']
-                                )
-                            ]
-                            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
-                                                                                                                            redis_client=redis_client,
-                                                                                                                            positions=exit_positions,
-                                                                                                                        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                                        ordergateway_executions_topic=ordergateway_executions_topic
-                                                                                                                        )
-                            if executed_positions:
-                                executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
-                                log(f"Position closing. {json.dumps(executed_position, indent=4)}") # type: ignore
-                                if executed_position_close['done']:
-                                    executed_position_close['position'] = executed_position['position']
+                            if tp or sl:
+                                exit_positions : List[DivisiblePosition] = [
+                                    DivisiblePosition(
+                                        ticker = param['ticker'],
+                                        side = 'sell' if param['side']=='buy' else 'buy',
+                                        amount = param['amount_base_ccy'],
+                                        leg_room_bps = param['leg_room_bps'],
+                                        order_type = param['order_type'],
+                                        slices = param['slices'],
+                                        wait_fill_threshold_ms = param['wait_fill_threshold_ms']
+                                    )
+                                ]
+                                executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
+                                                                                                                                redis_client=redis_client,
+                                                                                                                                positions=exit_positions,
+                                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+                                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
+                                                                                                                            )
+                                if executed_positions:
+                                    executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
+                                    log(f"Position closing. {json.dumps(executed_position, indent=4)}") # type: ignore
+                                    if executed_position_close['done']:
+                                        executed_position_close['position'] = executed_position['position']
 
-                                    if param['side']=='buy':
-                                        closed_pnl = (executed_position_close['average_cost'] - entry_price) * param['amount_base_ccy']
+                                        if param['side']=='buy':
+                                            closed_pnl = (executed_position_close['average_cost'] - entry_price) * param['amount_base_ccy']
+                                        else:
+                                            closed_pnl = (entry_price - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                        executed_position_close['position']['max_unrealized_pnl'] = max_unrealized_pnl
+                                        executed_position_close['position']['closed_pnl'] = closed_pnl
+                                        executed_position_close['position']['status'] = 'closed'
+
+                                        with open(position_cacnle_file, 'w') as f:
+                                            json.dump(executed_position_close, f)
+
+                                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
                                     else:
-                                        closed_pnl = (entry_price - executed_position_close['average_cost']) * param['amount_base_ccy']
-                                    executed_position_close['position']['max_unrealized_pnl'] = max_unrealized_pnl
-                                    executed_position_close['position']['closed_pnl'] = closed_pnl
-                                    executed_position_close['position']['status'] = 'closed'
+                                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                                    with open(position_cacnle_file, 'w') as f:
-                                        json.dump(executed_position_close, f)
-
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-                                else:
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-                                await exchange.close()
+                                    await exchange.close()
 
                     except Exception as loop_err:
                         log(f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
