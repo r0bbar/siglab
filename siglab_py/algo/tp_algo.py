@@ -27,7 +27,7 @@ TP algo is an excecution algo. It doesn't decide entries for you. It however, ex
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --default_effective_tp_trailing_percent 100 --sl_percent 1--reversal_num_intervals 2 --slack_info_url", "https://hooks.slack.com/services/xxx --slack_critial_url", "https://hooks.slack.com/services/xxx --slack_alert_url", "https://hooks.slack.com/services/xxx
+    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --default_effective_tp_trailing_percent 100 --sl_percent 1--reversal_num_intervals 2 --slack_info_url", "https://hooks.slack.com/services/xxx --slack_critial_url", "https://hooks.slack.com/services/xxx --slack_alert_url", "https://hooks.slack.com/services/xxx --load_entry_from_cache N
 
 Debug from VSCode, launch.json:
     {
@@ -340,6 +340,7 @@ async def main():
                         'status' : 'open',
                         'max_unrealized_pnl' : 0,
                         'entry_price' : entry_price,
+                        'amount_base_ccy' : executed_position['filled_amount'],
                         'tp_min_price' : tp_min_price,
                         'tp_max_price' : tp_max_price,
                         'sl_price' : sl_price,
@@ -356,8 +357,24 @@ async def main():
                 reversal : bool = False
                 tp : bool = False
                 sl : bool = False
-                while not tp and not sl:
+                position_break : bool = False
+                while (not tp and not sl and not position_break):
                     try:
+                        position_from_exchange = await exchange.fetch_position(param['ticker'])
+                        if exchange.options['defaultType']!='spot':
+                            position_from_exchange_num_contracts = position_from_exchange['contracts']
+                            if position_from_exchange['side']=='short':
+                                position_from_exchange_num_contracts = position_from_exchange_num_contracts *-1 if position_from_exchange_num_contracts>0 else position_from_exchange_num_contracts
+
+                            position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
+
+                            if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']:
+                                position_break = True
+
+                                err_msg = f"{ticker}: Position break! expected: {executed_position['position']['filled_amount']}, actual: {position_from_exchange_base_ccy}"
+                                log(err_msg)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
                         trailing_candles = await exchange.fetch_ohlcv(symbol=param['ticker'], timeframe='1h', limit=24) # type: ignore
                         trailing_candles = trailing_candles[-param['reversal_num_intervals']:]
                         
