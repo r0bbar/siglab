@@ -1,6 +1,7 @@
 
 from typing import List, Dict, Any, Union
 import json
+from  datetime import datetime
 import time
 from redis import StrictRedis
 
@@ -49,6 +50,8 @@ class Order:
         self.dispatched_amount : float = 0 # This is amount in base ccy, with rounding + multiplier applied (So for contracts with multiplier!=1, this is no longer amount in base ccy.)
         self.dispatched_price : Union[None, float] = None
 
+        self.timestamp_ms = int(datetime.now().timestamp() * 1000)
+
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         return {
             "ticker" : self.ticker,
@@ -59,7 +62,8 @@ class Order:
             "reduce_only" : self.reduce_only,
             "fees_ccy" : self.fees_ccy,
             "dispatched_amount" : self.dispatched_amount,
-            "dispatched_price" : self.dispatched_price
+            "dispatched_price" : self.dispatched_price,
+            "timestamp_ms" : self.timestamp_ms
         }
 
 '''
@@ -96,6 +100,8 @@ class DivisiblePosition(Order):
 
         self.dispatched_slices : List[Order] = []
         self.executions : Dict[str, Dict[str, Any]] = {}
+
+        self.timestamp_ms = int(datetime.now().timestamp() * 1000)
 
     def to_slices(self) -> List[Order]:
         slices : List[Order] = []
@@ -331,6 +337,7 @@ class DivisiblePosition(Order):
         rv['pos'] = self.pos
         rv['done'] = self.done
         rv['execution_err'] = self.execution_err
+        rv['timestamp_ms'] = self.timestamp_ms
         return rv
 
 def execute_positions(
