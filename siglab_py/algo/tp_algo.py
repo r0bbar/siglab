@@ -62,6 +62,8 @@ Debug from VSCode, launch.json:
                         "--sl_percent", "1",
                         "--reversal_num_intervals", "2",
 
+                        "--load_entry_from_cache", "N",
+
                         "--slack_info_url", "https://hooks.slack.com/services/xxx",
                         "--slack_critial_url", "https://hooks.slack.com/services/xxx",
                         "--slack_alert_url", "https://hooks.slack.com/services/xxx",
@@ -144,6 +146,8 @@ def parse_args():
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
 
+    parser.add_argument("--load_entry_from_cache", help="Y or N. This is for algo restart scenario where you don't want make entry again. In this case existing/running position loaded from cache.", default='N')
+
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
@@ -183,6 +187,14 @@ def parse_args():
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
+
+    if args.load_entry_from_cache:
+        if args.load_entry_from_cache=='Y':
+            param['load_entry_from_cache'] = True
+        else:
+            param['load_entry_from_cache'] = False
+    else:
+        param['load_entry_from_cache'] = False
 
     param['tp_min_percent'] = float(args.tp_min_percent)
     param['tp_max_percent'] = float(args.tp_max_percent)
@@ -266,30 +278,40 @@ async def main():
         rate_limit_ms=param['rate_limit_ms']
     )
     if exchange:
+        markets = await exchange.load_markets() # type: ignore
+        market = markets[param['ticker']]
+        multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+
         balances = await exchange.fetch_balance() # type: ignore
         log(f"Balances: {json.dumps(balances, indent=4)}") # type: ignore
 
-        # STEP 1. Make entry
-        entry_positions : List[DivisiblePosition] = [
-            DivisiblePosition(
-                ticker = param['ticker'],
-                side = param['side'],
-                amount = param['amount_base_ccy'],
-                leg_room_bps = param['leg_room_bps'],
-                order_type = param['order_type'],
-                slices = param['slices'],
-                wait_fill_threshold_ms = param['wait_fill_threshold_ms']
-            )
-        ]
-        executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
-                                                                                                        redis_client=redis_client,
-                                                                                                        positions=entry_positions,
-                                                                                                        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                        ordergateway_executions_topic=ordergateway_executions_topic
-                                                                                                        )
-        if executed_positions:
+        if not param['load_entry_from_cache']:
+            # STEP 1. Make entry
+            entry_positions : List[DivisiblePosition] = [
+                DivisiblePosition(
+                    ticker = param['ticker'],
+                    side = param['side'],
+                    amount = param['amount_base_ccy'],
+                    leg_room_bps = param['leg_room_bps'],
+                    order_type = param['order_type'],
+                    slices = param['slices'],
+                    wait_fill_threshold_ms = param['wait_fill_threshold_ms']
+                )
+            ]
+            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
+                                                                                                            redis_client=redis_client,
+                                                                                                            positions=entry_positions,
+                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
+                                                                                                            )
+        else:
+            with open(position_cacnle_file, 'r') as f:
+                executed_position = json.load(f)
+                executed_positions = [ executed_position ]
+            
+        if executed_positions or param['load_entry_from_cache']:
             executed_position = executed_positions[0] # We sent only one DivisiblePosition.
-            log(f"Entry dispatched. {json.dumps(executed_position, indent=4)}") # type: ignore
+            log(f"{'Entry dispatched.' if not param['load_entry_from_cache'] else 'Entry loaded from cache.'} {json.dumps(executed_position, indent=4)}") # type: ignore
             if executed_position['done']:
                 def _reversal(
                     direction : str,  # up or down
@@ -313,18 +335,20 @@ async def main():
                     tp_max_price = entry_price * (1-param['tp_max_percent']/100)
                     sl_price = entry_price * (1+param['sl_percent']/100)
 
-                executed_position['position'] = {
-                    'status' : 'open',
-                    'max_unrealized_pnl' : 0,
-                    'entry_price' : entry_price,
-                    'tp_min_price' : tp_min_price,
-                    'tp_max_price' : tp_max_price,
-                    'sl_price' : sl_price
-                }
-                with open(position_cacnle_file, 'w') as f:
-                    json.dump(executed_position, f)
+                if not param['load_entry_from_cache']:
+                    executed_position['position'] = {
+                        'status' : 'open',
+                        'max_unrealized_pnl' : 0,
+                        'entry_price' : entry_price,
+                        'tp_min_price' : tp_min_price,
+                        'tp_max_price' : tp_max_price,
+                        'sl_price' : sl_price,
+                        'multiplier' : multiplier
+                    }
+                    with open(position_cacnle_file, 'w') as f:
+                        json.dump(executed_position, f)
 
-                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, Entry succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_price}", message=executed_position, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, Entry succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_price}", message=executed_position, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 unrealized_pnl : float = 0
                 max_unrealized_pnl : float = 0
