@@ -102,9 +102,6 @@ def compute_candles_stats(
 
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
 
-    pd_candles['normalized_close_short'] = (pd_candles['close'] - pd_candles['sma_short_periods']) / close_short_periods_rolling.std()
-    pd_candles['normalized_close_long'] = (pd_candles['close'] - pd_candles['sma_long_periods']) / pd_candles['std']
-
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
 
@@ -368,36 +365,73 @@ def compute_candles_stats(
     pd_candles['macd_minus_signal'] = pd_candles['macd'] - pd_candles['signal']
 
     if not pypy_compat:
-        import statsmodels.api as sm # in-compatible with pypy
+        def calculate_slope(
+            pd_data : pd.DataFrame,
+            src_col_name : str,
+            slope_col_name : str,
+            sliding_window_how_many_candles : int
+        ):
+            import statsmodels.api as sm # in-compatible with pypy
 
-        # Slopes
-        X = sm.add_constant(range(len(pd_candles['normalized_close_short'])))
-        rolling_slope = pd_candles['normalized_close_short'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['close_short_slope'] = rolling_slope
-
-        X = sm.add_constant(range(len(pd_candles['normalized_close_long'])))
-        rolling_slope = pd_candles['normalized_close_long'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['close_long_slope'] = rolling_slope
+            X = sm.add_constant(range(len(pd_candles[src_col_name])))
+            rolling_slope = pd_candles[src_col_name].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+            pd_candles[slope_col_name] = rolling_slope
+            max_abs_slope = pd_candles[slope_col_name].abs().rolling(window=sliding_window_how_many_candles).max()
+            pd_candles[f"normalized_{slope_col_name}"] = pd_candles[slope_col_name] / max_abs_slope
+            normalized_slope_rolling = pd_candles[f"normalized_{slope_col_name}"].rolling(window=sliding_window_how_many_candles)
+            pd_candles[f"normalized_{slope_col_name}_min"] = normalized_slope_rolling.min()
+            pd_candles[f"normalized_{slope_col_name}_max"] = normalized_slope_rolling.max()
+            pd_candles[f"normalized_{slope_col_name}_idmin"] = normalized_slope_rolling.apply(lambda x : x.idxmin())
+            pd_candles[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
         
-        X = sm.add_constant(range(len(pd_candles['ema_short_periods'])))
-        rolling_slope = pd_candles['ema_short_periods'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['ema_short_slope'] = rolling_slope
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='close',
+            slope_col_name='close_short_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles/slow_fast_interval_ratio)
+        )
 
-        X = sm.add_constant(range(len(pd_candles['ema_long_periods'])))
-        rolling_slope = pd_candles['ema_long_periods'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['ema_long_slope'] = rolling_slope
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='close',
+            slope_col_name='close_long_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+        )
+        
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='ema_short_periods',
+            slope_col_name='ema_short_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles/slow_fast_interval_ratio)
+        )
 
-        X = sm.add_constant(range(len(pd_candles['boillenger_upper'])))
-        rolling_slope = pd_candles['boillenger_upper'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['boillenger_upper_slope'] = rolling_slope
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='ema_long_periods',
+            slope_col_name='ema_long_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+        )
 
-        X = sm.add_constant(range(len(pd_candles['boillenger_lower'])))
-        rolling_slope = pd_candles['boillenger_lower'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['boillenger_lower_slope'] = rolling_slope
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='boillenger_upper',
+            slope_col_name='boillenger_upper_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+        )
 
-        X = sm.add_constant(range(len(pd_candles['ema_rsi'])))
-        rolling_slope = pd_candles['ema_rsi'].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
-        pd_candles['ema_rsi_slope'] = rolling_slope
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='boillenger_lower',
+            slope_col_name='boillenger_lower_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+        )
+
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='ema_rsi',
+            slope_col_name='ema_rsi_slope',
+            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+        )
 
         pd_candles['regular_divergence'] = (
             (pd_candles['ema_long_slope'] > 0) & (pd_candles['ema_rsi_slope'] < 0) |
