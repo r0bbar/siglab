@@ -214,6 +214,11 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
         lambda x: "AMER" in timestamp_to_active_trading_regions(int(x/1000))
     )
 
+    pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'] - pd_candles['timestamp_ms'].shift(1)
+    timestamp_ms_gap = pd_candles.iloc[-1]['timestamp_ms_gap']
+    assert(pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap!=timestamp_ms_gap].shape[0]==0)
+    pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
+
 def timestamp_to_active_trading_regions(
         timestamp_ms : int
 ) -> List[str]:
