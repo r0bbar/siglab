@@ -672,6 +672,8 @@ def build_pair_candles(
     pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms_1'] - pd_candles['timestamp_ms_2']
     assert(pd_candles[pd_candles.timestamp_ms_gap!=0].shape[0]==0)
 
+    pd_candles.drop(pd_candles.columns[pd_candles.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+
     return pd_candles
 
     
