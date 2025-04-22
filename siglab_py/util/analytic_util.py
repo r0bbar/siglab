@@ -865,3 +865,33 @@ def partition_sliding_window(
         'maxima' : maxima,
         'segments' : consolidated_segements
     }
+
+# This relies on statsmodels.api, which is not pypy compatible
+def compute_pair_stats(
+    pd_candles : pd.DataFrame,
+    how_many_candles : int = 24*7
+) -> None:
+    import statsmodels.api as sm
+
+    def _compute_hedge_ratio(
+                prices0 : List[float],
+                prices1 : List[float]
+        ):
+        model = sm.OLS(prices0, prices1).fit()
+        hedge_ratio = model.params[0]
+        return hedge_ratio
+    
+    pd_candles['hedge_ratio'] = np.nan
+    for j in range(how_many_candles, pd_candles.shape[0]):
+        window = pd_candles.iloc[j-how_many_candles:j]
+        hedge_ratio = _compute_hedge_ratio(window['close_1'].values, window['close_2'].values) # type: ignore
+        pd_candles.loc[j, 'hedge_ratio'] = hedge_ratio
+
+    pd_candles['close_spread'] = pd_candles['close_1'] - (pd_candles['close_2'] * pd_candles['hedge_ratio']) # You're fitting one hedge_ratio over a windows
+    mean = pd_candles['close_spread'].rolling(how_many_candles).mean()
+    std = pd_candles['close_spread'].rolling(how_many_candles).std()
+    pd_candles['close_spread_mean'] = mean
+    pd_candles['close_spread_std'] = std
+    pd_candles['zscore_close_spread'] = (pd_candles['close_spread'] - mean)/std
+    pd_candles['zscore_close_spread_min'] = pd_candles['zscore_close_spread'].rolling(how_many_candles).min()
+    pd_candles['zscore_close_spread_max'] = pd_candles['zscore_close_spread'].rolling(how_many_candles).max()
