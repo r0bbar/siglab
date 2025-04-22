@@ -26,8 +26,8 @@ from siglab_py.util.analytic_util import compute_candles_stats
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python ccxt_candles_ta_to_csv.py --exchange_name bybit --symbol BTC/USDT:USDT --end_date "2025-03-11 0:0:0" --start_date "2021-03-11 0:0:0" --default_type linear --compute_ta Y --pypy_compatible N
-
+    python ccxt_candles_ta_to_csv.py --exchange_name okx --symbol BTC/USDT:USDT --candle_size 1h --end_date "2025-04-22 0:0:0" --start_date "2024-01-01 0:0:0" --default_type linear --compute_ta Y --pypy_compatible N
+    
     (Remember: python -mpip install siglab_py)
 
 This script is pypy compatible. Set "pypy_compatible" to True, in which case "compute_candles_stats" will skip calculation for TAs which requires: scipy, statsmodels, scikit-learn, sklearn.preprocessing
@@ -60,8 +60,8 @@ If debugging from VSCode, launch.json:
                 "args" : [
                         "--exchange_name", "bybit",
                         "--symbol", "BTC/USDT:USDT",
-                        "--end_date", "2025-03-11 0:0:0",
-                        "--start_date", "2024-03-11 0:0:0",
+                        "--end_date", "2025-04-22 0:0:0",
+                        "--start_date", "2024-01-01 0:0:0",
                         "--default_type", "linear",
                         "--compute_ta", "Y",
                         "--pypy_compatible", "N"
