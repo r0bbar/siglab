@@ -627,3 +627,51 @@ def fetch_deribit_btc_option_expiries(
         'by_expiry' : sorted_expiry_data, # type: ignore Otherwise, Error: Type "dict[str, list[tuple[str, float]] | dict[str, Dict[Unknown, Unknown]]]" is not assignable to return type "Dict[str, Dict[str, float] | Dict[str, Dict[str, str | float]]]"
         'by_expiry_and_strike' : expiry_data_breakdown_by_strike
     }
+
+def build_pair_candles(
+    pd_candles1 : pd.DataFrame,
+    pd_candles2 : pd.DataFrame
+) -> pd.DataFrame:
+    min_timestamp_ms1 = int(pd_candles1.iloc[0]['timestamp_ms'])
+    max_timestamp_ms1 = int(pd_candles1.iloc[-1]['timestamp_ms'])
+    min_timestamp_ms2 = int(pd_candles2.iloc[0]['timestamp_ms'])
+    max_timestamp_ms2 = int(pd_candles2.iloc[-1]['timestamp_ms'])
+
+    pd_candles1 = pd_candles1[(pd_candles1.timestamp_ms>=min_timestamp_ms2) & (pd_candles1.timestamp_ms<=max_timestamp_ms2) & (~pd_candles1.timestamp_ms.isna()) ]
+    pd_candles2 = pd_candles2[(pd_candles2.timestamp_ms>=min_timestamp_ms1) & (pd_candles2.timestamp_ms<=max_timestamp_ms1) & (~pd_candles2.timestamp_ms.isna())]
+    assert(pd_candles1.shape[0]==pd_candles2.shape[0])
+
+    pd_candles1['timestamp_ms_gap'] = pd_candles1['timestamp_ms'] - pd_candles1['timestamp_ms'].shift(1)
+    timestamp_ms_gap = pd_candles1.iloc[-1]['timestamp_ms_gap']
+    
+    assert(pd_candles1[~pd_candles1.timestamp_ms_gap.isna()][pd_candles1.timestamp_ms_gap!=timestamp_ms_gap].shape[0]==0)
+    pd_candles1.drop(columns=['timestamp_ms_gap'], inplace=True)
+
+    pd_candles2['timestamp_ms_gap'] = pd_candles2['timestamp_ms'] - pd_candles2['timestamp_ms'].shift(1)
+    timestamp_ms_gap = pd_candles2.iloc[-1]['timestamp_ms_gap']
+    assert(pd_candles2[~pd_candles2.timestamp_ms_gap.isna()][pd_candles2.timestamp_ms_gap!=timestamp_ms_gap].shape[0]==0)
+    pd_candles2.drop(columns=['timestamp_ms_gap'], inplace=True)
+
+    min_timestamp_ms1 = int(pd_candles1.iloc[0]['timestamp_ms'])
+    max_timestamp_ms1 = int(pd_candles1.iloc[-1]['timestamp_ms'])
+    min_timestamp_ms2 = int(pd_candles2.iloc[0]['timestamp_ms'])
+    max_timestamp_ms2 = int(pd_candles2.iloc[-1]['timestamp_ms'])
+    assert(min_timestamp_ms1==min_timestamp_ms2)
+    assert(max_timestamp_ms1==max_timestamp_ms2)
+    assert(pd_candles1.shape[0]==pd_candles2.shape[0])
+
+    if len([ col for col in pd_candles1.columns if col[-2:]=='_1' ]) == 0:
+        pd_candles1.columns = [str(col) + '_1' for col in pd_candles1.columns]
+
+    if len([ col for col in pd_candles2.columns if col[-2:]=='_2' ]) == 0:
+        pd_candles2.columns = [str(col) + '_2' for col in pd_candles2.columns]
+
+    pd_candles1.reset_index(drop=True, inplace=True)
+    pd_candles2.reset_index(drop=True, inplace=True)
+    pd_candles = pd.concat([pd_candles1, pd_candles2], axis=1)
+    pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms_1'] - pd_candles['timestamp_ms_2']
+    assert(pd_candles[pd_candles.timestamp_ms_gap!=0].shape[0]==0)
+
+    return pd_candles
+
+    
