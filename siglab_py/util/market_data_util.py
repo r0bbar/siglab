@@ -516,55 +516,56 @@ def _fetch_candles_ccxt(
     candle_size : str,
     num_candles_limit : int = 100
 ) -> Dict[str, Union[pd.DataFrame, None]]:
-    ticker = normalized_symbols[0]
+    rsp = {}
 
-    def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
-            one_timeframe = f"1{timeframe[-1]}"
-            candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
-            if candles and len(candles)>0:
-                candles.sort(key=lambda x : x[0], reverse=False)
+    for ticker in normalized_symbols:
+        def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
+                one_timeframe = f"1{timeframe[-1]}"
+                candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
+                if candles and len(candles)>0:
+                    candles.sort(key=lambda x : x[0], reverse=False)
 
-            return candles
-        
-    def _calc_increment(candle_size):
-        increment = 1
-        num_intervals = int(candle_size[0])
-        interval_type = candle_size[-1]
-        if interval_type == "m":
-            increment = 60
-        elif interval_type == "h":
-            increment = 60*60
-        elif interval_type == "d":
-            increment = 60*60*24
-        else:
-            raise ValueError(f"Invalid candle_size {candle_size}")
-        return num_intervals * increment
-    
-    all_candles = []
-    params = {}
-    this_cutoff = start_ts
-    while this_cutoff<end_ts:
-        candles = _fetch_ohlcv(exchange=exchange, symbol=ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
-        if candles and len(candles)>0:
-            all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
-
-            record_ts = max([int(record[0]) for record in candles])
-            record_ts_str : str = str(record_ts)
-            if len(record_ts_str)==13:
-                record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
+                return candles
             
-            this_cutoff = record_ts  + _calc_increment(candle_size)
-        else:
-            this_cutoff += _calc_increment(candle_size)
+        def _calc_increment(candle_size):
+            increment = 1
+            num_intervals = int(candle_size[0])
+            interval_type = candle_size[-1]
+            if interval_type == "m":
+                increment = 60
+            elif interval_type == "h":
+                increment = 60*60
+            elif interval_type == "d":
+                increment = 60*60*24
+            else:
+                raise ValueError(f"Invalid candle_size {candle_size}")
+            return num_intervals * increment
+        
+        all_candles = []
+        params = {}
+        this_cutoff = start_ts
+        while this_cutoff<end_ts:
+            candles = _fetch_ohlcv(exchange=exchange, symbol=ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
+            if candles and len(candles)>0:
+                all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
 
-    columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
-    pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
-    fix_column_types(pd_all_candles)
-    pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
+                record_ts = max([int(record[0]) for record in candles])
+                record_ts_str : str = str(record_ts)
+                if len(record_ts_str)==13:
+                    record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
+                
+                this_cutoff = record_ts  + _calc_increment(candle_size)
+            else:
+                this_cutoff += _calc_increment(candle_size)
 
-    return {
-        ticker : pd_all_candles
-    }
+        columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
+        pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
+        fix_column_types(pd_all_candles)
+        pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
+
+        rsp[ticker] = pd_all_candles
+
+    return rsp
 
 def fetch_deribit_btc_option_expiries(
     market: str = 'BTC'
