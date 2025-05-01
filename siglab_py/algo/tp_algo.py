@@ -446,7 +446,9 @@ async def main():
                                         leg_room_bps = param['leg_room_bps'],
                                         order_type = param['order_type'],
                                         slices = param['slices'],
-                                        wait_fill_threshold_ms = param['wait_fill_threshold_ms']
+                                        wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
+
+                                        reduce_only=True
                                     )
                                 ]
                                 executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
