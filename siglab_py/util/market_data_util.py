@@ -19,6 +19,7 @@ from yahoofinancials import YahooFinancials
 # yfinance allows intervals '1m', '5m', '15m', '1h', '1d', '1wk', '1mo'. yahoofinancials not as flexible
 import yfinance as yf
 
+from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.futubull import Futubull
 from siglab_py.exchanges.any_exchange import AnyExchange
 
@@ -519,6 +520,7 @@ def _fetch_candles_ccxt(
     rsp = {}
 
     for ticker in normalized_symbols:
+        @retry(num_attempts=3, pause_between_retries_ms=1000)
         def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
                 one_timeframe = f"1{timeframe[-1]}"
                 candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
