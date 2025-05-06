@@ -452,6 +452,8 @@ async def execute_one_position(
                     'reduceOnly': slice.reduce_only
                 }
                 if position.order_type=='limit':
+                    order_params['postOnly'] = True
+                    
                     if not param['dry_run']:
                         executed_order = await exchange.create_order( # type: ignore
                             symbol = position.ticker,
