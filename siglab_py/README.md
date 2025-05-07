@@ -1,7 +1,7 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
 ... allows engineers/traders to quickly setup a trading desk: From back tests to trading. The repo include "infrastructure" code necessary. By infrastructure, I mean everything from fetching candles, orderbooks, to calculation of technical indicators and finally orders execution. 
 
-![alt text](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
+![Overall Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
 The **top** part of above diagram is to illustrate **candles_provider** pull candles into Redis. **candles_ta_provider** picks up the candles from Redis, then publish candles with TA calculated, back into Redis. Same for **order_book_provider**, orderbooks fetched are published to Redis for strategies consumption.
 
@@ -107,6 +107,8 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 
 
 ## 2. Under [**ordergateway**](https://github.com/r0bbar/siglab/tree/master/siglab_py/ordergateway)
+
+![Orderflow Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py_ordergateway.jpg)
 
 [**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges (CEX: binance, okx, bybit. DEX: hyperliquid and soon vertexprotocol). But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like [**IBKR**](https://www.interactivebrokers.com). To trade exchanges not supported by [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md) or tradfi brokerages of your choice, extend [**AnyExchange**](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py). Example [**Futubull**](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/futubull.py). 
 
