@@ -38,7 +38,8 @@ Usage:
 
     --default_type defaults to linear
     --rate_limit_ms defaults to 100
-
+    --encrypt_decrypt_with_aws_kms If you encrypt apikey and secret using AMS KMS, then set to Y. If apikey and secret in unencrypted plain text, set to N.
+	--passphrase is optional, this depends on the exchange.
     --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
     How to get Slack webhook urls? https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
@@ -453,7 +454,7 @@ async def execute_one_position(
                 }
                 if position.order_type=='limit':
                     order_params['postOnly'] = True
-                    
+
                     if not param['dry_run']:
                         executed_order = await exchange.create_order( # type: ignore
                             symbol = position.ticker,
