@@ -34,12 +34,13 @@ current_filename = os.path.basename(__file__)
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100
+    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
 
     --default_type defaults to linear
     --rate_limit_ms defaults to 100
     --encrypt_decrypt_with_aws_kms If you encrypt apikey and secret using AMS KMS, then set to Y. If apikey and secret in unencrypted plain text, set to N.
 	--passphrase is optional, this depends on the exchange.
+    --gateway_id contains two parts separated by underscore. Gateway.py will parse 'hyperliquid_01' into two parts: 'hyperliquid' (Exchange name) and '01' (Use this for your sub account ID). Exchange name need be spelt exactly. Please have a look at market_data_util async_instantiate_exchange.
     --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
     How to get Slack webhook urls? https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
