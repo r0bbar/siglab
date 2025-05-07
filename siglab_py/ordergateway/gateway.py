@@ -47,6 +47,8 @@ Usage:
     Another example:
         python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/yyy --slack_alert_url=https://hooks.slack.com/services/zzz
 
+    gateway.py takes outgoing orders from redis and publish executions back to redis when done. Redis configuration in param['mds']['redis']. Start redis before starting gateway.py.
+
 This script is pypy compatible:
     pypy gateway.py --gateway_id bybit_01 --default_type linear --rate_limit_ms 100
 
