@@ -116,6 +116,8 @@ async def async_instantiate_exchange(
         # spot, swap, future
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
         exchange = ccxtpro.deribit(exchange_params)  # type: ignore
+    elif exchange_name=='kraken':
+        exchange = ccxtpro.kraken(exchange_params) # type: ignore
     elif exchange_name=='hyperliquid':
         '''
         https://app.hyperliquid.xyz/API
