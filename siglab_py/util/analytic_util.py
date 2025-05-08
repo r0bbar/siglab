@@ -895,3 +895,10 @@ def compute_pair_stats(
     pd_candles['zscore_close_spread'] = (pd_candles['close_spread'] - mean)/std
     pd_candles['zscore_close_spread_min'] = pd_candles['zscore_close_spread'].rolling(how_many_candles).min()
     pd_candles['zscore_close_spread_max'] = pd_candles['zscore_close_spread'].rolling(how_many_candles).max()
+
+    calculate_slope(
+        pd_data=pd_candles,
+        src_col_name='zscore_close_spread',
+        slope_col_name='zscore_slope',
+        sliding_window_how_many_candles=how_many_candles
+    )
