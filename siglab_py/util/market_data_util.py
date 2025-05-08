@@ -523,7 +523,9 @@ def _fetch_candles_ccxt(
     logger = logging.getLogger()
 
     rsp = {}
-
+    
+    num_tickers = len(normalized_symbols)
+    i = 0
     for ticker in normalized_symbols:
         @retry(num_attempts=3, pause_between_retries_ms=1000)
         def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
@@ -548,7 +550,7 @@ def _fetch_candles_ccxt(
                 raise ValueError(f"Invalid candle_size {candle_size}")
             return num_intervals * increment
         
-        logger.info(f"Fetching {candle_size} candles for {ticker}.")
+        logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
 
         all_candles = []
         params = {}
@@ -573,6 +575,8 @@ def _fetch_candles_ccxt(
         pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
 
         rsp[ticker] = pd_all_candles
+
+        i+=1
 
     return rsp
 
