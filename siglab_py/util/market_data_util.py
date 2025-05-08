@@ -1,3 +1,4 @@
+import logging
 import incremental
 import tzlocal
 from datetime import datetime, timezone
@@ -519,6 +520,8 @@ def _fetch_candles_ccxt(
     candle_size : str,
     num_candles_limit : int = 100
 ) -> Dict[str, Union[pd.DataFrame, None]]:
+    logger = logging.getLogger()
+
     rsp = {}
 
     for ticker in normalized_symbols:
@@ -545,6 +548,8 @@ def _fetch_candles_ccxt(
                 raise ValueError(f"Invalid candle_size {candle_size}")
             return num_intervals * increment
         
+        logger.info(f"Fetching {candle_size} candles for {ticker}.")
+
         all_candles = []
         params = {}
         this_cutoff = start_ts
