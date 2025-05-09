@@ -2,6 +2,7 @@ import logging
 import incremental
 import tzlocal
 from datetime import datetime, timezone
+import time
 from typing import List, Dict, Union, NoReturn, Any, Tuple
 from pathlib import Path
 import math
@@ -512,6 +513,28 @@ def fetch_candles(
         )
     return { '' : None }
 
+'''
+Find listing date https://gist.github.com/mr-easy/5185b1dcdd5f9f908ff196446f092e9b
+
+Usage:
+    listing_ts = find_start_time(exchange, 'HYPE/USDT:USDT', int(datetime(2024,1,1).timestamp()*1000), int(datetime(2025,5,1).timestamp()*1000), '1h')
+
+Caveats: 
+1) If listing date lies outside [start_time, end_time], this function will stackoverflow, 
+2) Even if not, it's still very time consuming.
+
+Alternative: market['created']
+'''
+def search_listing_ts(exchange, symbol, start_time, end_time, timeframe):
+    mid_time = (start_time + end_time)//2
+    if(mid_time == start_time): return mid_time+1
+    ohlcv = exchange.fetch_ohlcv(symbol, timeframe, mid_time, limit=1)
+    time.sleep(1)
+    if(len(ohlcv) == 0):
+        return search_listing_ts(exchange, symbol, mid_time, end_time, timeframe)
+    else:
+        return search_listing_ts(exchange, symbol, start_time, mid_time, timeframe)
+    
 def _fetch_candles_ccxt(
     start_ts : int,
     end_ts : int,
@@ -523,6 +546,8 @@ def _fetch_candles_ccxt(
     logger = logging.getLogger()
 
     rsp = {}
+
+    exchange.load_markets()
     
     num_tickers = len(normalized_symbols)
     i = 0
@@ -551,6 +576,16 @@ def _fetch_candles_ccxt(
             return num_intervals * increment
         
         logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
+
+        '''
+        It uses a while loop to implement a sliding window to download candles between start_ts and end_ts. 
+        However, start_ts for example can be 1 Jan 2021 for a given ticker. 
+        But if that ticker listing date is 1 Jan 2025, this while loop would waste a lot of time loop between 1 Jan 2021 thru 31 Dec 2024, slowly incrementing this_cutoff += _calc_increment(candle_size).
+        A more efficient way is to find listing date. Start looping from there.
+        '''
+        market = exchange.markets[ticker]
+        if market['created']:
+            start_ts = max(start_ts, int(market['created']/1000))
 
         all_candles = []
         params = {}
