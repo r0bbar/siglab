@@ -126,7 +126,7 @@ Reference: https://norman-lm-fung.medium.com/standalone-order-gateway-on-top-of-
 
 + Hung limit orders will be cancelled. Remainder are sent as market orders.
 
-+ For limit orders, a more positive **leg_room_bps** means you'd be executing more aggressively (i.e. so your orders get filled). This means Buy at higher price, or Sell at lower price. Limit price is calculated by applying **leg_room_bps** on top of best Bid/Ask, depending on order's side.
++ For limit orders, a more positive **leg_room_bps** means you'd be executing more aggressively (i.e. so your orders get filled). This means Buy at higher price, or Sell at lower price. Limit price is calculated by applying **leg_room_bps** on top of best Bid/Ask, depending on order's side. If you try to send limit order with a positive leg_room_bps, gateway will dispatch the order as Market Order. To send Limit Order: use a negative leg_room_bps.
 
 + Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially**. Atm, there's no synchronization if you're executing multiple positions. So, first position may have executed 3/10 slices. The second position may have already executed 6/10 slices. If you're entering or unwinding delta neutral positions, burden of making sure both legs of the trade is being executed at same pace is on strategy implementation.
 
