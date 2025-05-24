@@ -32,6 +32,13 @@ from util.notification_util import dispatch_notification
 current_filename = os.path.basename(__file__)
 
 '''
+Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
+Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+'''
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+'''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
