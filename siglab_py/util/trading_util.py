@@ -49,6 +49,9 @@ What's 'loss_trailing'? 'loss_trailing' is essentially pnl drop from max_unreali
         unrealized_pnl_live = $40
         max_unrealized_pnl_live = $100
         loss_trailing = (1 - unrealized_pnl_live/max_unrealized_pnl_live) = (1-40/100) = 0.6 (Or 60%)
+
+Have a look at this for a visual explaination how "Gradually tightened stops" works:
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
 '''
 def calc_eff_trailing_sl(
         tp_min_percent : float,

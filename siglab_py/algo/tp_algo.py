@@ -419,11 +419,15 @@ async def main():
 
                             loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100 if unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl else 0
                             
+                            '''
+                            Have a look at this for a visual explaination how "Gradually tightened stops" works:
+                                https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
+                            '''
                             effective_tp_trailing_percent = calc_eff_trailing_sl(
                                 tp_min_percent = param['tp_min_percent'],
                                 tp_max_percent = param['tp_max_percent'],
                                 sl_percent_trailing = param['sl_percent_trailing'],
-                                pnl_percent_notional = max_unrealized_pnl_percent,
+                                pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent']
                             )
 
