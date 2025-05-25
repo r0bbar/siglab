@@ -52,6 +52,7 @@ What's 'loss_trailing'? 'loss_trailing' is essentially pnl drop from max_unreali
 
 Have a look at this for a visual explaination how "Gradually tightened stops" works:
     https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
+    https://norman-lm-fung.medium.com/gradually-tightened-trailing-stops-f7854bf1e02b
 '''
 def calc_eff_trailing_sl(
         tp_min_percent : float,

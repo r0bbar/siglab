@@ -8,6 +8,7 @@ from util.trading_util import *
 '''
 Have a look at this for a visual explaination how "Gradually tightened stops" works:
     https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
+    https://norman-lm-fung.medium.com/gradually-tightened-trailing-stops-f7854bf1e02b
 '''
 
 # @unittest.skip("Skip all integration tests.")
