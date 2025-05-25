@@ -357,6 +357,7 @@ async def main():
                 unrealized_pnl : float = 0
                 max_unrealized_pnl : float = 0
                 unrealized_pnl_percent : float = 0
+                max_unrealized_pnl_percent : float = 0
                 reversal : bool = False
                 tp : bool = False
                 sl : bool = False
@@ -410,6 +411,7 @@ async def main():
 
                             if unrealized_pnl>max_unrealized_pnl:
                                 max_unrealized_pnl = unrealized_pnl
+                                max_unrealized_pnl_percent = max_unrealized_pnl / amount_filled_usdt * 100
                                 executed_position['position']['max_unrealized_pnl'] = max_unrealized_pnl
 
                                 with open(position_cacnle_file, 'w') as f:
@@ -421,7 +423,7 @@ async def main():
                                 tp_min_percent = param['tp_min_percent'],
                                 tp_max_percent = param['tp_max_percent'],
                                 sl_percent_trailing = param['sl_percent_trailing'],
-                                pnl_percent_notional = unrealized_pnl_percent,
+                                pnl_percent_notional = max_unrealized_pnl_percent,
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent']
                             )
 
