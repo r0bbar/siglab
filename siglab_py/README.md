@@ -109,7 +109,7 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 
 [Gradually Tightened Trailing Stops ** calc_eff_trailing_sl**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/trading_util.py)
 
-[**tg_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/tg_monitor.py)
+[**tg_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/tg_monitor.py) to monitor Telegram channel.
 
 a. Save (and accumulate) messages to message cache file (No duplicates) for further analysis.
 
