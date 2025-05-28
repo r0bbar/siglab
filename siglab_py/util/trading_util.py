@@ -64,7 +64,7 @@ def calc_eff_trailing_sl(
     slope = (0 - sl_percent_trailing) / (tp_max_percent - tp_min_percent)
     effective_tp_trailing_percent = (
                                         slope * (pnl_percent_notional - tp_min_percent) + sl_percent_trailing 
-                                        if pnl_percent_notional>tp_min_percent 
+                                        if pnl_percent_notional>=tp_min_percent 
                                         else default_effective_tp_trailing_percent
                                     )
     return effective_tp_trailing_percent
