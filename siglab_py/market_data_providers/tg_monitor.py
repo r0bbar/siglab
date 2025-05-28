@@ -18,6 +18,8 @@ from telethon.errors import SessionPasswordNeededError, FloodWaitError
 from telethon.types import Message
 from redis import StrictRedis
 
+from siglab_py.util.notification_util import dispatch_notification
+
 current_filename = os.path.basename(__file__)
 
 '''
@@ -32,6 +34,7 @@ tg_monitor fetches messages from particular TG channel (--channel_username). The
         - If scripts runs on Windows, play a wav file (Feels free make modification play sounds on Ubuntu for example)
 
 Usage:
+    set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
     python tg_monitor.py --api_id xxx --api_hash yyy --phone +XXXYYYYYYYY --channel_username @zZz --users_filter "yYy,zZz" --start_date 2025-03-01 --message_keywords_filter "trump,trade war,tariff" --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
 
 api_id and api_hash
@@ -221,6 +224,8 @@ async def main() -> None:
     log(f"session_file: {session_file}")
     log(f"message_cache_file: {message_cache_file}")
 
+    notification_params : Dict[str, Any] = param['notification']
+
     tm1 : datetime = datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days=-1)
     tm1 = tm1.astimezone(pytz.UTC)
 
@@ -353,28 +358,31 @@ async def main() -> None:
                         seen_hashes.add(message_hash)
                         processed_messages.append(message_data)
 
-                        with open(message_cache_file, 'a', encoding='utf-8') as f:
-                            json.dump(message_data, f, ensure_ascii=False)
-                            f.write('\n')
+                        if message_date>tm1:
+                            dispatch_notification(title=f"{param['current_filename']} {param['channel_username']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
 
-                        if (
-                            param['message_keywords_filter']
-                            and any(keyword.lower().strip() in message_text.lower() for keyword in param['message_keywords_filter'])
-                        ):
-                            if param['alert_wav_path'] and message_date>=tm1 and sys.platform == 'win32':
-                                import winsound
-                                for _ in range(5):
-                                    winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
-                                    log(f"Incoming! {message_data}")
+                            with open(message_cache_file, 'a', encoding='utf-8') as f:
+                                json.dump(message_data, f, ensure_ascii=False)
+                                f.write('\n')
 
-                            if redis_client:
-                                try:
-                                    publish_topic = f"{param['mds']['topics']['tg_alert']}_{message.id}"
-                                    redis_client.publish(publish_topic, json_str)
-                                    redis_client.setex(message_hash, param['mds']['redis']['ttl_ms'] // 1000, json_str)
-                                    log(f"Published message {message.id} to Redis topic {publish_topic}", LogLevel.INFO)
-                                except Exception as e:
-                                    log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
+                            if (
+                                param['message_keywords_filter']
+                                and any(keyword.lower().strip() in message_text.lower() for keyword in param['message_keywords_filter'])
+                            ):
+                                if param['alert_wav_path'] and message_date>=tm1 and sys.platform == 'win32':
+                                    import winsound
+                                    for _ in range(5):
+                                        winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
+                                        log(f"Incoming! {message_data}")
+
+                                if redis_client:
+                                    try:
+                                        publish_topic = f"{param['mds']['topics']['tg_alert']}_{message.id}"
+                                        redis_client.publish(publish_topic, json_str)
+                                        redis_client.setex(message_hash, param['mds']['redis']['ttl_ms'] // 1000, json_str)
+                                        log(f"Published message {message.id} to Redis topic {publish_topic}", LogLevel.INFO)
+                                    except Exception as e:
+                                        log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
                 
                 if processed_messages:
                     oldest_message: Dict[str, Any] = min(processed_messages, key=lambda x: x['timestamp_ms'])
