@@ -104,6 +104,13 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 
 [**futu_candles_ta_to_csv.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/futu_candles_ta_to_csv.py), [Futubull version of the same](https://www.futunn.com/). You need Futubull brokerage account for this to work.
 
+Other utilities
+[**tg_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/tg_monitor.py)
+a. Save (and accumulate) messages to message cache file (No duplicates) for further analysis.
+b. If any of keywords in message_keywords_filter matches words in message (--message_keywords_filter):
+- Publish to redis for strategy consumption, topic: param['mds']['topics']['tg_alert']
+- Dispatch slack alert
+- If scripts runs on Windows, play a wav file (Feels free make modification play sounds on Ubuntu for example)
 
 
 ## 2. Under [**ordergateway**](https://github.com/r0bbar/siglab/tree/master/siglab_py/ordergateway)
