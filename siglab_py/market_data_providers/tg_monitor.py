@@ -100,6 +100,8 @@ launch.json for Debugging from VSCode:
             }
         ]
     }
+
+https://norman-lm-fung.medium.com/monitoring-telegram-channel-tg-monitor-from-siglab-py-f7ec30c2c32e
 '''
 
 param: Dict[str, Any] = {
