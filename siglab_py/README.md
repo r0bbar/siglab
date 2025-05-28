@@ -110,7 +110,9 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 [Gradually Tightened Trailing Stops ** calc_eff_trailing_sl**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/trading_util.py)
 
 [**tg_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/tg_monitor.py)
+
 a. Save (and accumulate) messages to message cache file (No duplicates) for further analysis.
+
 b. If any of keywords in message_keywords_filter matches words in message (--message_keywords_filter):
 - Publish to redis for strategy consumption, topic: param['mds']['topics']['tg_alert']
 - Dispatch slack alert
