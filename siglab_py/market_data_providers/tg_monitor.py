@@ -113,7 +113,8 @@ param: Dict[str, Any] = {
     'message_keywords_filter': [],
     'start_date': None,  
     'alert_wav_path' : r"d:\sounds\terrible.wav",
-
+    "num_shouts" : 15, # How many times 'alert_wav_path' is played
+    "loop_freq_ms" : 1000,
     'current_filename' : current_filename,
 
     'notification' : {
@@ -373,7 +374,7 @@ async def main() -> None:
                             ):
                                 if param['alert_wav_path'] and message_date>=tm1 and sys.platform == 'win32':
                                     import winsound
-                                    for _ in range(15):
+                                    for _ in range(param['num_shouts']):
                                         winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                                         log(f"Incoming! {message_data}")
 
@@ -408,7 +409,9 @@ async def main() -> None:
                 else:
                     log(f"No messages processed in this iteration. last_message_date: {last_message_date}", LogLevel.INFO)
                     last_message_date = last_message_date + timedelta(days=1)
-                await asyncio.sleep(1)
+
+                await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
+
         except Exception as e:
             log(f"Oops {str(e)} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", LogLevel.ERROR)
 
