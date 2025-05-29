@@ -373,7 +373,7 @@ async def main() -> None:
                             ):
                                 if param['alert_wav_path'] and message_date>=tm1 and sys.platform == 'win32':
                                     import winsound
-                                    for _ in range(5):
+                                    for _ in range(15):
                                         winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                                         log(f"Incoming! {message_data}")
 
