@@ -63,6 +63,9 @@ def calc_eff_trailing_sl(
         linear : bool = True,
         pow : float = 5 # This is for non-linear trailing stops
 ) -> float:
+    if pnl_percent_notional>tp_max_percent:
+            return 0
+    
     if linear:
         slope = (0 - sl_percent_trailing) / (tp_max_percent - tp_min_percent)
         effective_tp_trailing_percent = (
@@ -70,7 +73,7 @@ def calc_eff_trailing_sl(
                                             if pnl_percent_notional>=tp_min_percent 
                                             else default_effective_tp_trailing_percent
                                         )
-    else:
+    else:    
         def y(
 				x : float,
 				x_shift : float,
