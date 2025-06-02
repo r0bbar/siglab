@@ -23,6 +23,13 @@ from siglab_py.constants import LogLevel # type: ignore
 current_filename = os.path.basename(__file__)
 
 '''
+Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
+Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+'''
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+'''
 TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also trailing stops.
 
 Now why does TP algo need apikey when gateway.py is sending the orders? TP algo perform position reconciliation (For contracts), and if positions don't match, algo would terminate.
