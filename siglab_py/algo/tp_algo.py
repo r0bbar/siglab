@@ -161,7 +161,7 @@ def parse_args():
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
-    parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default -1, in which case it'd actually be set to float('inf')", default=-1)
+    parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf')", default=float('inf'))
     parser.add_argument("--sl_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=2)
     
@@ -209,7 +209,7 @@ def parse_args():
     param['tp_min_percent'] = float(args.tp_min_percent)
     param['tp_max_percent'] = float(args.tp_max_percent)
     param['sl_percent_trailing'] = float(args.sl_percent_trailing)
-    param['default_effective_tp_trailing_percent'] = float(args.default_effective_tp_trailing_percent) if args.default_effective_tp_trailing_percent!=-1 else float('inf')
+    param['default_effective_tp_trailing_percent'] = float(args.default_effective_tp_trailing_percent)
     param['sl_percent'] = float(args.sl_percent)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
     
