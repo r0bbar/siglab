@@ -365,6 +365,7 @@ async def main():
                 max_unrealized_pnl : float = 0
                 unrealized_pnl_percent : float = 0
                 max_unrealized_pnl_percent : float = 0
+                loss_trailing : float = 0
                 reversal : bool = False
                 tp : bool = False
                 sl : bool = False
@@ -424,7 +425,11 @@ async def main():
                                 with open(position_cacnle_file, 'w') as f:
                                     json.dump(executed_position, f)
 
-                            loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100 if unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl else 0
+                            if (
+                                (unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl)
+                                or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is active.
+                            ):
+                                loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100
                             
                             '''
                             Have a look at this for a visual explaination how "Gradually tightened stops" works:
