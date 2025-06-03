@@ -396,7 +396,11 @@ async def main():
                                     log(err_msg)
                                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
-                        if not position_break:
+                        if position_break:
+                            log(f"Position break! Exiting execution. Did you manually close the trade?")
+                            break
+                        
+                        else:
                             trailing_candles = await exchange.fetch_ohlcv(symbol=param['ticker'], timeframe='1h', limit=24) # type: ignore
                             trailing_candles = trailing_candles[-param['reversal_num_intervals']:]
                             
