@@ -427,7 +427,7 @@ async def main():
 
                             if (
                                 (unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl)
-                                or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is active.
+                                or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is (and will remain) active.
                             ):
                                 loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100
                             
