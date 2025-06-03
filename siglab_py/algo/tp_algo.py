@@ -163,7 +163,7 @@ def parse_args():
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
     parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf')", default=float('inf'))
     parser.add_argument("--sl_percent", help="Hard stop in percent.", default=2)
-    parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=2)
+    parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
