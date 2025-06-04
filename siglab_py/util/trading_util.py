@@ -107,6 +107,11 @@ def calc_eff_trailing_sl(
                                                 else default_effective_tp_trailing_percent
                                             )
         else:
+            '''
+            y_shift = 0 when tp_max_percent==tp_min_percent.
+            If default_effective_tp_trailing_percent==float('inf'), essentially it means trailing stops won't fire.
+            Client side needs handle this.
+            '''
             effective_tp_trailing_percent = default_effective_tp_trailing_percent
-            
+
     return effective_tp_trailing_percent
