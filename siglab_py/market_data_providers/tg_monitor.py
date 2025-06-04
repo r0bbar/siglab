@@ -113,7 +113,7 @@ param: Dict[str, Any] = {
     'message_keywords_filter': [],
     'start_date': None,  
     'alert_wav_path' : r"d:\sounds\terrible.wav",
-    "num_shouts" : 15, # How many times 'alert_wav_path' is played
+    "num_shouts" : 5, # How many times 'alert_wav_path' is played
     "loop_freq_ms" : 1000,
     'current_filename' : current_filename,
 
