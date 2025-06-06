@@ -30,7 +30,10 @@ if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 '''
-TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also trailing stops.
+TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also gradually tighted trailing stops.
+
+For more on "Gradually Tighted Stops" and 'calc_eff_trailing_sl':
+    https://medium.com/@norman-lm-fung/gradually-tightened-trailing-stops-f7854bf1e02b
 
 Now why does TP algo need apikey when gateway.py is sending the orders? TP algo perform position reconciliation (For contracts), and if positions don't match, algo would terminate.
 Why would you do that? Imagine if trader want to intervene and close out positions from mobile?
@@ -86,6 +89,9 @@ Debug from VSCode, launch.json:
     }
 '''
 param : Dict = {
+    'trailing_sl_min_percent_linear': 1.0, # This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps), there's more uncertainty if target can be reached: Go with linear.
+    'non_linear_pow' : 3, # For non-linear trailing stops tightening. 
+
     "loop_freq_ms" : 5000, # reduce this if you need trade faster
 
     'current_filename' : current_filename,
@@ -164,6 +170,8 @@ def parse_args():
     parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf')", default=float('inf'))
     parser.add_argument("--sl_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
+    parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 1% (100 bps)", default=1.0)
+    parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 3", default=3)
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
@@ -212,6 +220,8 @@ def parse_args():
     param['default_effective_tp_trailing_percent'] = float(args.default_effective_tp_trailing_percent)
     param['sl_percent'] = float(args.sl_percent)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
+    param['trailing_sl_min_percent_linear'] = float(args.trailing_sl_min_percent_linear)
+    param['non_linear_pow'] = float(args.non_linear_pow)
     
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
@@ -444,7 +454,9 @@ async def main():
                                 tp_max_percent = param['tp_max_percent'],
                                 sl_percent_trailing = param['sl_percent_trailing'],
                                 pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
-                                default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent']
+                                default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
+                                linear=False if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else True, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
+                                pow=param['non_linear_pow']
                             )
 
                             log(f"unrealized_pnl: {round(unrealized_pnl,4)}, unrealized_pnl_percent: {round(unrealized_pnl_percent,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
