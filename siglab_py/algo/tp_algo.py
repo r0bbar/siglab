@@ -369,7 +369,7 @@ async def main():
                     with open(position_cacnle_file, 'w') as f:
                         json.dump(executed_position, f)
 
-                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, Entry succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_price}", message=executed_position, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, Entry succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_price}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 unrealized_pnl : float = 0
                 max_unrealized_pnl : float = 0
