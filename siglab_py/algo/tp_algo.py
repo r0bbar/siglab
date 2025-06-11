@@ -18,7 +18,7 @@ from util.trading_util import calc_eff_trailing_sl
 from util.notification_util import dispatch_notification
 from util.aws_util import AwsKmsUtil
 
-from siglab_py.constants import LogLevel # type: ignore
+from siglab_py.constants import LogLevel, JSON_SERIALIZABLE_TYPES # type: ignore
 
 current_filename = os.path.basename(__file__)
 
