@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import argparse
 from datetime import datetime, timezone
 import time
-from typing import Dict, Any, Union
+from typing import List, Dict, Any, Union
 import json
 import asyncio
 from redis import StrictRedis
