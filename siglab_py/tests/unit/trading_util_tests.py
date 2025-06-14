@@ -66,15 +66,15 @@ class TradingUtilTests(unittest.TestCase):
 
     def test_round_to_level(self):
         prices = [ 
-            { 'price' : 95332, 'rounded' : 95000}, 
-            { 'price' : 95878, 'rounded' : 96000}, 
-            { 'price' : 103499, 'rounded' : 103000}, 
-            { 'price' : 103500, 'rounded' : 104000}, 
             { 'price' : 15080, 'rounded' : 15000}, 
             { 'price' : 15180, 'rounded' : 15200}, 
             { 'price' : 25080, 'rounded' : 25200}, 
             { 'price' : 25180, 'rounded' : 25200}, 
             { 'price' : 25380, 'rounded' : 25500}, 
+            { 'price' : 95332, 'rounded' : 95000}, 
+            { 'price' : 95878, 'rounded' : 96000}, 
+            { 'price' : 103499, 'rounded' : 103000}, 
+            { 'price' : 103500, 'rounded' : 104000}, 
             { 'price' : 150800, 'rounded' : 150000}, 
             { 'price' : 151800, 'rounded' : 152000}
         ]

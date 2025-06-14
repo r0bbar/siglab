@@ -117,6 +117,7 @@ def calc_eff_trailing_sl(
 
     return effective_tp_trailing_percent
 
+# https://norman-lm-fung.medium.com/levels-are-psychological-7176cdefb5f2
 def round_to_level(
             price : float,
             level_granularity : float = 0.01
