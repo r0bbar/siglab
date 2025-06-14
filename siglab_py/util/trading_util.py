@@ -122,7 +122,7 @@ def round_to_level(
             price : float,
             level_granularity : float = 0.01
         ) -> float:
-    level_size = price * 0.01
+    level_size = price * level_granularity
     magnitude = math.floor(math.log10(level_size))
     base_increment = 10 ** magnitude
     rounded_level_size = round(level_size / base_increment) * base_increment

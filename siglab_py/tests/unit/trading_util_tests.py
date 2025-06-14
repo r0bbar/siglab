@@ -81,6 +81,6 @@ class TradingUtilTests(unittest.TestCase):
         for entry in prices:
             price = entry['price']
             expected = entry['rounded']
-            rounded_price = round_to_level(price)
+            rounded_price = round_to_level(price, level_granularity=0.01)
             print(f"{price} rounded to: {rounded_price}")
             assert(rounded_price==expected)
