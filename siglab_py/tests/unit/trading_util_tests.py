@@ -13,7 +13,7 @@ Have a look at this for a visual explaination how "Gradually tightened stops" wo
 
 # @unittest.skip("Skip all integration tests.")
 class TradingUtilTests(unittest.TestCase):
-    def test_timestamp_to_active_trading_regions_case1(self):
+    def test_calc_eff_trailing_sl_case1(self):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
@@ -30,7 +30,7 @@ class TradingUtilTests(unittest.TestCase):
         )
         assert(effective_tp_trailing_percent==50) # Generous trailing SL when trading starting out and pnl small.
 
-    def test_timestamp_to_active_trading_regions_case2(self):
+    def test_calc_eff_trailing_sl_case2(self):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
@@ -47,7 +47,7 @@ class TradingUtilTests(unittest.TestCase):
         )
         assert(effective_tp_trailing_percent==25) # Intermediate trailing SL
 
-    def test_timestamp_to_active_trading_regions_case3(self):
+    def test_calc_eff_trailing_sl_case3(self):
         tp_min_percent : float = 1.5
         tp_max_percent : float = 2.5
         sl_percent_trailing : float = 50 # Trailing stop loss in percent
