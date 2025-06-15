@@ -30,6 +30,7 @@ API
         stock basic info https://openapi.futunn.com/futu-api-doc/en/quote/get-static-info.html
         historical candles https://openapi.futunn.com/futu-api-doc/en/quote/request-history-kline.html
         realtime candles https://openapi.futunn.com/futu-api-doc/en/quote/get-kl.html
+        orderbook https://openapi.futunn.com/futu-api-doc/en/quote/get-order-book.html
         real time quote https://openapi.futunn.com/futu-api-doc/en/quote/get-stock-quote.html
         open orders https://openapi.futunn.com/futu-api-doc/en/trade/get-order-list.html
         historical orders https://openapi.futunn.com/futu-api-doc/en/trade/get-history-order-list.html
