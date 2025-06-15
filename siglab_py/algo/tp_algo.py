@@ -455,7 +455,7 @@ async def main():
                                 sl_percent_trailing = param['sl_percent_trailing'],
                                 pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
-                                linear=False if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else True, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
+                                linear=True if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
                                 pow=param['non_linear_pow']
                             )
 
