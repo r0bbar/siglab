@@ -40,7 +40,7 @@ Why would you do that? Imagine if trader want to intervene and close out positio
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --default_effective_tp_trailing_percent 100 --sl_percent 1 --reversal_num_intervals 2 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache N
+    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 2 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache N
 
 Debug from VSCode, launch.json:
     {
@@ -71,7 +71,6 @@ Debug from VSCode, launch.json:
                         "--tp_min_percent", "1.5",
                         "--tp_max_percent", "2.5",
                         "--sl_percent_trailing", "50",
-                        "--default_effective_tp_trailing_percent", "100",
                         "--sl_percent", "1",
                         "--reversal_num_intervals", "2",
 
@@ -90,7 +89,7 @@ Debug from VSCode, launch.json:
 '''
 param : Dict = {
     'trailing_sl_min_percent_linear': 1.0, # This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps), there's more uncertainty if target can be reached: Go with linear.
-    'non_linear_pow' : 3, # For non-linear trailing stops tightening. 
+    'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
 
     "loop_freq_ms" : 5000, # reduce this if you need trade faster
 
@@ -167,11 +166,11 @@ def parse_args():
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
-    parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf')", default=float('inf'))
+    parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
     parser.add_argument("--sl_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
-    parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 1% (100 bps)", default=1.0)
-    parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 3", default=3)
+    parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>200bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 2% (200 bps)", default=2.0)
+    parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
