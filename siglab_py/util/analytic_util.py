@@ -118,8 +118,10 @@ def compute_candles_stats(
     pd_candles['ema_long_periods'] = close_long_periods_ewm.mean()
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
     pd_candles['std'] = close_long_periods_rolling.std()
-
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
+
+    pd_candles['vwap_short_periods'] = (pd_candles['close'] * pd_candles['volume']).rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).sum() / pd_candles['volume'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).sum()
+    pd_candles['vwap_long_periods'] = (pd_candles['close'] * pd_candles['volume']).rolling(window=sliding_window_how_many_candles).sum() / pd_candles['volume'].rolling(window=sliding_window_how_many_candles).sum()
 
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
