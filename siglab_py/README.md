@@ -19,7 +19,7 @@ It consists of two primary components.
 
 TAs computed (This is an expanding list):
 
-+ Basic SMA/EMAs (And slopes)
++ Basic SMA/EMA/VWAP (And slopes)
 
 + ATR, std, log return, historical vols
 
