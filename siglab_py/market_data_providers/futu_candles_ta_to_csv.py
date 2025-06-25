@@ -21,6 +21,8 @@ Usage:
 
     python futu_candles_ta_to_csv.py --symbol AAPL --end_date "2025-03-11 0:0:0" --start_date "2024-03-11 0:0:0" --market US --trdmarket US --security_firm FUTUSECURITIES --security_type STOCK --compute_ta Y --pypy_compatible N
 
+    python futu_candles_ta_to_csv.py --symbol US.GCmain --end_date "2025-03-11 0:0:0" --start_date "2021-03-11 0:0:0" --market US --trdmarket FUTURES --security_firm FUTUSECURITIES --security_type FUTURE --compute_ta Y --pypy_compatible N
+
     (Remember: python -mpip install siglab_py)
 
 This script is pypy compatible. Set "pypy_compatible" to True, in which case "compute_candles_stats" will skip calculation for TAs which requires: scipy, statsmodels, scikit-learn, sklearn.preprocessing
