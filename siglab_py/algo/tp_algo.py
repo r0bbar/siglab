@@ -375,6 +375,7 @@ async def main():
                 unrealized_pnl_percent : float = 0
                 max_unrealized_pnl_percent : float = 0
                 loss_trailing : float = 0
+                effective_tp_trailing_percent : float = float('inf')
                 reversal : bool = False
                 tp : bool = False
                 sl : bool = False
@@ -448,7 +449,7 @@ async def main():
                             Have a look at this for a visual explaination how "Gradually tightened stops" works:
                                 https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
                             '''
-                            effective_tp_trailing_percent = calc_eff_trailing_sl(
+                            _effective_tp_trailing_percent = calc_eff_trailing_sl(
                                 tp_min_percent = param['tp_min_percent'],
                                 tp_max_percent = param['tp_max_percent'],
                                 sl_percent_trailing = param['sl_percent_trailing'],
@@ -457,6 +458,9 @@ async def main():
                                 linear=True if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
                                 pow=param['non_linear_pow']
                             )
+
+                            # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
+                            effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
                             log(f"unrealized_pnl: {round(unrealized_pnl,4)}, unrealized_pnl_percent: {round(unrealized_pnl_percent,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
