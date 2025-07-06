@@ -362,6 +362,23 @@ def compute_candles_stats(
         span=rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles, 
         adjust=False).mean()
 
+    rsi_rolling = pd_candles['rsi'].rolling(window=int(rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles))
+    pd_candles['rsi_max'] = rsi_rolling.max()
+    pd_candles['rsi_idmax'] = rsi_rolling.apply(lambda x : x.idxmax())
+    pd_candles['rsi_min'] = rsi_rolling.min()
+    pd_candles['rsi_idmin'] = rsi_rolling.apply(lambda x : x.idxmin())
+
+    def rsi_trend(
+            row,
+            rsi_upper_threshold : float = 70,
+            rsi_lower_threshold : float = 30):
+        if row['rsi_idmax'] > row['rsi_idmin']:
+            return 'DOWN' if row.name > row['rsi_idmax'] and row['rsi'] <= rsi_upper_threshold else 'UP'
+        else:
+            return 'UP' if row.name > row['rsi_idmin'] and row['rsi'] >= rsi_lower_threshold else 'DOWN'
+
+    pd_candles['rsi_trend'] = pd_candles.apply(lambda row: rsi_trend(row), axis=1)
+    
 
     # MFI (Money Flow Index) https://randerson112358.medium.com/algorithmic-trading-strategy-using-money-flow-index-mfi-python-aa46461a5ea5 
     pd_candles['typical_price'] = (pd_candles['high'] + pd_candles['low'] + pd_candles['close']) / 3
