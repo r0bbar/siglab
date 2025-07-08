@@ -86,6 +86,7 @@ def compute_candles_stats(
         rsi_sliding_window_how_many_candles : Union[int, None] = None, # RSI standard 14
         hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
         boillenger_std_multiples_for_aggressive_moves_detect : int = 3, # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
+        target_fib_level : float = 0.618,
         pypy_compat : bool = True
         ):
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
@@ -459,9 +460,8 @@ def compute_candles_stats(
         
 
     # Fibonacci
-    TARGET_FIB_LEVEL = 0.618
-    pd_candles['fib_618_short_periods'] = pd_candles.apply(lambda rw : estimate_fib_retracement(rw['min_short_periods'], rw['idmin_short_periods'], rw['max_short_periods'], rw['idmax_short_periods'], TARGET_FIB_LEVEL), axis=1)
-    pd_candles['fib_618_long_periods'] = pd_candles.apply(lambda rw : estimate_fib_retracement(rw['min_long_periods'], rw['idmin_long_periods'], rw['max_long_periods'], rw['idmax_long_periods'], TARGET_FIB_LEVEL), axis=1)
+    pd_candles[f'fib_{target_fib_level}_short_periods'] = pd_candles.apply(lambda rw : estimate_fib_retracement(rw['min_short_periods'], rw['idmin_short_periods'], rw['max_short_periods'], rw['idmax_short_periods'], target_fib_level), axis=1)
+    pd_candles[f'fib_{target_fib_level}_long_periods'] = pd_candles.apply(lambda rw : estimate_fib_retracement(rw['min_long_periods'], rw['idmin_long_periods'], rw['max_long_periods'], rw['idmax_long_periods'], target_fib_level), axis=1)
 
 
     # Inflection points

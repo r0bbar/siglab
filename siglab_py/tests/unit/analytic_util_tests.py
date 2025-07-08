@@ -66,7 +66,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'typical_price', 
             'money_flow', 'money_flow_positive', 'money_flow_negative', 'positive_flow_sum', 'negative_flow_sum', 'money_flow_ratio', 'mfi', 
             'macd', 'signal', 'macd_minus_signal', 
-            'fib_618_short_periods', 'fib_618_long_periods', 
+            'fib_0.618_short_periods', 'fib_0.618_long_periods', 
             'gap_close_vs_ema', 
             'close_above_or_below_ema', 
             'close_vs_ema_inflection'
