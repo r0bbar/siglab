@@ -374,9 +374,9 @@ def compute_candles_stats(
             rsi_upper_threshold : float = 70,
             rsi_lower_threshold : float = 30):
         if row['rsi_idmax'] > row['rsi_idmin']:
-            return 'DOWN' if row.name > row['rsi_idmax'] and row['rsi'] <= rsi_upper_threshold else 'up'
+            return 'down' if row.name > row['rsi_idmax'] and row['rsi'] <= rsi_upper_threshold else 'up'
         else:
-            return 'UP' if row.name > row['rsi_idmin'] and row['rsi'] >= rsi_lower_threshold else 'down'
+            return 'up' if row.name > row['rsi_idmin'] and row['rsi'] >= rsi_lower_threshold else 'down'
 
     pd_candles['rsi_trend'] = pd_candles.apply(lambda row: rsi_trend(row), axis=1)
     
