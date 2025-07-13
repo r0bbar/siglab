@@ -174,7 +174,9 @@ def compute_candles_stats(
     pd_candles.loc[:,'l_pc'] = abs(pd_candles['low'] - pd_candles['close'].shift(1))
     pd_candles.loc[:,'tr'] = pd_candles[['h_l', 'h_pc', 'l_pc']].max(axis=1)
     pd_candles.loc[:,'atr'] = pd_candles['tr'].rolling(window=sliding_window_how_many_candles).mean()
-
+    pd_candles.loc[:,'atr_avg_short_periods'] = pd_candles['atr'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
+    pd_candles.loc[:,'atr_avg_long_periods'] = pd_candles['atr'].rolling(window=sliding_window_how_many_candles).mean()
+    
 
     '''
     @hardcode @todo
