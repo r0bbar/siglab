@@ -403,7 +403,7 @@ def compute_candles_stats(
     # MACD https://www.investopedia.com/terms/m/macd.asp
     # https://www.youtube.com/watch?v=jmPCL3l08ss
     pd_candles['macd'] = pd_candles['ema_short_periods'] - pd_candles['ema_long_periods']
-    pd_candles['signal'] = pd_candles['macd'].ewm(span=9, adjust=False).mean()
+    pd_candles['signal'] = pd_candles['macd'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False).mean()
     pd_candles['macd_minus_signal'] = pd_candles['macd'] - pd_candles['signal']
 
     if not pypy_compat:
