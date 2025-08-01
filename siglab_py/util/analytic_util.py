@@ -83,7 +83,8 @@ def compute_candles_stats(
         rsi_ema : bool = True,
         boillenger_ema : bool = False,
         slow_fast_interval_ratio : float = 3,
-        rsi_sliding_window_how_many_candles : Union[int, None] = None, # RSI standard 14
+        rsi_sliding_window_how_many_candles : int = 14, # RSI standard 14
+        rsi_trend_sliding_window_how_many_candles : int = 24*7, # This is for purpose of RSI trend identification (Locating local peaks/troughs in RSI). This should typically be multiples of 'rsi_sliding_window_how_many_candles'.
         hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
         boillenger_std_multiples_for_aggressive_moves_detect : int = 3, # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
         target_fib_level : float = 0.618,
@@ -346,9 +347,9 @@ def compute_candles_stats(
     if rsi_ema == True:
         # Use exponential moving average
         lo_ma_up = lo_up.ewm(
-            com = (rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles) - 1, 
+            com = rsi_sliding_window_how_many_candles -1, 
             adjust=True, 
-            min_periods = rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).mean()
+            min_periods = rsi_sliding_window_how_many_candles).mean()
         lo_ma_down = lo_down.ewm(
             com = (rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles) - 1, 
             adjust=True, 
@@ -356,16 +357,16 @@ def compute_candles_stats(
 
     else:
         # Use simple moving average
-        lo_ma_up = lo_up.rolling(window = rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).mean()
-        lo_ma_down = lo_down.rolling(window = rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).mean()
+        lo_ma_up = lo_up.rolling(window = rsi_sliding_window_how_many_candles).mean()
+        lo_ma_down = lo_down.rolling(window = rsi_sliding_window_how_many_candles).mean()
         
     lo_rs = lo_ma_up / lo_ma_down
     pd_candles.loc[:,'rsi'] = 100 - (100/(1 + lo_rs))
     pd_candles['ema_rsi'] = pd_candles['rsi'].ewm(
-        span=rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles, 
+        span=rsi_sliding_window_how_many_candles, 
         adjust=False).mean()
 
-    rsi_rolling = pd_candles['rsi'].rolling(window=int(rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles))
+    rsi_rolling = pd_candles['rsi'].rolling(window=int(rsi_trend_sliding_window_how_many_candles))
     pd_candles['rsi_max'] = rsi_rolling.max()
     pd_candles['rsi_idmax'] = rsi_rolling.apply(lambda x : x.idxmax())
     pd_candles['rsi_min'] = rsi_rolling.min()
