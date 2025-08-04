@@ -376,6 +376,8 @@ def compute_candles_stats(
             row,
             rsi_upper_threshold : float = 70,
             rsi_lower_threshold : float = 30):
+        if pd.isna(row['rsi_idmax']) or pd.isna(row['rsi_idmin']):
+            return np.nan
         if row['rsi_idmax'] > row['rsi_idmin']:
             return 'down' if row.name > row['rsi_idmax'] and row['rsi'] <= rsi_upper_threshold else 'up'
         else:
