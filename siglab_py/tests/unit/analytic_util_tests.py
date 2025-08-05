@@ -56,6 +56,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'chop_against_ema', 
             'ema_volume_short_periods', 'ema_volume_long_periods', 
             'max_short_periods', 'max_long_periods', 'idmax_short_periods', 'idmax_long_periods', 'min_short_periods', 'min_long_periods', 'idmin_short_periods', 'idmin_long_periods', 
+            'price_swing_short_periods', 'price_swing_long_periods',
             'h_l', 'h_pc', 'l_pc', 'tr', 'atr', 'atr_avg_short_periods', 'atr_avg_long_periods',
             'hurst_exp', 
             'boillenger_upper', 'boillenger_lower', 'boillenger_channel_height', 'boillenger_upper_agg', 'boillenger_lower_agg', 'boillenger_channel_height_agg', 

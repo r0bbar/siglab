@@ -168,6 +168,17 @@ def compute_candles_stats(
     pd_candles['idmin_short_periods'] = close_short_periods_rolling.apply(lambda x : x.idxmin())
     pd_candles['idmin_long_periods'] = close_long_periods_rolling.apply(lambda x : x.idxmin())
 
+    pd_candles['price_swing_short_periods'] = np.where(
+        pd_candles['idmax_short_periods'] > pd_candles['idmin_short_periods'],
+        pd_candles['max_short_periods'] - pd_candles['min_short_periods'],  # Up swing
+        pd_candles['min_short_periods'] - pd_candles['max_short_periods']   # Down swing (negative)
+    )
+
+    pd_candles['price_swing_long_periods'] = np.where(
+        pd_candles['idmax_long_periods'] > pd_candles['idmin_long_periods'],
+        pd_candles['max_long_periods'] - pd_candles['min_long_periods'],  # Up swing
+        pd_candles['min_long_periods'] - pd_candles['max_long_periods']   # Down swing (negative)
+    )
 
     # ATR https://medium.com/codex/detecting-ranging-and-trending-markets-with-choppiness-index-in-python-1942e6450b58 
     pd_candles.loc[:,'h_l'] = pd_candles['high'] - pd_candles['low']
