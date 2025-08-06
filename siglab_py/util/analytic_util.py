@@ -50,7 +50,31 @@ def calculate_slope(
     pd_data[f"normalized_{slope_col_name}_max"] = normalized_slope_rolling.max()
     pd_data[f"normalized_{slope_col_name}_idmin"] = normalized_slope_rolling.apply(lambda x : x.idxmin())
     pd_data[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
-    
+
+def higherhighs(series: pd.Series) -> str:
+    unique_maxima = series.dropna()[series.dropna().diff().ne(0)]
+    if len(unique_maxima) < 2:
+        return 'sideways'
+    first, last = unique_maxima.iloc[0], unique_maxima.iloc[-1]
+    if first > last:
+        return 'lower_highs'
+    elif first < last:
+        return 'higher_highs'
+    else:
+        return 'sideways'
+
+def lowerlows(series: pd.Series) -> str:
+    unique_minima = series.dropna()[series.dropna().diff().ne(0)]
+    if len(unique_minima) < 2:
+        return 'sideways'
+    first, last = unique_minima.iloc[0], unique_minima.iloc[-1]
+    if first > last:
+        return 'lower_lows'
+    elif first < last:
+        return 'higher_lows'
+    else:
+        return 'sideways'
+
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)
@@ -180,6 +204,11 @@ def compute_candles_stats(
         pd_candles['min_long_periods'] - pd_candles['max_long_periods']   # Down swing (negative)
     )
 
+    pd_candles['higher_highs_long_periods'] = higherhighs(pd_candles['max_long_periods'])
+    pd_candles['lower_lows_long_periods'] = lowerlows(pd_candles['min_long_periods'])
+    pd_candles['higher_highs_short_periods'] = higherhighs(pd_candles['max_short_periods'])
+    pd_candles['lower_lows_short_periods'] = lowerlows(pd_candles['min_short_periods'])
+
     # ATR https://medium.com/codex/detecting-ranging-and-trending-markets-with-choppiness-index-in-python-1942e6450b58 
     pd_candles.loc[:,'h_l'] = pd_candles['high'] - pd_candles['low']
     pd_candles.loc[:,'h_pc'] = abs(pd_candles['high'] - pd_candles['close'].shift(1))
@@ -199,10 +228,10 @@ def compute_candles_stats(
     Sometimes you may encounter "Exception has occurred: FloatingPointError invalid value encountered in scalar divide"
     And for example adjusting window size from 120 to 125 will resolve the issue.
     '''
+    if not hurst_exp_window_how_many_candles:
+        hurst_exp_window_how_many_candles = (sliding_window_how_many_candles if sliding_window_how_many_candles>=125 else 125)
     pd_candles['hurst_exp'] = pd_candles['close'].rolling(
-        window=(
-            hurst_exp_window_how_many_candles if hurst_exp_window_how_many_candles else (sliding_window_how_many_candles if sliding_window_how_many_candles>=125 else 125)
-            )
+        window=hurst_exp_window_how_many_candles
         ).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
 
 
@@ -395,6 +424,20 @@ def compute_candles_stats(
             return 'up' if row.name > row['rsi_idmin'] and row['rsi'] >= rsi_lower_threshold else 'down'
 
     pd_candles['rsi_trend'] = pd_candles.apply(lambda row: rsi_trend(row), axis=1)
+
+    pd_candles['rsi_higher_highs'] = higherhighs(pd_candles['rsi_max'])
+    pd_candles['rsi_lower_lows'] = lowerlows(pd_candles['rsi_min'])
+
+    def _rsi_divergence(row):
+		# Bullish Divergence: Price lower low + RSI higher low
+        if row['lower_lows_long_periods']=='lower_lows' and row['rsi_lower_lows']=='higher_lows':
+            return 'bullish_divergence'
+		# Bearish Divergence: Price higher high + RSI lower high
+        elif row['higher_highs_long_periods']=='higher_highs' and row['rsi_higher_highs']=='lower_highs':
+            return 'bearish_divergence'
+        else:
+            return 'no_divergence'
+    pd_candles['rsi_divergence'] = pd_candles.apply(_rsi_divergence, axis=1)
     
 
     # MFI (Money Flow Index) https://randerson112358.medium.com/algorithmic-trading-strategy-using-money-flow-index-mfi-python-aa46461a5ea5 
@@ -473,6 +516,13 @@ def compute_candles_stats(
         pd_candles['regular_divergence'] = (
             (pd_candles['ema_long_slope'] > 0) & (pd_candles['ema_rsi_slope'] < 0) |
             (pd_candles['ema_long_slope'] < 0) & (pd_candles['ema_rsi_slope'] > 0)
+        )
+
+        calculate_slope(
+            pd_data=pd_candles,
+            src_col_name='hurst_exp',
+            slope_col_name='hurst_exp_slope',
+            sliding_window_how_many_candles=hurst_exp_window_how_many_candles
         )
         
 
