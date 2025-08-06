@@ -1,6 +1,7 @@
 import tzlocal
 from datetime import datetime, timezone
 from typing import List, Dict, Union, NoReturn, Any, Tuple
+from enum import Enum
 from pathlib import Path
 import math
 import pandas as pd
@@ -11,6 +12,7 @@ from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
 
 from siglab_py.util.market_data_util import fix_column_types
+from constants import TrendDirection
 
 # Fibonacci
 MAGIC_FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.00, 1.618, 2.618, 3.618, 4.236]
@@ -51,34 +53,33 @@ def calculate_slope(
     pd_data[f"normalized_{slope_col_name}_idmin"] = normalized_slope_rolling.apply(lambda x : x.idxmin())
     pd_data[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
 
-def higherhighs(series: pd.Series) -> Union[str, None]:
-    if pd.isna(series.iloc[0]):
-        return None
-    unique_maxima = series.dropna()[series.dropna().diff().ne(0)]
+def trend_from_highs(series: np.ndarray) -> float:
+    valid_series = series[~np.isnan(series)]
+    unique_maxima = valid_series[np.concatenate(([True], np.diff(valid_series) != 0))]
     if len(unique_maxima) < 2:
-        return None
-    first, last = unique_maxima.iloc[0], unique_maxima.iloc[-1]
+        return TrendDirection.UNDEFINED.value
+    first, last = unique_maxima[0], unique_maxima[-1]
     if first > last:
-        return 'lower_highs'
+        return TrendDirection.LOWER_HIGHS.value
     elif first < last:
-        return 'higher_highs'
+        return TrendDirection.HIGHER_HIGHS.value
     else:
-        return 'sideways'
+        return TrendDirection.SIDEWAYS.value
 
-def lowerlows(series: pd.Series) -> Union[str, None]:
-    if pd.isna(series.iloc[0]):
-        return None
-    unique_minima = series.dropna()[series.dropna().diff().ne(0)]
+def trend_from_lows(series: np.ndarray) -> float:
+    valid_series = series[~np.isnan(series)]
+    unique_minima = valid_series[np.concatenate(([True], np.diff(valid_series) != 0))]
     if len(unique_minima) < 2:
-        return None
-    first, last = unique_minima.iloc[0], unique_minima.iloc[-1]
+        return TrendDirection.UNDEFINED.value
+    first, last = unique_minima[0], unique_minima[-1]
     if first > last:
-        return 'lower_lows'
+        return TrendDirection.LOWER_LOWS.value
     elif first < last:
-        return 'higher_lows'
+        return TrendDirection.HIGHER_LOWS.value
     else:
-        return 'sideways'
-
+        return TrendDirection.SIDEWAYS.value
+    
+    
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)
@@ -208,10 +209,26 @@ def compute_candles_stats(
         pd_candles['min_long_periods'] - pd_candles['max_long_periods']   # Down swing (negative)
     )
 
-    pd_candles['higher_highs_long_periods'] = higherhighs(pd_candles['max_long_periods'])
-    pd_candles['lower_lows_long_periods'] = lowerlows(pd_candles['min_long_periods'])
-    pd_candles['higher_highs_short_periods'] = higherhighs(pd_candles['max_short_periods'])
-    pd_candles['lower_lows_short_periods'] = lowerlows(pd_candles['min_short_periods'])
+    pd_candles['trend_from_highs_long_periods'] = np.where(
+												pd.isna(pd_candles['max_long_periods']),
+                                                None, # type: ignore
+												pd_candles['max_long_periods'].rolling(window=sliding_window_how_many_candles).apply(trend_from_highs, raw=True)
+												)
+    pd_candles['trend_from_lows_long_periods'] = np.where(
+												pd.isna(pd_candles['min_long_periods']),
+                                                None, # type: ignore
+												pd_candles['min_long_periods'].rolling(window=sliding_window_how_many_candles).apply(trend_from_lows, raw=True)
+												)
+    pd_candles['trend_from_highs_short_periods'] = np.where(
+												pd.isna(pd_candles['max_short_periods']),
+                                                None, # type: ignore
+												pd_candles['max_short_periods'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(trend_from_highs, raw=True)
+												)
+    pd_candles['trend_from_lows_short_periods'] = np.where(
+												pd.isna(pd_candles['min_short_periods']),
+                                                None, # type: ignore
+												pd_candles['min_short_periods'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(trend_from_lows, raw=True)
+												)
 
     # ATR https://medium.com/codex/detecting-ranging-and-trending-markets-with-choppiness-index-in-python-1942e6450b58 
     pd_candles.loc[:,'h_l'] = pd_candles['high'] - pd_candles['low']
@@ -429,18 +446,26 @@ def compute_candles_stats(
 
     pd_candles['rsi_trend'] = pd_candles.apply(lambda row: rsi_trend(row), axis=1)
 
-    pd_candles['rsi_higher_highs'] = higherhighs(pd_candles['rsi_max'])
-    pd_candles['rsi_lower_lows'] = lowerlows(pd_candles['rsi_min'])
+    pd_candles['rsi_trend_from_highs'] = np.where(
+												pd.isna(pd_candles['rsi_max']),
+                                                None, # type: ignore
+												pd_candles['rsi_max'].rolling(window=rsi_trend_sliding_window_how_many_candles).apply(trend_from_highs, raw=True)
+												)
+    pd_candles['rsi_trend_from_lows'] = np.where(
+												pd.isna(pd_candles['rsi_min']),
+                                                None, # type: ignore
+												pd_candles['rsi_min'].rolling(window=rsi_trend_sliding_window_how_many_candles).apply(trend_from_lows, raw=True)
+												)
 
     def _rsi_divergence(row):
-		# Bullish Divergence: Price lower low + RSI higher low
-        if row['lower_lows_long_periods']=='lower_lows' and row['rsi_lower_lows']=='higher_lows':
+        trend_from_highs_long_periods = TrendDirection(row['trend_from_highs_long_periods']) if row['trend_from_highs_long_periods'] is not None and not pd.isna(row['trend_from_highs_long_periods']) else None  # type: ignore
+        rsi_trend_from_highs = TrendDirection(row['rsi_trend_from_highs']) if row['rsi_trend_from_highs'] is not None and not pd.isna(row['rsi_trend_from_highs']) else None # type: ignore
+        
+        if trend_from_highs_long_periods and rsi_trend_from_highs and trend_from_highs_long_periods == TrendDirection.LOWER_HIGHS and rsi_trend_from_highs == TrendDirection.HIGHER_HIGHS:
             return 'bullish_divergence'
-		# Bearish Divergence: Price higher high + RSI lower high
-        elif row['higher_highs_long_periods']=='higher_highs' and row['rsi_higher_highs']=='lower_highs':
+        elif trend_from_highs_long_periods and rsi_trend_from_highs and trend_from_highs_long_periods == TrendDirection.HIGHER_HIGHS and rsi_trend_from_highs == TrendDirection.LOWER_HIGHS:
             return 'bearish_divergence'
-        else:
-            return 'no_divergence'
+        return 'no_divergence'
     pd_candles['rsi_divergence'] = pd_candles.apply(_rsi_divergence, axis=1)
     
 
