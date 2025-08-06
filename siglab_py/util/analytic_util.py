@@ -52,6 +52,8 @@ def calculate_slope(
     pd_data[f"normalized_{slope_col_name}_idmax"] = normalized_slope_rolling.apply(lambda x : x.idxmax())
 
 def higherhighs(series: pd.Series) -> Union[str, None]:
+    if pd.isna(series.iloc[0]):
+        return None
     unique_maxima = series.dropna()[series.dropna().diff().ne(0)]
     if len(unique_maxima) < 2:
         return None
@@ -64,6 +66,8 @@ def higherhighs(series: pd.Series) -> Union[str, None]:
         return 'sideways'
 
 def lowerlows(series: pd.Series) -> Union[str, None]:
+    if pd.isna(series.iloc[0]):
+        return None
     unique_minima = series.dropna()[series.dropna().diff().ne(0)]
     if len(unique_minima) < 2:
         return None
