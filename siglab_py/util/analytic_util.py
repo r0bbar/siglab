@@ -187,6 +187,40 @@ def compute_candles_stats(
     pd_candles['ema_volume_short_periods'] = pd_candles['volume'].ewm(span=sliding_window_how_many_candles/slow_fast_interval_ratio, adjust=False).mean()
     pd_candles['ema_volume_long_periods'] = pd_candles['volume'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
 
+    pd_candles['ema_cross'] = None
+    pd_candles['ema_cross_last'] = None
+    pd_candles['ema_bullish_cross_last_id'] = None
+    pd_candles['ema_bearish_cross_last_id'] = None
+    ema_short_periods_prev = pd_candles['ema_short_periods'].shift(1)
+    ema_long_periods_prev = pd_candles['ema_long_periods'].shift(1)
+    ema_short_periods_curr = pd_candles['ema_short_periods']
+    ema_long_periods_curr = pd_candles['ema_long_periods']
+    bullish_ema_crosses = (ema_short_periods_prev <= ema_long_periods_prev) & (ema_short_periods_curr > ema_long_periods_curr)
+    bearish_ema_crosses = (ema_short_periods_prev >= ema_long_periods_prev) & (ema_short_periods_curr < ema_long_periods_curr)
+    pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = 1
+    pd_candles.loc[bearish_ema_crosses, 'ema_cross'] = -1
+    pd_candles['ema_bullish_cross_last_id'] = pd_candles['ema_cross'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmax())
+    pd_candles['ema_bearish_cross_last_id'] = pd_candles['ema_cross'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmin())
+    pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = np.where(
+        pd_candles.loc[bullish_ema_crosses, 'ema_cross']==1,
+        'bullish',
+        pd_candles.loc[bullish_ema_crosses, 'ema_cross']
+    )
+    pd_candles['ema_cross_last'] = np.where(
+        pd_candles['ema_bullish_cross_last_id'] > pd_candles['ema_bearish_cross_last_id'],
+        'bullish',
+        np.where(
+            pd_candles['ema_bearish_cross_last_id'] > pd_candles['ema_bullish_cross_last_id'],
+            'bearish',
+            None # type: ignore
+        )
+    )
+
+    pd_candles['ema_cross_last'] = pd_candles['ema_cross_last'].where(
+        pd_candles['ema_bullish_cross_last_id'].isnull() & pd_candles['ema_bearish_cross_last_id'].isnull(),
+        None
+    )
+
     pd_candles['max_short_periods'] = close_short_periods_rolling.max()
     pd_candles['max_long_periods'] = close_long_periods_rolling.max()
     pd_candles['idmax_short_periods'] = close_short_periods_rolling.apply(lambda x : x.idxmax())
