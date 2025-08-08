@@ -21,6 +21,8 @@ TAs computed (This is an expanding list):
 
 + Basic SMA/EMA/VWAP (And slopes)
 
++ EMA crosses
+
 + ATR, std, log return, historical vols
 
 + Boillenger bands (Yes incorrect spelling sorry)
