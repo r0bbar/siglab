@@ -38,7 +38,7 @@ class AnalyticUtilTests(unittest.TestCase):
             pd_candles=pd_candles,
             boillenger_std_multiples=2,
             sliding_window_how_many_candles=20,
-            pypy_compat=True
+            pypy_compat=True # Slopes calculation? Set pypy_compat to False
         )
 
         expected_columns : List[str] = [

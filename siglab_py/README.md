@@ -97,7 +97,8 @@ expected_columns : List[str] = [
             'candle_height_percent', 'candle_height_percent_rounded', 
             'log_return', 'interval_hist_vol', 'annualized_hist_vol',
             'chop_against_ema', 
-            'ema_volume_short_periods', 'ema_volume_long_periods', 
+            'ema_volume_short_periods', 'ema_volume_long_periods',
+            'ema_cross', 'ema_cross_last', 'ema_bullish_cross_last_id', 'ema_bearish_cross_last_id', 
             'max_short_periods', 'max_long_periods', 'idmax_short_periods', 'idmax_long_periods', 'min_short_periods', 'min_long_periods', 'idmin_short_periods', 'idmin_long_periods', 
             'price_swing_short_periods', 'price_swing_long_periods',
             'trend_from_highs_long_periods', 'trend_from_lows_long_periods', 'trend_from_highs_short_periods', 'trend_from_lows_short_periods',
@@ -119,7 +120,7 @@ expected_columns : List[str] = [
 assert(pd_candles.columns.to_list()==expected_columns)
 ```
 
-(This list does not include the slopes calculated)
+(This list does not include the slopes calculated. Set pypy_compat to False if you want them.)
 
 Further examples on usage of market_data_util and analytic_util in back tests.
 
