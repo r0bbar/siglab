@@ -199,25 +199,27 @@ def compute_candles_stats(
     bearish_ema_crosses = (ema_short_periods_prev >= ema_long_periods_prev) & (ema_short_periods_curr < ema_long_periods_curr)
     pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = 1
     pd_candles.loc[bearish_ema_crosses, 'ema_cross'] = -1
-    pd_candles['ema_bullish_cross_last_id'] = pd_candles['ema_cross'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmax())
-    pd_candles['ema_bearish_cross_last_id'] = pd_candles['ema_cross'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmin())
-    pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = np.where(
-        pd_candles.loc[bullish_ema_crosses, 'ema_cross']==1,
-        'bullish',
-        pd_candles.loc[bullish_ema_crosses, 'ema_cross']
-    )
+    bullish_indices = pd.Series(pd_candles.index.where(pd_candles['ema_cross'] == 1), index=pd_candles.index).astype('Int64')
+    bearish_indices = pd.Series(pd_candles.index.where(pd_candles['ema_cross'] == -1), index=pd_candles.index).astype('Int64')
+    pd_candles['ema_bullish_cross_last_id'] = bullish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
+    pd_candles['ema_bearish_cross_last_id'] = bearish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
     pd_candles['ema_cross_last'] = np.where(
-        pd_candles['ema_bullish_cross_last_id'] > pd_candles['ema_bearish_cross_last_id'],
+    (pd_candles['ema_bullish_cross_last_id'].notna()) & (
+            pd_candles['ema_bearish_cross_last_id'].isna() | 
+            (pd_candles['ema_bullish_cross_last_id'] > pd_candles['ema_bearish_cross_last_id'])
+        ),
         'bullish',
         np.where(
-            pd_candles['ema_bearish_cross_last_id'] > pd_candles['ema_bullish_cross_last_id'],
+            (pd_candles['ema_bearish_cross_last_id'].notna()) & (
+                pd_candles['ema_bullish_cross_last_id'].isna() | 
+                (pd_candles['ema_bearish_cross_last_id'] > pd_candles['ema_bullish_cross_last_id'])
+            ),
             'bearish',
             None # type: ignore
         )
     )
-
     pd_candles['ema_cross_last'] = pd_candles['ema_cross_last'].where(
-        pd_candles['ema_bullish_cross_last_id'].isnull() & pd_candles['ema_bearish_cross_last_id'].isnull(),
+        pd_candles['ema_bullish_cross_last_id'].isna() & pd_candles['ema_bearish_cross_last_id'].isna(),
         None
     )
 
