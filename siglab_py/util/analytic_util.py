@@ -141,7 +141,6 @@ def compute_candles_stats(
     close_short_periods_ewm = pd_candles['close'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False)
     close_long_periods_ewm = pd_candles['close'].ewm(span=sliding_window_how_many_candles, adjust=False)
 
-
     pd_candles['pct_change_close'] = pd_candles['close'].pct_change() * 100
     pd_candles['sma_short_periods'] = close_short_periods_rolling.mean()
     pd_candles['sma_long_periods'] = close_long_periods_rolling.mean()
@@ -203,25 +202,25 @@ def compute_candles_stats(
     bearish_indices = pd.Series(pd_candles.index.where(pd_candles['ema_cross'] == -1), index=pd_candles.index).astype('Int64')
     pd_candles['ema_bullish_cross_last_id'] = bullish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
     pd_candles['ema_bearish_cross_last_id'] = bearish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
-    pd_candles['ema_cross_last'] = np.where(
-    (pd_candles['ema_bullish_cross_last_id'].notna()) & (
-            pd_candles['ema_bearish_cross_last_id'].isna() | 
-            (pd_candles['ema_bullish_cross_last_id'] > pd_candles['ema_bearish_cross_last_id'])
-        ),
-        'bullish',
-        np.where(
-            (pd_candles['ema_bearish_cross_last_id'].notna()) & (
-                pd_candles['ema_bullish_cross_last_id'].isna() | 
-                (pd_candles['ema_bearish_cross_last_id'] > pd_candles['ema_bullish_cross_last_id'])
-            ),
-            'bearish',
-            None # type: ignore
-        )
-    )
-    pd_candles['ema_cross_last'] = pd_candles['ema_cross_last'].where(
-        pd_candles['ema_bullish_cross_last_id'].isna() & pd_candles['ema_bearish_cross_last_id'].isna(),
-        None
-    )
+    conditions = [
+        (pd_candles['ema_bullish_cross_last_id'].notna() & 
+        pd_candles['ema_bearish_cross_last_id'].notna() &
+        (pd_candles['ema_bullish_cross_last_id'] > pd_candles['ema_bearish_cross_last_id'])),
+        
+        (pd_candles['ema_bullish_cross_last_id'].notna() & 
+        pd_candles['ema_bearish_cross_last_id'].notna() &
+        (pd_candles['ema_bearish_cross_last_id'] > pd_candles['ema_bullish_cross_last_id'])),
+        
+        (pd_candles['ema_bullish_cross_last_id'].notna() & 
+        pd_candles['ema_bearish_cross_last_id'].isna()),
+        
+        (pd_candles['ema_bearish_cross_last_id'].notna() & 
+        pd_candles['ema_bullish_cross_last_id'].isna())
+    ]
+    choices = ['bullish', 'bearish', 'bullish', 'bearish']
+    pd_candles['ema_cross_last'] = np.select(conditions, choices, default=None) # type: ignore
+    pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = 'bullish'
+    pd_candles.loc[bearish_ema_crosses, 'ema_cross'] = 'bearish'
 
     pd_candles['max_short_periods'] = close_short_periods_rolling.max()
     pd_candles['max_long_periods'] = close_long_periods_rolling.max()
