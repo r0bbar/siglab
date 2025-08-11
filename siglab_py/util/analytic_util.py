@@ -167,6 +167,8 @@ def compute_candles_stats(
         pd_candles['annualized_volatility'] = (
             pd_candles['interval_historical_volatility'] * annualization_factor
         )
+
+    Why log return? Trading Dude https://python.plainenglish.io/stop-using-percentage-returns-logarithmic-returns-explained-with-code-64a4634b883a
     '''
     pd_candles['log_return'] = np.log(pd_candles['close'] / pd_candles['close'].shift(1))
     pd_candles['interval_hist_vol'] = pd_candles['log_return'].rolling(window=sliding_window_how_many_candles).std()
