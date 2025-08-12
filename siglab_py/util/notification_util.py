@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tabulate import tabulate
 
-from util.slack_notification_util import slack_dispatch_notification
+from siglab_py.util.slack_notification_util import slack_dispatch_notification
 
 from siglab_py.constants import LogLevel
 
