@@ -83,14 +83,15 @@ def trend_from_lows(series: np.ndarray) -> float:
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)
-    b. ATR
-    c. Boillenger bands (Yes incorrect spelling sorry)
-    d. FVG
-    e. Hurst Exponent
-    f. RSI, MFI
-    g. MACD
-    h. Fibonacci
-    i. Inflections points: where 'close' crosses EMA from above or below.
+    b. EMA crosses
+    c. ATR
+    d. Boillenger bands (Yes incorrect spelling sorry)
+    e. FVG
+    f. Hurst Exponent
+    g. RSI, MFI
+    h. MACD
+    i. Fibonacci
+    j. Inflections points: where 'close' crosses EMA from above or below.
 
 Parameters:
     a. boillenger_std_multiples: For boillenger upper and lower calc
