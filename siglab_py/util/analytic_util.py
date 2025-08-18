@@ -434,8 +434,11 @@ def compute_candles_stats(
 
     pd_candles['fvg_mitigated'] = pd_candles.apply(lambda row: compute_fvg_mitigated(row, pd_candles), axis=1)
 
-
-    # RSI - https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
+    '''
+        RSI
+        Divergences from Bybit Learn https://www.youtube.com/watch?v=G9oUTi-PI18&t=809s 
+        RSI Reversals from BK Traders https://www.youtube.com/watch?v=MvkbrHjiQlI
+    '''
     pd_candles.loc[:,'close_delta'] = pd_candles['close'].diff()
     pd_candles.loc[:,'close_delta_percent'] = pd_candles['close'].pct_change()
     lo_up = pd_candles['close_delta'].clip(lower=0)
