@@ -2,7 +2,7 @@ import unittest
 from typing import List
 from pathlib import Path
 
-from util.analytic_util import compute_candles_stats
+from util.analytic_util import compute_candles_stats, lookup_fib_target
 
 import pandas as pd
 
@@ -79,3 +79,28 @@ class AnalyticUtilTests(unittest.TestCase):
         unexpected_columns = [ actual for actual in pd_candles.columns.to_list() if actual not in expected_columns ]
 
         assert(pd_candles.columns.to_list()==expected_columns)
+
+    def test_lookup_fib_target(self):
+        data_dir = Path(__file__).parent.parent.parent.parent / "data"
+        csv_path = data_dir / "sample_btc_candles.csv"
+        pd_candles : pd.DataFrame = pd.read_csv(csv_path)
+        target_fib_level : float = 0.618
+        compute_candles_stats(
+            pd_candles=pd_candles,
+            boillenger_std_multiples=2,
+            sliding_window_how_many_candles=20,
+            target_fib_level=target_fib_level,
+            pypy_compat=True # Slopes calculation? Set pypy_compat to False
+        )
+
+        last_row = pd_candles.iloc[-1]
+        result = lookup_fib_target(
+            row=last_row, 
+            pd_candles=pd_candles,
+            target_fib_level=target_fib_level
+            )
+        if result:
+            assert(result['short_periods']['min']<result['short_periods']['fib_target']<result['short_periods']['max'])
+            assert(result['long_periods']['min']<result['long_periods']['fib_target']<result['long_periods']['max'])
+        
+

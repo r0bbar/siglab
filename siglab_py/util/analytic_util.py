@@ -612,6 +612,68 @@ def compute_candles_stats(
         'close_vs_ema_inflection'
     ] = np.sign(pd_candles['close'] - pd_candles['ema_long_periods'])
 
+def lookup_fib_target(
+            row,
+            pd_candles,
+            target_fib_level : float = 0.618
+        ) -> Union[Dict, None]:
+            if row is None:
+                return None
+            
+            fib_target_short_periods = None
+            fib_target_long_periods = None
+
+            max_short_periods = row['max_short_periods']
+            idmax_short_periods = int(row['idmax_short_periods']) if not math.isnan(row['idmax_short_periods']) else None
+            max_long_periods = row['max_long_periods']
+            idmax_long_periods = int(row['idmax_long_periods']) if not math.isnan(row['idmax_long_periods']) else None
+
+            min_short_periods = row['min_short_periods']
+            idmin_short_periods = int(row['idmin_short_periods']) if not math.isnan(row['idmin_short_periods']) else None
+            min_long_periods = row['min_long_periods']
+            idmin_long_periods = int(row['idmin_long_periods']) if not math.isnan(row['idmin_long_periods']) else None
+                        
+            if idmax_short_periods and idmin_short_periods and idmax_short_periods>0 and idmin_short_periods>0:
+                if idmax_short_periods>idmin_short_periods and idmax_short_periods < len(pd_candles):
+                    # Falling from prev peak
+                    last_peak = pd_candles.iloc[idmax_short_periods]
+                    fib_target_short_periods = last_peak[f'fib_{target_fib_level}_short_periods'] if not math.isnan(last_peak[f'fib_{target_fib_level}_short_periods']) else None
+                    
+                else:
+                    # Bouncing from prev bottom
+                    if idmin_short_periods < len(pd_candles):
+                        last_bottom = pd_candles.iloc[idmin_short_periods]
+                        fib_target_short_periods = last_bottom[f'fib_{target_fib_level}_short_periods'] if not math.isnan(last_bottom[f'fib_{target_fib_level}_short_periods']) else None
+                        
+            if idmax_long_periods and idmin_long_periods and idmax_long_periods>0 and idmin_long_periods>0:
+                if idmax_long_periods>idmin_long_periods and idmax_long_periods < len(pd_candles):
+                    # Falling from prev peak
+                    last_peak = pd_candles.iloc[idmax_long_periods]
+                    fib_target_long_periods = last_peak[f'fib_{target_fib_level}_long_periods'] if not math.isnan(last_peak[f'fib_{target_fib_level}_long_periods']) else None
+                    
+                else:
+                    # Bouncing from prev bottom
+                    if idmin_long_periods < len(pd_candles):
+                        last_bottom = pd_candles.iloc[idmin_long_periods]
+                        fib_target_long_periods = last_bottom[f'fib_{target_fib_level}_long_periods'] if not math.isnan(last_bottom[f'fib_{target_fib_level}_long_periods']) else None
+            
+            return {
+                'short_periods' : {
+                    'idmin' : idmin_short_periods,
+                    'idmax' : idmax_short_periods,
+                    'min' : min_short_periods,
+                    'max' : max_short_periods,
+                    'fib_target' : fib_target_short_periods,
+                },
+                'long_periods' : {
+                    'idmin' : idmin_long_periods,
+                    'idmax' : idmax_long_periods,
+                    'min' : min_long_periods,
+                    'max' : max_long_periods,
+                    'fib_target' : fib_target_long_periods
+                }
+            }
+
 ''' 
 The implementation from Geeksforgeeks https://www.geeksforgeeks.org/find-indices-of-all-local-maxima-and-local-minima-in-an-array/ is wrong. 
 If you have consecutive-duplicates, things will gall apart!
