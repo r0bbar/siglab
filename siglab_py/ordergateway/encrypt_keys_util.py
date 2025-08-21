@@ -1,5 +1,5 @@
 from typing import Union
-from util.aws_util import AwsKmsUtil
+from siglab_py.util.aws_util import AwsKmsUtil
 
 '''
 From command line, run 'aws configure' with IAM user's Access key ID and Secret access key. (Assume you have awscli installed)
