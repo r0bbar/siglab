@@ -4,7 +4,7 @@ https://www.futuhk.com/en/support/categories/909?global_content=%7B%22promote_id
 
 Fees: https://www.futuhk.com/en/commissionnew#crypto
 
-Subscribe L2 data: https://openapi.futunn.com/futu-api-doc/en/intro/authority.html#5331
+Subscribe L2 data: https://openapi.futunn.com/futu-api-doc/en/intro/authority.html
 
 Investor Protection: https://www.futuhk.com/en
 
