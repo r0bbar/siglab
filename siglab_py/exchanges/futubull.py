@@ -15,8 +15,17 @@ Margin Trading:
 Download Futu OpenD
     https://www.futuhk.com/en/support/topic1_464?global_content=%7B%22promote_id%22%3A13765%2C%22sub_promote_id%22%3A10%7D
 
-    If you run the installer version "Futu_OpenD-GUI_9.0.5008_Windows.exe", it'd be installed under:
+    If you run the installer version "Futu_OpenD-GUI_9.0.5008_Windows.exe", it'd be installed under C-Drive:
         C:\\Users\\xxx\\AppData\\Roaming\\Futu_OpenD\\Futu_OpenD.exe
+    Unfortunately, log folder also under C-drive as a result, and they are big.
+
+    For command line version: https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html
+        Binary under downloaded package (You can put it under for example D-drive): 
+            ...\Futu_OpenD_9.4.5408_Windows\Futu_OpenD_9.4.5408_Windows
+            
+        Put a batch file "start_futu_opend.bat", if login_pwd include special characters, enclose pwd with double quotes:
+            FutuOpenD -login_account=1234567 -login_pwd="... Your Secret here ..."
+    Config file is "FutuOpenD.xml", you can adjust logging verbosity here.
 
 Architecture: https://openapi.futunn.com/futu-api-doc/en/intro/intro.html
 
