@@ -580,7 +580,7 @@ def compute_candles_stats(
             pd_data=pd_candles,
             src_col_name='ema_rsi',
             slope_col_name='ema_rsi_slope',
-            sliding_window_how_many_candles=int(sliding_window_how_many_candles)
+            sliding_window_how_many_candles=int(rsi_trend_sliding_window_how_many_candles)
         )
 
         pd_candles['regular_divergence'] = (
