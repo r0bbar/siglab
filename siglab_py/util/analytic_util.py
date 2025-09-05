@@ -121,6 +121,7 @@ def compute_candles_stats(
         pypy_compat : bool = True
         ):
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
+    pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open']
 
     '''
     market_data_gizmo inserted dummy lines --> Need exclude those or "TypeError: unorderable types for comparison": pd_btc_candles = pd_btc_candles[pd_btc_candles.close.notnull()]
@@ -156,6 +157,9 @@ def compute_candles_stats(
 
     pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
     pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
+
+    pd_candles['candle_body_height_percent'] = pd_candles['candle_body_height'] / pd_candles['ema_close'] * 100
+    pd_candles['candle_body_height_percent_rounded'] = pd_candles['candle_body_height_percent'].round().astype('Int64')
 
     '''
     To annualize volatility:
