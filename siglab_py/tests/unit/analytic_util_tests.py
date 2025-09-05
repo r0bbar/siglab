@@ -57,6 +57,8 @@ class AnalyticUtilTests(unittest.TestCase):
             'ema_volume_short_periods', 'ema_volume_long_periods', 
             'ema_cross', 'ema_cross_last', 'ema_bullish_cross_last_id', 'ema_bearish_cross_last_id',
             'max_short_periods', 'max_long_periods', 'idmax_short_periods', 'idmax_long_periods', 'min_short_periods', 'min_long_periods', 'idmin_short_periods', 'idmin_long_periods', 
+            'max_candle_body_height_percent_long_periods', 'idmax_candle_body_height_percent_long_periods',
+            'min_candle_body_height_percent_long_periods', 'idmin_candle_body_height_percent_long_periods',
             'price_swing_short_periods', 'price_swing_long_periods',
             'trend_from_highs_long_periods', 'trend_from_lows_long_periods', 'trend_from_highs_short_periods', 'trend_from_lows_short_periods',
             'h_l', 'h_pc', 'l_pc', 'tr', 'atr', 'atr_avg_short_periods', 'atr_avg_long_periods',

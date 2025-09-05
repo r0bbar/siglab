@@ -239,6 +239,11 @@ def compute_candles_stats(
     pd_candles['idmin_short_periods'] = close_short_periods_rolling.apply(lambda x : x.idxmin())
     pd_candles['idmin_long_periods'] = close_long_periods_rolling.apply(lambda x : x.idxmin())
 
+    pd_candles['max_candle_body_height_percent_long_periods'] = pd_candles['candle_body_height_percent'].rolling(window=sliding_window_how_many_candles).max()
+    pd_candles['idmax_candle_body_height_percent_long_periods'] = pd_candles['candle_body_height_percent'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmax())
+    pd_candles['min_candle_body_height_percent_long_periods'] = pd_candles['candle_body_height_percent'].rolling(window=sliding_window_how_many_candles).min()
+    pd_candles['idmin_candle_body_height_percent_long_periods'] = pd_candles['candle_body_height_percent'].rolling(window=sliding_window_how_many_candles).apply(lambda x : x.idxmin())
+
     pd_candles['price_swing_short_periods'] = np.where(
         pd_candles['idmax_short_periods'] > pd_candles['idmin_short_periods'],
         pd_candles['max_short_periods'] - pd_candles['min_short_periods'],  # Up swing
