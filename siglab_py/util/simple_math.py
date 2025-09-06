@@ -16,7 +16,7 @@ def generate_rand_nums(
     if abs_max<range_max:
         abs_max = range_max
 
-    result = []
+    result : List[float] = []
     for _ in range(int(size * percent_in_range/100)):
         result.append(random.uniform(range_min, range_max))
     for _ in range(size - len(result)):
