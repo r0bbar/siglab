@@ -108,6 +108,9 @@ class SimpleMathTests(unittest.TestCase):
             assert(rounded_price==expected)
 
     def test_bucket_series(self):
+
+        level_granularity : float = 0.1
+
         range_min : float = 0
         range_max : float = 1
         size : int = 100
@@ -129,7 +132,8 @@ class SimpleMathTests(unittest.TestCase):
             Dict[str,Union[float, List[float]]]
         ] = bucket_series(
                                                 values = rand_nums,
-                                                outlier_threshold_percent = 10
+                                                outlier_threshold_percent = 10,
+                                                level_granularity=level_granularity
                                             )
         
 
@@ -151,7 +155,8 @@ class SimpleMathTests(unittest.TestCase):
 
         buckets = bucket_series(
                                     values = rand_nums,
-                                    outlier_threshold_percent = 10
+                                    outlier_threshold_percent = 10,
+                                    level_granularity=level_granularity
                                 )
         
 
@@ -173,7 +178,8 @@ class SimpleMathTests(unittest.TestCase):
 
         buckets = bucket_series(
                                     values = rand_nums,
-                                    outlier_threshold_percent = 10
+                                    outlier_threshold_percent = 10,
+                                    level_granularity=level_granularity
                                 )
         
 
@@ -195,7 +201,8 @@ class SimpleMathTests(unittest.TestCase):
 
         buckets = bucket_series(
                                     values = rand_nums,
-                                    outlier_threshold_percent = 10
+                                    outlier_threshold_percent = 10,
+                                    level_granularity=level_granularity
                                 )
         
 
@@ -217,5 +224,6 @@ class SimpleMathTests(unittest.TestCase):
 
         buckets = bucket_series(
                                     values = rand_nums,
-                                    outlier_threshold_percent = 10
+                                    outlier_threshold_percent = 10,
+                                    level_granularity=level_granularity
                                 )
