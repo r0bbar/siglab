@@ -1,7 +1,7 @@
 import unittest
-from typing import List
+from typing import List, Dict, Union
 
-from util.simple_math import generate_rand_nums, round_to_level
+from util.simple_math import generate_rand_nums, round_to_level, bucket_series
 
 class SimpleMathTests(unittest.TestCase):
 
@@ -106,3 +106,116 @@ class SimpleMathTests(unittest.TestCase):
             rounded_price = round_to_level(price, level_granularity=0.01)
             print(f"{price} rounded to: {rounded_price}")
             assert(rounded_price==expected)
+
+    def test_bucket_series(self):
+        range_min : float = 0
+        range_max : float = 1
+        size : int = 100
+        percentage_in_range : float = 91
+        abs_min : float = -0.5
+        abs_max : float = 1.1
+
+        rand_nums : List[float] = generate_rand_nums(
+                                        range_min = range_min,
+                                        range_max = range_max,
+                                        size = size, 
+                                        percent_in_range = percentage_in_range,
+                                        abs_min = abs_min,
+                                        abs_max = abs_max
+                                    )
+
+        buckets : Dict[
+            str, 
+            Dict[str,Union[float, List[float]]]
+        ] = bucket_series(
+                                                values = rand_nums,
+                                                outlier_threshold_percent = 10
+                                            )
+        
+
+        range_min = -1
+        range_max = 1
+        size : int = 100
+        percentage_in_range = 91
+        abs_min = -1.5
+        abs_max = 1.5
+
+        rand_nums : List[float] = generate_rand_nums(
+                                        range_min = range_min,
+                                        range_max = range_max,
+                                        size = size, 
+                                        percent_in_range = percentage_in_range,
+                                        abs_min = abs_min,
+                                        abs_max = abs_max
+                                    )
+
+        buckets = bucket_series(
+                                    values = rand_nums,
+                                    outlier_threshold_percent = 10
+                                )
+        
+
+        range_min = 0
+        range_max = 100
+        size : int = 100
+        percentage_in_range = 91
+        abs_min = -0.5
+        abs_max = 150
+
+        rand_nums : List[float] = generate_rand_nums(
+                                        range_min = range_min,
+                                        range_max = range_max,
+                                        size = size, 
+                                        percent_in_range = percentage_in_range,
+                                        abs_min = abs_min,
+                                        abs_max = abs_max
+                                    )
+
+        buckets = bucket_series(
+                                    values = rand_nums,
+                                    outlier_threshold_percent = 10
+                                )
+        
+
+        range_min = -100
+        range_max = 100
+        size : int = 100
+        percentage_in_range = 91
+        abs_min = -150
+        abs_max = 150
+
+        rand_nums : List[float] = generate_rand_nums(
+                                        range_min = range_min,
+                                        range_max = range_max,
+                                        size = size, 
+                                        percent_in_range = percentage_in_range,
+                                        abs_min = abs_min,
+                                        abs_max = abs_max
+                                    )
+
+        buckets = bucket_series(
+                                    values = rand_nums,
+                                    outlier_threshold_percent = 10
+                                )
+        
+
+        range_min = 20_000
+        range_max = 120_000
+        size : int = 100
+        percentage_in_range = 91
+        abs_min = 15_000
+        abs_max = 130_000
+
+        rand_nums : List[float] = generate_rand_nums(
+                                        range_min = range_min,
+                                        range_max = range_max,
+                                        size = size, 
+                                        percent_in_range = percentage_in_range,
+                                        abs_min = abs_min,
+                                        abs_max = abs_max
+                                    )
+
+        buckets = bucket_series(
+                                    values = rand_nums,
+                                    outlier_threshold_percent = 10
+                                )
