@@ -8,7 +8,7 @@ def generate_rand_nums(
         percent_in_range : float = 100,
         abs_min : float = 0,
         abs_max : float = 1
-    ):
+    ) -> List[float]:
     assert(range_min<range_max)
 
     if abs_min>range_min:
