@@ -1,7 +1,7 @@
 import unittest
 from typing import List
 
-from util.simple_math import generate_rand_nums
+from util.simple_math import generate_rand_nums, round_to_level
 
 class SimpleMathTests(unittest.TestCase):
 
@@ -85,3 +85,24 @@ class SimpleMathTests(unittest.TestCase):
         assert(len(rand_nums)==size)
         assert(len([x for x in rand_nums if x>=range_min and x<=range_max]) == (percentage_in_range/100) * size)
         assert(len([x for x in rand_nums if x<abs_min or x>abs_max]) == 0)
+
+    def test_round_to_level(self):
+        prices = [ 
+            { 'price' : 15080, 'rounded' : 15000}, 
+            { 'price' : 15180, 'rounded' : 15200}, 
+            { 'price' : 25080, 'rounded' : 25200}, 
+            { 'price' : 25180, 'rounded' : 25200}, 
+            { 'price' : 25380, 'rounded' : 25500}, 
+            { 'price' : 95332, 'rounded' : 95000}, 
+            { 'price' : 95878, 'rounded' : 96000}, 
+            { 'price' : 103499, 'rounded' : 103000}, 
+            { 'price' : 103500, 'rounded' : 104000}, 
+            { 'price' : 150800, 'rounded' : 150000}, 
+            { 'price' : 151800, 'rounded' : 152000}
+        ]
+        for entry in prices:
+            price = entry['price']
+            expected = entry['rounded']
+            rounded_price = round_to_level(price, level_granularity=0.01)
+            print(f"{price} rounded to: {rounded_price}")
+            assert(rounded_price==expected)

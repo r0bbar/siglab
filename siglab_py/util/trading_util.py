@@ -116,15 +116,3 @@ def calc_eff_trailing_sl(
             effective_tp_trailing_percent = default_effective_tp_trailing_percent
 
     return effective_tp_trailing_percent
-
-# https://norman-lm-fung.medium.com/levels-are-psychological-7176cdefb5f2
-def round_to_level(
-            price : float,
-            level_granularity : float = 0.01
-        ) -> float:
-    level_size = price * level_granularity
-    magnitude = math.floor(math.log10(level_size))
-    base_increment = 10 ** magnitude
-    rounded_level_size = round(level_size / base_increment) * base_increment
-    rounded_price = round(price / rounded_level_size) * rounded_level_size
-    return rounded_price

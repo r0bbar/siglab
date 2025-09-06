@@ -1,3 +1,4 @@
+import math
 import random
 from typing import List
 
@@ -28,3 +29,15 @@ def generate_rand_nums(
     random.shuffle(result)
 
     return result
+
+# https://norman-lm-fung.medium.com/levels-are-psychological-7176cdefb5f2
+def round_to_level(
+            num : float,
+            level_granularity : float = 0.01
+        ) -> float:
+    level_size = num * level_granularity
+    magnitude = math.floor(math.log10(level_size))
+    base_increment = 10 ** magnitude
+    rounded_level_size = round(level_size / base_increment) * base_increment
+    rounded_num = round(num / rounded_level_size) * rounded_level_size
+    return rounded_num
