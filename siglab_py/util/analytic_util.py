@@ -11,6 +11,7 @@ from hurst import compute_Hc # compatible with pypy
 from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
 
+from siglab_py.util.simple_math import bucket_series, bucketize_val
 from siglab_py.util.market_data_util import fix_column_types
 from siglab_py.constants import TrendDirection
 
@@ -473,6 +474,13 @@ def compute_candles_stats(
         
     lo_rs = lo_ma_up / lo_ma_down
     pd_candles.loc[:,'rsi'] = 100 - (100/(1 + lo_rs))
+    rsi_buckets = bucket_series(
+        values = pd_candles['rsi'].to_list(),
+        outlier_threshold_percent=10,
+        level_granularity=0.1
+    )
+    
+    pd_candles['rsi_bucket'] = pd_candles['rsi'].apply(lambda x: bucketize_val(x, buckets=rsi_buckets))
     pd_candles['ema_rsi'] = pd_candles['rsi'].ewm(
         span=rsi_sliding_window_how_many_candles, 
         adjust=False).mean()
@@ -534,6 +542,12 @@ def compute_candles_stats(
         rsi_sliding_window_how_many_candles if rsi_sliding_window_how_many_candles else sliding_window_how_many_candles).sum()
     pd_candles['money_flow_ratio'] = pd_candles['positive_flow_sum'] / pd_candles['negative_flow_sum']
     pd_candles['mfi'] = 100 - (100 / (1 + pd_candles['money_flow_ratio']))
+    mfi_buckets = bucket_series(
+        values = pd_candles['mfi'].to_list(),
+        outlier_threshold_percent=10,
+        level_granularity=0.1
+    )
+    pd_candles['mfi_bucket'] = pd_candles['mfi'].apply(lambda x: bucketize_val(x, buckets=mfi_buckets))
     
 
     # MACD https://www.investopedia.com/terms/m/macd.asp
