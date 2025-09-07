@@ -190,3 +190,16 @@ def bucket_series(
         assert(len([x for x in bucket['values'] if x<bucket['min'] or x>bucket['max']])==0) # type: ignore
 
     return buckets
+
+def bucketize_val(
+            x : float,
+            buckets : Dict[
+            str, 
+            Dict[str,Union[float, List[float]]]
+        ]
+    ) -> Union[str,None]:
+        for key in buckets:
+            bucket = buckets[key]
+            if x>=bucket['min'] and x<=bucket['max']: # type: ignore
+                return key
+        return None

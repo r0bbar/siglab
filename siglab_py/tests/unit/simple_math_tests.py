@@ -1,7 +1,7 @@
 import unittest
 from typing import List, Dict, Union
 
-from util.simple_math import generate_rand_nums, round_to_level, bucket_series
+from util.simple_math import generate_rand_nums, round_to_level, bucket_series, bucketize_val
 
 class SimpleMathTests(unittest.TestCase):
 
@@ -136,7 +136,13 @@ class SimpleMathTests(unittest.TestCase):
                                                 level_granularity=level_granularity
                                             )
         
+        bucketized = []
+        for num in rand_nums:
+            bucketized.append(
+                bucketize_val(num, buckets=buckets)
+            )
 
+        
         range_min = -1
         range_max = 1
         size : int = 100
