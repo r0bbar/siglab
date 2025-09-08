@@ -185,6 +185,8 @@ def compute_candles_stats(
     annualization_factor = np.sqrt(candles_per_year)
     pd_candles['annualized_hist_vol'] = pd_candles['interval_hist_vol'] * annualization_factor
 
+    pd_candles['gap_ema_close_vs_ema'] = pd_candles['ema_close'] - pd_candles['ema_long_periods']
+    pd_candles['gap_ema_close_vs_ema_percent'] = pd_candles['gap_ema_close_vs_ema']/pd_candles['ema_close'] * 100
 
     pd_candles['chop_against_ema'] = (
         (~pd_candles['is_green'] & (pd_candles['close'] > pd_candles['ema_close'])) |  # Case 1: Green candle and close > EMA

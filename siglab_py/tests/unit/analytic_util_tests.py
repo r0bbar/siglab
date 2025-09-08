@@ -53,6 +53,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'vwap_short_periods', 'vwap_long_periods',
             'candle_height_percent', 'candle_height_percent_rounded', 'candle_body_height_percent', 'candle_body_height_percent_rounded',
             'log_return', 'interval_hist_vol', 'annualized_hist_vol',
+            'gap_ema_close_vs_ema', 'gap_ema_close_vs_ema_percent',
             'chop_against_ema', 
             'ema_volume_short_periods', 'ema_volume_long_periods', 
             'ema_cross', 'ema_cross_last', 'ema_bullish_cross_last_id', 'ema_bearish_cross_last_id',
