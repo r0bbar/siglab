@@ -625,6 +625,8 @@ def compute_candles_stats(
 
     # Inflection points
     pd_candles['gap_close_vs_ema'] = pd_candles['close'] - pd_candles['ema_long_periods']
+    pd_candles['gap_close_vs_ema_percent'] = pd_candles['gap_close_vs_ema']/pd_candles['close'] *100
+
     pd_candles['close_above_or_below_ema'] = None
     pd_candles.loc[pd_candles['gap_close_vs_ema'] > 0, 'close_above_or_below_ema'] = 'above'
     pd_candles.loc[pd_candles['gap_close_vs_ema'] < 0, 'close_above_or_below_ema'] = 'below'
