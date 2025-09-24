@@ -126,11 +126,9 @@ assert(pd_candles.columns.to_list()==expected_columns)
 
 Further examples on usage of market_data_util and analytic_util in back tests.
 
-### Examples 1: Fibonacci
-    https://medium.com/@norman-lm-fung/debunking-myth-fibonacci-618-ea957c795d5a
-
-### Example 2: Trading breakouts
-    https://medium.com/@norman-lm-fung/debunking-myths-trading-breakouts-f73db8006f44
+### Examples: Fibonacci
+    Back test: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.py
+    Notebook to view equity curve and calc Sharpe: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
 
 **partition_sliding_window** segments time series based on inflection points: Where price crosses MAs.
     https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
