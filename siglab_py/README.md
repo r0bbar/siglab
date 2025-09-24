@@ -126,7 +126,7 @@ assert(pd_candles.columns.to_list()==expected_columns)
 
 Further examples on usage of market_data_util and analytic_util in back tests.
 
-### Examples: Fibonacci
+### Example on using siglab_py in back tests: A simple buy dip strategy with target using Fibonacci 618
 - Back test: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.py
 
 - Notebook to view equity curve and calc Sharpe: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
