@@ -1901,7 +1901,7 @@ def run_all_scenario(
         target_candle_file_name_fast : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_file_name_slow : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name_fast):
-            if algo_param['force_reload'] and 'reference_candles_file' in algo_param and os.path.isfile(algo_param['reference_candles_file']):
+            if algo_param['force_reload'] and 'reference_candles_file' in algo_param and algo_param['reference_candles_file'] and os.path.isfile(algo_param['reference_candles_file']):
                 pd_ref_candles_fast = pd.read_csv(algo_param['reference_candles_file'])
                 pd_ref_candles_slow : pd.DataFrame = pd_ref_candles_fast.copy(deep=True)
 
@@ -1987,7 +1987,7 @@ def run_all_scenario(
                         pd_hi_candles = None
                         target_candle_file_name : str = f'{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["hi_candle_size"]}.csv'
                         if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name):
-                            if algo_param['force_reload'] and 'hi_candles_file' in algo_param and os.path.isfile(algo_param['hi_candles_file']):
+                            if algo_param['force_reload'] and 'hi_candles_file' in algo_param and algo_param['hi_candles_file'] and os.path.isfile(algo_param['hi_candles_file']):
                                 pd_hi_candles : pd.DataFrame = pd.read_csv(algo_param['hi_candles_file'])
 
                             else:
@@ -2039,7 +2039,7 @@ def run_all_scenario(
                         _ticker = ticker.split(":")[0].replace("/","")
                         target_candle_file_name : str = f'{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["lo_candle_size"]}.csv'
                         if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name):
-                            if algo_param['force_reload'] and 'lo_candles_file' in algo_param and os.path.isfile(algo_param['lo_candles_file']):
+                            if algo_param['force_reload'] and 'lo_candles_file' in algo_param and algo_param['lo_candles_file'] and os.path.isfile(algo_param['lo_candles_file']):
                                 pd_lo_candles : pd.DataFrame = pd.read_csv(algo_param['lo_candles_file'])
 
                             else:
