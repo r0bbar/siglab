@@ -112,16 +112,16 @@ strategy_mode_values : List[str]= [ 'long_short'] # 'long_only', 'short_only', '
 
 
 start_dates : List[datetime] = [ 
-    datetime(2024, 4, 1),
+    # datetime(2024, 4, 1),
     # datetime(2023, 1,1)
-    # datetime(2021, 3, 1),
+    datetime(2021, 3, 1),
 ]
 
 # 'hi' refers to 'higher timeframe'
 hi_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('1d', 30, 478),
+    # ('1d', 30, 478),
     # ('1d', 30, 887),
-    # ('1d', 30, 1595),
+    ('1d', 30, 1595),
 ]
 
 '''
@@ -130,9 +130,9 @@ hi_how_many_candles_values : List[Tuple[str, int, int]] = [
 - total num candles to fetch: It's just your test duration from start to end, how many candles are there?
 '''
 lo_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('1h', 24, 24*478),
+    # ('1h', 24, 24*478),
     # ('1h', 24, 24*887),
-    # ('1h', 24, 24*1595),
+    ('1h', 24, 24*1595),
 ]
 
 # For 'lower timeframe' as well as 'higher timeframe', EMA's are evaluated with 'long periods' and 'short periods'. In example below, 'long' is 24 hours, 'short' is 8 hours.
