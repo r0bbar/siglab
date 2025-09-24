@@ -131,6 +131,8 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 - Notebook to view equity curve and calc Sharpe: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
 
+- backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing
+
 **partition_sliding_window** segments time series based on inflection points: Where price crosses MAs.
     https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
 
