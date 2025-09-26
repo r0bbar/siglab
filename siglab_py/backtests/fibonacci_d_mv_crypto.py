@@ -75,7 +75,7 @@ exchanges : List[Exchange] = [
     binance(param),  # type: ignore
 ]
 
-exchanges[0].name='okx_linear' # type: ignore
+exchanges[0].name='binance_linear' # type: ignore
 
 commission_bps : float = 5
 
