@@ -865,30 +865,19 @@ def run_scenario(
 
                     return ref_row
                 
-                hi_row, hi_row_tm1, hi_row_1, hi_row_2 = None, None, None, None
+                hi_row, hi_row_tm1 = None, None
                 if lo_datetime>=algo_param['start_date']:
                     if algo_param['lo_candle_size'][-1]=="m":
                         matching_rows = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==lo_day) & (pd_hi_candles.hour==lo_hour)]
                         if not matching_rows.empty:
-                            hi_row_1 = matching_rows.iloc[0]
-                            hi_row_1_datetime = hi_row_1['datetime']
-
-                            num_rows_matching_in_hi_candles = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==lo_day) & (pd_hi_candles.hour==(lo_datetime + timedelta(hours=1)).hour)].shape[0]
-                            if num_rows_matching_in_hi_candles>0:
-                                hi_row_2 = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==lo_day) & (pd_hi_candles.hour==(lo_datetime + timedelta(hours=1)).hour)].iloc[0]
-                                hi_row_2_datetime = hi_row_2['datetime']
-
-                                if abs((hi_row_1_datetime-lo_datetime).total_seconds()) < abs((hi_row_2_datetime-lo_datetime).total_seconds()):
-                                    hi_row = hi_row_1
-                                else:
-                                    hi_row = hi_row_2
-                            else:
-                                hi_row = hi_row_1
+                            hi_row = matching_rows.iloc[0]
+                            
                         else:
                             logger.warning(f"{key} hi_row not found for year: {lo_year}, month: {lo_month}, day: {lo_day}, hour: {lo_hour}")
+                            continue
 
                         hi_row_tm1 = pd_hi_candles.iloc[hi_row.name -1] if hi_row is not None else None
-                        assert(hi_row_tm1['timestamp_ms'] <= lo_row['timestamp_ms']) # No look ahead bias!!!
+                        assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
 
                         # Be careful with look ahead bias!!!
                         target_ref_candle_date = lo_datetime + timedelta(days=-1)
@@ -906,25 +895,14 @@ def run_scenario(
                     elif algo_param['lo_candle_size'][-1]=="h":
                         matching_rows = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==lo_day)]
                         if not matching_rows.empty:
-                            hi_row_1 = matching_rows.iloc[0]
-                            hi_row_1_datetime = hi_row_1['datetime']
-
-                            num_rows_matching_in_hi_candles = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==(lo_datetime + timedelta(days=1)).day)].shape[0]
-                            if num_rows_matching_in_hi_candles>0:
-                                hi_row_2 = pd_hi_candles[(pd_hi_candles.year==lo_year) & (pd_hi_candles.month==lo_month) & (pd_hi_candles.day==(lo_datetime + timedelta(days=1)).day)].iloc[0]
-                                hi_row_2_datetime = hi_row_2['datetime']
-
-                                if abs((hi_row_1_datetime-lo_datetime).total_seconds()) < abs((hi_row_2_datetime-lo_datetime).total_seconds()):
-                                    hi_row = hi_row_1
-                                else:
-                                    hi_row = hi_row_2
-                            else:
-                                hi_row = hi_row_1
+                            hi_row = matching_rows.iloc[0]
+                            
                         else:
                             logger.warning(f"{key} hi_row not found for year: {lo_year}, month: {lo_month}, day: {lo_day}")
+                            continue
 
                         hi_row_tm1 = pd_hi_candles.iloc[hi_row.name  -1] if hi_row is not None else None
-                        assert(hi_row_tm1['timestamp_ms'] <= lo_row['timestamp_ms']) # No look ahead bias!!!
+                        assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
                         
                         # Be careful with look ahead bias!!!
                         target_ref_candle_date = lo_datetime + timedelta(days=-1)
