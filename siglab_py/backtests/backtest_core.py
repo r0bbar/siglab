@@ -19,6 +19,7 @@ from siglab_py.util.retry_util import retry
 from siglab_py.util.market_data_util import fetch_candles, fix_column_types, fetch_historical_price, timestamp_to_week_of_month
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.analytic_util import compute_candles_stats, lookup_fib_target, partition_sliding_window
+from siglab_py.util.simple_math import bucket_series, bucketize_val
 
 def get_logger(report_name : str):
     logging.Formatter.converter = time.gmtime
@@ -618,6 +619,12 @@ def run_scenario(
     tp_eval_func_sig = inspect.signature(tp_eval_func)
     tp_eval_func_params = tp_eval_func_sig.parameters.keys()
     
+    BUCKETS_m100_100 = bucket_series(
+						values=list([i for i in range(-100,100)]), 
+						outlier_threshold_percent=10, 
+						level_granularity=0.01
+					)
+    
     REFERENCE_PRICE_CACHE_COLUMNS = [ 
             'exchange', 'ticker', 'datetime', 'datetime_utc', 'timestamp_ms', 'price'
     ]
@@ -1119,44 +1126,16 @@ def run_scenario(
                             reason, 
                             reason2,
                             gloabl_state, all_trades, all_canvas,
-                            algo_param
+                            algo_param,
+                            standard_pnl_percent_buckets=BUCKETS_m100_100
                         ):
                         def _gains_losses_to_label(gains_losses_percent):
-                            abs_gains_losses_percent_label = None
-                            abs_gains_losses_percent = abs(gains_losses_percent)
-                            if abs_gains_losses_percent<=0.1:
-                                abs_gains_losses_percent_label = "under 10bps"
-                            elif abs_gains_losses_percent>0.1 and abs_gains_losses_percent<=0.2:
-                                abs_gains_losses_percent_label = "10-20bps"
-                            elif abs_gains_losses_percent>0.2 and abs_gains_losses_percent<=0.3:
-                                abs_gains_losses_percent_label = "20-30bps"
-                            elif abs_gains_losses_percent>0.3 and abs_gains_losses_percent<=0.4:
-                                abs_gains_losses_percent_label = "30-40bps"
-                            elif abs_gains_losses_percent>0.4 and abs_gains_losses_percent<=0.5:
-                                abs_gains_losses_percent_label = "40-50bps"
-                            elif abs_gains_losses_percent>0.5 and abs_gains_losses_percent<=1:
-                                abs_gains_losses_percent_label = "50-100bps"
-                            elif abs_gains_losses_percent>1 and abs_gains_losses_percent<=1.5:
-                                abs_gains_losses_percent_label = "100-150bps"
-                            elif abs_gains_losses_percent>1.5 and abs_gains_losses_percent<=2:
-                                abs_gains_losses_percent_label = "150-200bps"
-                            elif abs_gains_losses_percent>2 and abs_gains_losses_percent<=3:
-                                abs_gains_losses_percent_label = "2-3"
-                            elif abs_gains_losses_percent>3 and abs_gains_losses_percent<=5:
-                                abs_gains_losses_percent_label = "1-5"
-                            elif abs_gains_losses_percent>5 and abs_gains_losses_percent<=10:
-                                abs_gains_losses_percent_label = "5-10"
-                            elif abs_gains_losses_percent>10 and abs_gains_losses_percent<=15:
-                                abs_gains_losses_percent_label = "10-15"
-                            elif abs_gains_losses_percent>15 and abs_gains_losses_percent<=20:
-                                abs_gains_losses_percent_label = "15-20"
-                            elif abs_gains_losses_percent>20:
-                                abs_gains_losses_percent_label = ">20"
+                            gains_losses_percent_label = bucketize_val(gains_losses_percent, buckets=standard_pnl_percent_buckets)
 
                             if gains_losses_percent>=0:
-                                return f"gain {abs_gains_losses_percent_label}%" if "bps" not in abs_gains_losses_percent_label else f"gain {abs_gains_losses_percent_label}"
+                                return f"gain {gains_losses_percent_label}%"
                             else:
-                                return f"loss {abs_gains_losses_percent_label}%" if "bps" not in abs_gains_losses_percent_label else f"loss {abs_gains_losses_percent_label}"
+                                return f"loss {gains_losses_percent_label}%"
                         
                         def _how_long_before_closed_sec_to_label(how_long_before_closed_sec):
                             how_long_before_closed_sec_label = None
