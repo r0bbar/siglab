@@ -2,6 +2,8 @@ import math
 import random
 from typing import List, Dict, Union
 
+from pandas import isna
+
 def generate_rand_nums(
         range_min : float = 0,
         range_max : float = 1,
@@ -35,6 +37,8 @@ def round_to_level(
             num : float,
             level_granularity : float = 0.01
         ) -> float:
+    if math.isnan(num):
+        return num
     level_size = num * level_granularity
     magnitude = math.floor(math.log10(abs(level_size)))
     base_increment = 10 ** magnitude
