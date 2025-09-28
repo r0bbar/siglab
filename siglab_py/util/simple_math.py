@@ -36,7 +36,7 @@ def round_to_level(
             level_granularity : float = 0.01
         ) -> float:
     level_size = num * level_granularity
-    magnitude = math.floor(math.log10(level_size))
+    magnitude = math.floor(math.log10(abs(level_size)))
     base_increment = 10 ** magnitude
     rounded_level_size = round(level_size / base_increment) * base_increment
     rounded_num = round(num / rounded_level_size) * rounded_level_size
@@ -56,8 +56,23 @@ def bucket_series(
         ] = {}
     list_0_to_1 : bool = True if len([x for x in values if x<0 or x>1])/len(values)*100 <= outlier_threshold_percent else False
     list_m1_to_1 : bool = True if len([x for x in values if x<-1 or x>1])/len(values)*100 <= outlier_threshold_percent else False
+    
     list_0_to_100 : bool = True if len([x for x in values if x<0 or x>100])/len(values)*100 <= outlier_threshold_percent else False
+    if (
+        list_0_to_100
+        and (
+            not min(values)<100*(outlier_threshold_percent/100) or not max(values)>100*(1-outlier_threshold_percent/100)
+        )
+    ):
+        list_0_to_100 = False
     list_m100_to_100 : bool = True if len([x for x in values if x<-100 or x>100])/len(values)*100 <= outlier_threshold_percent else False
+    if (
+        list_m100_to_100
+        and (
+            not min(values)<-100*(1-outlier_threshold_percent/100) or not max(values)>100*(1-outlier_threshold_percent/100)
+        )
+    ):
+        list_m100_to_100 = False
 
     def _generate_sequence(start, stop, step):
         result = []
