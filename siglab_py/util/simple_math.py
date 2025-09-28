@@ -87,7 +87,11 @@ def bucket_series(
         return result
 
     if list_0_to_1:
-        intervals = _generate_sequence(0.1, 1, 0.1)
+        step = round_to_level(
+                1 * level_granularity,
+                level_granularity=level_granularity
+            )
+        intervals = _generate_sequence(0.1, 1, step)
         last_interval = 0
         buckets[f"< 0"] = {
             'min' : float("-inf"),
@@ -108,7 +112,11 @@ def bucket_series(
         }
     
     elif not list_0_to_1 and list_m1_to_1:
-        intervals = _generate_sequence(-0.9, 1, 0.1)
+        step = round_to_level(
+                1 * level_granularity,
+                level_granularity=level_granularity
+            )
+        intervals = _generate_sequence(-0.9, 1, step)
         last_interval = -1
         buckets[f"< -1"] = {
             'min' : float("-inf"),
@@ -129,7 +137,11 @@ def bucket_series(
         }
 
     elif not list_0_to_1 and not list_m1_to_1 and list_0_to_100:
-        intervals = _generate_sequence(10, 100, 10)
+        step = round_to_level(
+                100 * level_granularity,
+                level_granularity=level_granularity
+            )
+        intervals = _generate_sequence(10, 100, step)
         last_interval = 0
         buckets[f"<0"] = {
             'min' : float("-inf"),
@@ -150,7 +162,11 @@ def bucket_series(
         }
 
     elif not list_0_to_1 and not list_m1_to_1 and not list_0_to_100 and list_m100_to_100:
-        intervals = _generate_sequence(-90, 100, 10)
+        step = round_to_level(
+                100 * level_granularity,
+                level_granularity=level_granularity
+            )
+        intervals = _generate_sequence(-90, 100, step)
         last_interval = -100
         buckets[f"<-100"] = {
             'min' : float("-inf"),
