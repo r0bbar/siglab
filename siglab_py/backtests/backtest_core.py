@@ -1183,7 +1183,7 @@ def run_scenario(
                             trade['closed'] = True
                         max_pain = min([ trade['max_pain'] for trade in this_ticker_open_trades])
                         max_pain_percent = max_pain/this_ticker_current_position_usdt * 100
-                        max_pain_percent_label = _gains_losses_to_label(abs(max_pain_percent))
+                        max_pain_percent_label = _gains_losses_to_label(max_pain_percent)
 
                         timestamp_ms_from_closed_trades = min([ trade['timestamp_ms'] for trade in this_ticker_open_trades])
                         num_impacting_economic_calendars = min([ trade['num_impacting_economic_calendars'] if 'num_impacting_economic_calendars' in trade else 0 for trade in this_ticker_open_trades])
