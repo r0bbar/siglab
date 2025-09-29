@@ -31,7 +31,7 @@ import pandas as pd
 from ccxt.base.exchange import Exchange
 from ccxt.binance import binance # Use any crypto exchange that support the pair you want to trade
 
-from backtest_core import get_logger, spawn_parameters, generic_pnl_eval, generic_tp_eval, run_all_scenario, dump_trades_to_disk
+from backtest_core import get_logger, spawn_parameters, generic_pnl_eval, generic_tp_eval, generic_sort_filter_universe, run_all_scenario, dump_trades_to_disk
 
 PYPY_COMPAT : bool = False
 
@@ -302,7 +302,8 @@ d. 'tp_eval' (Logic to fire TP)
 e. 'sl_adj'
     Adjustment to sl_percent_hard
 f. 'trailing_stop_threshold_eval'
-g. 'additional_trade_fields' to be included in trade extract file (Entries only. Not applicable to exit trades.)
+g. 'sort_filter_universe' (optional, if 'white_list_tickers' only has one ticker for example, then you don't need bother)
+h. 'additional_trade_fields' to be included in trade extract file (Entries only. Not applicable to exit trades.)
 '''
 def order_notional_adj(
     algo_param : Dict,
@@ -516,6 +517,24 @@ def tp_eval (
     '''
     return generic_tp_eval(lo_row, this_ticker_open_trades)
 
+def sort_filter_universe(
+    tickers : List[str],
+    exchange : Exchange,
+
+    # Use "i" (row index) to find current/last interval's market data or TAs from "all_exchange_candles"
+    i,
+    all_exchange_candles : Dict[str, Dict[str, Dict[str, pd.DataFrame]]],
+
+    max_num_tickers : int = 10
+) -> List[str]:
+    return generic_sort_filter_universe(
+         tickers=tickers,
+         exchange=exchange,
+         i=i,
+         all_exchange_candles=all_exchange_candles,
+         max_num_tickers=max_num_tickers
+    )
+
 algo_results : List[Dict] = run_all_scenario(
     algo_params=algo_params,
     exchanges=exchanges,
@@ -527,6 +546,7 @@ algo_results : List[Dict] = run_all_scenario(
     trailing_stop_threshold_eval_func=trailing_stop_threshold_eval,
     pnl_eval_func=pnl_eval,
     tp_eval_func=tp_eval,
+    sort_filter_universe_func=sort_filter_universe,
 
     logger=logger
 )

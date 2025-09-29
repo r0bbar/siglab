@@ -438,6 +438,30 @@ def generic_tp_eval (
              return True
     return False
 
+def generic_sort_filter_universe(
+    tickers : List[str],
+    exchange : Exchange,
+
+    # Use "i" (row index) to find current/last interval's market data or TAs from "all_exchange_candles"
+    i,
+    all_exchange_candles : Dict[str, Dict[str, Dict[str, pd.DataFrame]]],
+
+    max_num_tickers : int = 10
+) -> List[str]:
+    if not tickers:
+        return None
+    
+    sorted_filtered_tickers : List[str] = tickers.copy()
+
+    # Custom strategy specific sort logic here. Sort first before you filter!
+    sorted_filtered_tickers.sort()
+
+    # Custom filtering logic
+    if len(sorted_filtered_tickers)>max_num_tickers:
+         sorted_filtered_tickers = sorted_filtered_tickers[:max_num_tickers]
+
+    return sorted_filtered_tickers
+
 @retry(num_attempts=3)
 def fetch_price(
             exchange,
@@ -529,6 +553,7 @@ def run_scenario(
         trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]],
         pnl_eval_func : Callable[..., Dict[str, float]],
         tp_eval_func : Callable[..., bool],
+        sort_filter_universe_func : Callable[..., List[str]],
 
         logger,
 
@@ -618,6 +643,8 @@ def run_scenario(
     trailing_stop_threshold_eval_func_params = trailing_stop_threshold_eval_func_sig.parameters.keys()
     tp_eval_func_sig = inspect.signature(tp_eval_func)
     tp_eval_func_params = tp_eval_func_sig.parameters.keys()
+    sort_filter_universe_func_sig = inspect.signature(sort_filter_universe_func)
+    sort_filter_universe_func_params = sort_filter_universe_func_sig.parameters.keys()
     
     BUCKETS_m100_100 = bucket_series(
 						values=list([i for i in range(-100,100)]), 
@@ -657,7 +684,11 @@ def run_scenario(
     ath, atl = None, None
     for i in range(algo_param['how_many_last_candles'], lo_num_intervals):
         for exchange in exchanges:
-            for ticker in tickers:
+            
+            kwargs = {k: v for k, v in locals().items() if k in sort_filter_universe_func_params}
+            sorted_filtered_tickers = sort_filter_universe_func(**kwargs)
+
+            for ticker in sorted_filtered_tickers:
                 key = f"{exchange.name}-{ticker}"
                 if key not in reversal_camp_cache:
                     reversal_camp_cache[key] = REVERSAL_CAMP_ITEM.copy()
@@ -1743,6 +1774,9 @@ def run_scenario(
                     if this_ticker_current_position_usdt>0:
                         _close_open_positions(key, ticker, this_ticker_current_position_usdt, this_ticker_open_positions_side, current_position_usdt, unrealized_pnl, None, lo_row, 'HC', '', gloabl_state, all_trades, all_canvas, algo_param)
                     
+            sorted_filtered_tickers.clear()
+            sorted_filtered_tickers = None
+
     if plot_timeseries:
         for exchange in exchanges:
             for ticker in tickers:
@@ -1784,6 +1818,7 @@ def run_all_scenario(
     trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]],
     pnl_eval_func : Callable[..., Dict[str, float]],
     tp_eval_func : Callable[..., bool],
+    sort_filter_universe_func : Callable[..., List[str]],
 
     logger,
 
@@ -2074,6 +2109,7 @@ def run_all_scenario(
                 trailing_stop_threshold_eval_func=trailing_stop_threshold_eval_func,
                 pnl_eval_func=pnl_eval_func,
                 tp_eval_func=tp_eval_func,
+                sort_filter_universe_func=sort_filter_universe_func,
 
                 logger=logger,
 
