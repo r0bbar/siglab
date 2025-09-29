@@ -548,7 +548,36 @@ def compute_candles_stats(
     # https://www.youtube.com/watch?v=jmPCL3l08ss
     pd_candles['macd'] = pd_candles['ema_short_periods'] - pd_candles['ema_long_periods']
     pd_candles['signal'] = pd_candles['macd'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False).mean()
-    pd_candles['macd_minus_signal'] = pd_candles['macd'] - pd_candles['signal']
+    pd_candles['macd_minus_signal'] = pd_candles['macd'] - pd_candles['signal'] # MACD histogram
+    macd_cur = pd_candles['macd_minus_signal']
+    macd_prev = pd_candles['macd_minus_signal'].shift(1)
+    bullish_macd_crosses = (macd_prev < 0) & (macd_cur > 0)
+    bearish_macd_crosses = (macd_prev > 0) & (macd_cur < 0)
+    pd_candles.loc[bullish_macd_crosses, 'macd_cross'] = 1
+    pd_candles.loc[bearish_macd_crosses, 'macd_cross'] = -1
+    bullish_indices = pd.Series(pd_candles.index.where(pd_candles['macd_cross'] == 1), index=pd_candles.index).astype('Int64')
+    bearish_indices = pd.Series(pd_candles.index.where(pd_candles['macd_cross'] == -1), index=pd_candles.index).astype('Int64')
+    pd_candles['macd_bullish_cross_last_id'] = bullish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
+    pd_candles['macd_bearish_cross_last_id'] = bearish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
+    conditions = [
+        (pd_candles['macd_bullish_cross_last_id'].notna() & 
+        pd_candles['macd_bearish_cross_last_id'].notna() &
+        (pd_candles['macd_bullish_cross_last_id'] > pd_candles['macd_bearish_cross_last_id'])),
+        
+        (pd_candles['macd_bullish_cross_last_id'].notna() & 
+        pd_candles['macd_bearish_cross_last_id'].notna() &
+        (pd_candles['macd_bearish_cross_last_id'] > pd_candles['macd_bullish_cross_last_id'])),
+        
+        (pd_candles['macd_bullish_cross_last_id'].notna() & 
+        pd_candles['macd_bearish_cross_last_id'].isna()),
+        
+        (pd_candles['macd_bearish_cross_last_id'].notna() & 
+        pd_candles['macd_bullish_cross_last_id'].isna())
+    ]
+    choices = ['bullish', 'bearish', 'bullish', 'bearish']
+    pd_candles['macd_cross_last'] = np.select(conditions, choices, default=None) # type: ignore
+    pd_candles.loc[bullish_macd_crosses, 'macd_cross'] = 'bullish'
+    pd_candles.loc[bearish_macd_crosses, 'macd_cross'] = 'bearish'
 
     if not pypy_compat:
         calculate_slope(
