@@ -1555,9 +1555,10 @@ def run_scenario(
                     allow_entry_final_long = False
                     allow_entry_final_short = False
 
-                    kwargs = {k: v for k, v in locals().items() if k in allow_slice_entry_func_params}
-                    allow_slice_entry_func_result = allow_slice_entry_func(**kwargs)
-                    
+                    if algo_param['enable_sliced_entry']:
+                        kwargs = {k: v for k, v in locals().items() if k in allow_slice_entry_func_params}
+                        allow_slice_entry_func_result = allow_slice_entry_func(**kwargs)
+                        
                     # 3. Entries
                     if (
                             algo_param['strategy_mode'] in [ 'long_only', 'long_short'] 
@@ -1572,7 +1573,7 @@ def run_scenario(
                                 ) or (
                                     this_ticker_open_positions_side=='buy'
                                     and _position_size_and_cash_check(current_position_usdt, this_ticker_current_position_usdt, order_notional_long, gloabl_state.total_equity, target_position_size_percent_total_equity, gloabl_state.cash)
-                                    and allow_slice_entry_func_result['long']
+                                    and (algo_param['enable_sliced_entry'] and allow_slice_entry_func_result['long'])
                                 )
                             )
                     ):
@@ -1676,7 +1677,7 @@ def run_scenario(
                                 ) or (
                                     this_ticker_open_positions_side=='sell'
                                     and _position_size_and_cash_check(current_position_usdt, this_ticker_current_position_usdt, order_notional_short, gloabl_state.total_equity, target_position_size_percent_total_equity, gloabl_state.cash)
-                                    and allow_slice_entry_func_result['short']
+                                    and (algo_param['enable_sliced_entry'] and allow_slice_entry_func_result['short'])
                                 )
                             )
                     ):
