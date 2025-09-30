@@ -649,7 +649,7 @@ def run_scenario(
     BUCKETS_m100_100 = bucket_series(
 						values=list([i for i in range(-100,100)]), 
 						outlier_threshold_percent=10, 
-						level_granularity=0.01
+						level_granularity=algo_param['default_level_granularity'] if 'default_level_granularity' in algo_param else 0.01
 					)
     
     REFERENCE_PRICE_CACHE_COLUMNS = [ 
