@@ -1769,7 +1769,11 @@ def run_scenario(
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].scatter([lo_datetime, lo_datetime], [lo_low, lo_high], color='gray')
                     
                     logger.info(f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}")
-
+                    
+                    if gloabl_state.total_equity<target_order_notional:
+                        logger.warning(f"total_equity {gloabl_state.total_equity} < target_order_notional {target_order_notional} exiting!!!")
+                        break
+                    
                 if i==pd_lo_candles.shape[0]-1:
                     # HC
                     if this_ticker_current_position_usdt>0:
