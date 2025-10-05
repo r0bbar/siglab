@@ -682,6 +682,7 @@ def run_scenario(
     lo_boillenger_lower_breached_cache = {}
     lo_boillenger_upper_breached_cache = {}
     ath, atl = None, None
+    target_order_notional = 0
     for i in range(algo_param['how_many_last_candles'], lo_num_intervals):
         for exchange in exchanges:
             
@@ -1770,10 +1771,6 @@ def run_scenario(
                     
                     logger.info(f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}")
                     
-                    if gloabl_state.total_equity<target_order_notional:
-                        logger.warning(f"total_equity {gloabl_state.total_equity} < target_order_notional {target_order_notional} exiting!!!")
-                        break
-                    
                 if i==pd_lo_candles.shape[0]-1:
                     # HC
                     if this_ticker_current_position_usdt>0:
@@ -1781,6 +1778,10 @@ def run_scenario(
                     
             sorted_filtered_tickers.clear()
             sorted_filtered_tickers = None
+
+        if gloabl_state.total_equity<target_order_notional:
+            logger.warning(f"total_equity {gloabl_state.total_equity} < target_order_notional {target_order_notional} exiting!!!")
+            break
 
     if plot_timeseries:
         for exchange in exchanges:
