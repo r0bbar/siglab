@@ -220,8 +220,13 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     )
 
     pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'] - pd_candles['timestamp_ms'].shift(1)
-    timestamp_ms_gap = pd_candles.iloc[-1]['timestamp_ms_gap']
-    assert(pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap!=timestamp_ms_gap].shape[0]==0)
+    
+    # Depending on asset, minutes bar may have gaps
+    timestamp_ms_gap_median = pd_candles['timestamp_ms_gap'].median()
+    NUM_MS_IN_1HR = 60*60*1000
+    if timestamp_ms_gap_median>=NUM_MS_IN_1HR:
+        num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
+        assert(num_rows_with_expected_gap/pd_candles.shape[0]>0.9)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
 
 def timestamp_to_active_trading_regions(
