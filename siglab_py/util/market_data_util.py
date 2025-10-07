@@ -516,20 +516,21 @@ def fetch_candles(
     validation_max_gaps : int = 10,
     validation_max_end_date_intervals : int = 1
 ) -> Dict[str, Union[pd.DataFrame, None]]:
+    exchange_candles = { '' : None }
     num_intervals = int(candle_size.replace(candle_size[-1],''))
 
     if end_ts>datetime.now().timestamp():
         end_ts = int(datetime.now().timestamp())
 
     if type(exchange) is YahooExchange:
-        return exchange.fetch_candles(
+        exchange_candles = exchange.fetch_candles(
                             start_ts=start_ts,
                             end_ts=end_ts,
                             symbols=normalized_symbols,
                             candle_size=candle_size
                         )
     elif type(exchange) is NASDAQExchange:
-        return exchange.fetch_candles(
+        exchange_candles = exchange.fetch_candles(
                             start_ts=start_ts,
                             end_ts=end_ts,
                             symbols=normalized_symbols,
@@ -546,11 +547,9 @@ def fetch_candles(
             pd_candles = exchange_candles[symbol]
             if not pd_candles is None:
                 fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
-                if num_intervals!=1:
-                    exchange_candles[symbol] = aggregate_candles(candle_size, pd_candles)
-        return exchange_candles
+                
     elif issubclass(exchange.__class__, CcxtExchange):
-        return _fetch_candles_ccxt(
+        exchange_candles = _fetch_candles_ccxt(
             start_ts=start_ts,
             end_ts=end_ts,
             exchange=exchange,
@@ -558,7 +557,12 @@ def fetch_candles(
             candle_size=candle_size,
             num_candles_limit=num_candles_limit
         )
-    return { '' : None }
+    if num_intervals!=1:
+        for symbol in exchange_candles:
+            if not exchange_candles[symbol] is None:
+                exchange_candles[symbol] = aggregate_candles(candle_size, exchange_candles[symbol]) #  type: ignore
+
+    return exchange_candles # type: ignore
 
 '''
 Find listing date https://gist.github.com/mr-easy/5185b1dcdd5f9f908ff196446f092e9b
@@ -593,8 +597,6 @@ def _fetch_candles_ccxt(
     logger = logging.getLogger()
 
     rsp = {}
-
-    num_intervals = int(candle_size.replace(candle_size[-1],''))
 
     exchange.load_markets()
     
@@ -657,9 +659,6 @@ def _fetch_candles_ccxt(
         pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
         fix_column_types(pd_all_candles)
         pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
-
-        if num_intervals!=1:
-            pd_all_candles = aggregate_candles(candle_size, pd_all_candles)
 
         rsp[ticker] = pd_all_candles
 
