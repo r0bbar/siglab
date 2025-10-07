@@ -426,6 +426,45 @@ class YahooExchange:
 
         return exchange_candles
 
+def aggregate_candles(
+    interval : str,
+    pd_candles : pd.DataFrame
+) -> pd.DataFrame:
+    if interval[-1]=='m':
+        # 'm' for pandas means months!
+        interval = interval.replace('m','min')
+    pd_candles.set_index('datetime', inplace=True)
+    pd_candles_aggregated = pd_candles.resample(interval).agg({
+        'exchange' : 'first',
+        'symbol' : 'first',
+        'timestamp_ms' : 'first',
+        
+        'open': 'first',
+        'high': 'max',
+        'low': 'min',
+        'close': 'last',
+        'volume': 'sum',
+
+        'datetime_utc' : 'first',
+        'year' : 'first',
+        'month' : 'first',
+        'day' : 'first',
+        'hour' : 'first',
+        'minute' : 'first',
+        'dayofweek' : 'first',
+        'week_of_month' : 'first',
+
+        'apac_trading_hr' : 'first',
+        'emea_trading_hr' : 'first',
+        'amer_trading_hr' : 'first',
+
+        'pct_chg_on_close' : 'sum',
+
+    })
+    pd_candles.reset_index(inplace=True)
+    pd_candles_aggregated.reset_index(inplace=True)
+    return pd_candles_aggregated
+    
 def fetch_historical_price(
     exchange,
     normalized_symbol : str,
@@ -472,7 +511,8 @@ def fetch_candles(
     validation_max_gaps : int = 10,
     validation_max_end_date_intervals : int = 1
 ) -> Dict[str, Union[pd.DataFrame, None]]:
-    
+    num_intervals = int(candle_size.replace(candle_size[-1],''))
+
     if end_ts>datetime.now().timestamp():
         end_ts = int(datetime.now().timestamp())
 
@@ -501,6 +541,8 @@ def fetch_candles(
             pd_candles = exchange_candles[symbol]
             if not pd_candles is None:
                 fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
+                if num_intervals!=1:
+                    exchange_candles[symbol] = aggregate_candles(candle_size, pd_candles)
         return exchange_candles
     elif issubclass(exchange.__class__, CcxtExchange):
         return _fetch_candles_ccxt(
@@ -547,6 +589,8 @@ def _fetch_candles_ccxt(
 
     rsp = {}
 
+    num_intervals = int(candle_size.replace(candle_size[-1],''))
+
     exchange.load_markets()
     
     num_tickers = len(normalized_symbols)
@@ -563,7 +607,7 @@ def _fetch_candles_ccxt(
             
         def _calc_increment(candle_size):
             increment = 1
-            num_intervals = int(candle_size[0])
+            num_intervals = int(candle_size.replace(candle_size[-1],''))
             interval_type = candle_size[-1]
             if interval_type == "m":
                 increment = 60
@@ -608,6 +652,9 @@ def _fetch_candles_ccxt(
         pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
         fix_column_types(pd_all_candles)
         pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
+
+        if num_intervals!=1:
+            pd_all_candles = aggregate_candles(candle_size, pd_all_candles)
 
         rsp[ticker] = pd_all_candles
 
