@@ -118,6 +118,40 @@ class MarketDataUtilTests(unittest.TestCase):
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
+
+    def test_aggregate_candles(self):
+        end_date : datetime = datetime.today()
+        start_date : datetime = end_date + timedelta(hours=-8)
+
+        param = {
+            'apiKey' : None,
+            'secret' : None,
+            'password' : None,
+            'subaccount' : None,
+            'rateLimit' : 100,    # In ms
+            'options' : {
+                'defaultType': 'swap'            }
+        }
+
+        exchange : Exchange = okx(param) # type: ignore
+        normalized_symbols = [ 'BTC/USDT:USDT' ]
+        pd_candles: Union[pd.DataFrame, None] = fetch_candles(
+            start_ts=start_date.timestamp(),
+            end_ts=end_date.timestamp(),
+            exchange=exchange,
+            normalized_symbols=normalized_symbols,
+            candle_size='15m' # <---- aggregate 1m into 15m candles
+        )[normalized_symbols[0]]
+
+        assert pd_candles is not None
+        pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'].diff()
+        timestamp_ms_gap_median = pd_candles['timestamp_ms_gap'].median()
+        NUM_MS_IN_1HR = 60*60*1000
+        expected_15m_gap_ms = NUM_MS_IN_1HR/4
+        assert(timestamp_ms_gap_median==expected_15m_gap_ms)
+        total_num_rows = pd_candles.shape[0]
+        num_rows_with_15min_gaps = pd_candles[pd_candles.timestamp_ms_gap!=timestamp_ms_gap_median].shape[0]
+        assert(num_rows_with_15min_gaps/total_num_rows <= 0.4) # Why not 100% match? minute bars may have gaps (Also depends on what ticker)
         
     def test_fetch_candles_futubull(self):
         # You need Futu OpenD running and you need entitlements
