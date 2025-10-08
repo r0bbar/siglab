@@ -904,6 +904,16 @@ def run_scenario(
 
                     return ref_row
                 
+                def _search_hi_tm1(hi_row, lo_row, pd_hi_candles):
+                    row_index = hi_row.name -1
+                    hi_row_tm1 = pd_hi_candles.iloc[row_index] if hi_row is not None else None
+                    hi_row_tm1 = hi_row_tm1 if hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms'] else None
+                    if row_index>1:
+                        while hi_row_tm1['timestamp_ms'] >= lo_row['timestamp_ms']:
+                            row_index = row_index -1
+                            hi_row_tm1 = pd_hi_candles.iloc[row_index]
+                    return hi_row_tm1
+
                 hi_row, hi_row_tm1 = None, None
                 if lo_datetime>=algo_param['start_date']:
                     if algo_param['lo_candle_size'][-1]=="m":
@@ -915,8 +925,11 @@ def run_scenario(
                             logger.warning(f"{key} hi_row not found for year: {lo_year}, month: {lo_month}, day: {lo_day}, hour: {lo_hour}")
                             continue
 
-                        hi_row_tm1 = pd_hi_candles.iloc[hi_row.name -1] if hi_row is not None else None
-                        assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
+                        hi_row_tm1 = _search_hi_tm1(hi_row, lo_row, pd_hi_candles)
+                        if hi_row_tm1 is not None:
+                            assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
+                        else:
+                            continue
 
                         # Be careful with look ahead bias!!!
                         target_ref_candle_date = lo_datetime + timedelta(days=-1)
@@ -940,8 +953,11 @@ def run_scenario(
                             logger.warning(f"{key} hi_row not found for year: {lo_year}, month: {lo_month}, day: {lo_day}")
                             continue
 
-                        hi_row_tm1 = pd_hi_candles.iloc[hi_row.name  -1] if hi_row is not None else None
-                        assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
+                        hi_row_tm1 = _search_hi_tm1(hi_row, lo_row, pd_hi_candles)
+                        if hi_row_tm1 is not None:
+                            assert(hi_row_tm1['timestamp_ms'] < lo_row['timestamp_ms']) # No look ahead bias!!!
+                        else:
+                            continue
                         
                         # Be careful with look ahead bias!!!
                         target_ref_candle_date = lo_datetime + timedelta(days=-1)
