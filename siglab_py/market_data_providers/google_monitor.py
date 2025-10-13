@@ -240,7 +240,7 @@ async def main() -> None:
                         published_date = item.get('pagemap', {}).get('metatags', [{}])[0].get('article:published_time', 'No date')
 
                         dt_message = datetime.now()
-                        pattern = r'^\d+\s+(hours?|minutes?|seconds?)\s+ago\s+\.\.\.\s+@\w+\.\s+-\s+[\w\s]+\s+\)\s+\(\s+\w+\s+\w+\.\s+\w+\s+-\s+([A-Za-z]+\s+\d+,\s+\d{4},\s+\d+:\d+\s+[AP]M\s+ET\s+\)\s+'
+                        pattern = r'^\d+\s+(hours?|minutes?|seconds?)\s+ago\s+\.\.\.\s+@\w+\.\s+-\s+[\w\s]+\s+\)\s+\(\s+\w+\s+\w+\.\s+\w+\s+-\s+([A-Za-z]+\s+\d+,\s+\d{4},\s+\d+:\d+\s+[AP]M\s+ET)\s+\)\s+'
                         match = re.match(pattern, snippet)
                         if published_date == 'No date' and match:
                             published_date = match.group(2)
