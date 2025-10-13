@@ -241,7 +241,7 @@ async def main() -> None:
                     dt_message = datetime.now()
                     timestamp_ms  = int(dt_message.timestamp() * 1000)
                     message_data: Dict[str, Any] = {
-                        "timestamp_ms": int(timestamp_ms * 1000),
+                        "timestamp_ms": timestamp_ms,
                         "datetime": dt_message.isoformat(), # Always in UTC
                         "message": snippet
                     }
