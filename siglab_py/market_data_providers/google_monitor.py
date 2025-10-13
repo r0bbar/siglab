@@ -251,6 +251,8 @@ async def main() -> None:
                         seen_hashes.add(message_hash)
                         processed_messages.append(message_data)
 
+                        log(f"Incoming! {message_data}")
+
                         dispatch_notification(title=f"{param['current_filename']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
 
                         with open(message_cache_file, 'a', encoding='utf-8') as f:
@@ -261,7 +263,6 @@ async def main() -> None:
                             import winsound
                             for _ in range(param['num_shouts']):
                                 winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
-                                log(f"Incoming! {message_data}")
 
                         if redis_client:
                             try:
