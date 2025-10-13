@@ -254,7 +254,11 @@ async def main() -> None:
             processed_messages = sorted(processed_messages, key=lambda m: m['datetime'])
             last_message_date = processed_messages[-1]['datetime']
             
-    redis_client: Optional[StrictRedis] = init_redis_client()
+    try:        
+        redis_client: Optional[StrictRedis] = init_redis_client()
+    except Exception as redis_err:
+        redis_client = None
+        log(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
         
     start_date: Optional[datetime] = None
     if param.get('start_date'):
