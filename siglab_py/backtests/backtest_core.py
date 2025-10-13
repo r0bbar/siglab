@@ -1,6 +1,7 @@
 # type: ignore Sorry sorry
 import os
 import logging
+import argparse
 import arrow
 from datetime import datetime, timedelta, timezone
 import time
@@ -2204,6 +2205,35 @@ def run_all_scenario(
     pd_results.loc['avg', 'hit_ratio'] = pd_results['hit_ratio'].mean(numeric_only=True, axis=0)
 
     return algo_results
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force_reload", help="Reload candles? Both candles and TA previously computed will be loaded from disk. Y or N (default)", default=False)
+    parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
+    parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
+    parser.add_argument("--asymmetric_tp_bps", help="A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
+    args = parser.parse_args()
+    
+    if args.force_reload:
+        if args.force_reload=='Y':
+            force_reload = True
+        else:
+            force_reload = False
+    else:
+        force_reload = False
+
+    if args.white_list_tickers:
+        white_list_tickers = args.white_list_tickers.split(',')
+        
+    reference_ticker = args.reference_ticker if args.reference_ticker else white_list_tickers[0]
+    asymmetric_tp_bps = int(args.asymmetric_tp_bps)
+
+    return {
+        'force_reload': force_reload,
+        'white_list_tickers' : white_list_tickers,
+        'reference_ticker' : reference_ticker,
+        'asymmetric_tp_bps' : asymmetric_tp_bps
+    }
 
 def dump_trades_to_disk(
     algo_results,

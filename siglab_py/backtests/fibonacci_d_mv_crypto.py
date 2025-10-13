@@ -23,7 +23,6 @@ Debug from vscode, Launch.json:
 '''
 import os
 import sys
-import argparse
 from datetime import datetime
 from typing import Dict, List, Tuple, Callable, Union
 import pandas as pd
@@ -31,7 +30,7 @@ import pandas as pd
 from ccxt.base.exchange import Exchange
 from ccxt.binance import binance # Use any crypto exchange that support the pair you want to trade
 
-from backtest_core import get_logger, spawn_parameters, generic_pnl_eval, generic_tp_eval, generic_sort_filter_universe, run_all_scenario, dump_trades_to_disk
+from backtest_core import parseargs, get_logger, spawn_parameters, generic_pnl_eval, generic_tp_eval, generic_sort_filter_universe, run_all_scenario, dump_trades_to_disk
 
 PYPY_COMPAT : bool = False
 
@@ -242,24 +241,8 @@ sideway_price_condition_threshold : float = 0.05 # i.e. Price if stay within 5% 
 
 ECONOMIC_CALENDARS_FILE : str = "economic_calanedar_archive.csv"
 
-def parseargs():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
-    parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination.", default="BTC/USDT:USDT")
-    parser.add_argument("--asymmetric_tp_bps", help="A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
-    args = parser.parse_args()
-    if args.white_list_tickers:
-        white_list_tickers = args.white_list_tickers.split(',')
-        
-    reference_ticker = args.reference_ticker if args.reference_ticker else white_list_tickers[0] # type: ignore
-    asymmetric_tp_bps = int(args.asymmetric_tp_bps)
-
-    return {
-        'white_list_tickers' : white_list_tickers, # type: ignore
-        'reference_ticker' : reference_ticker,
-        'asymmetric_tp_bps' : asymmetric_tp_bps
-    }
 args = parseargs()
+force_reload = args['force_reload']
 white_list_tickers : List[str] = args['white_list_tickers']
 reference_ticker : str = args['reference_ticker']
 asymmetric_tp_bps : int = args['asymmetric_tp_bps']
