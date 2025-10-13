@@ -227,76 +227,79 @@ async def main() -> None:
         redis_client = None
         log(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
 
-    try:
-        results = search_google_custom(param['query'], param['apikey'], param['search_engine_id'], param['num_results'])
+    while True:
+        try:
+            results = search_google_custom(param['query'], param['apikey'], param['search_engine_id'], param['num_results'])
 
-        if results:
-            if 'items' in results:
-                for item in results['items']:
-                    title = item.get('title', 'No title')
-                    snippet = item.get('snippet', 'No snippet')
-                    link = item.get('link', 'No link')
-                    published_date = item.get('pagemap', {}).get('metatags', [{}])[0].get('article:published_time', 'No date')
+            if results:
+                if 'items' in results:
+                    for item in results['items']:
+                        title = item.get('title', 'No title')
+                        snippet = item.get('snippet', 'No snippet')
+                        link = item.get('link', 'No link')
+                        published_date = item.get('pagemap', {}).get('metatags', [{}])[0].get('article:published_time', 'No date')
 
-                    dt_message = datetime.now()
-                    timestamp_ms  = int(dt_message.timestamp() * 1000)
-                    message_data: Dict[str, Any] = {
-                        "timestamp_ms": timestamp_ms,
-                        "datetime": dt_message.isoformat(), # Always in UTC
-                        "message": snippet
-                    }
-                    json_str: str = json.dumps(message_data, ensure_ascii=False, sort_keys=True)
-                    message_hash: str = hashlib.sha256(snippet.encode('utf-8')).hexdigest()
-                    if (message_hash not in seen_hashes):
-                        seen_hashes.add(message_hash)
-                        processed_messages.append(message_data)
-
-                        log(f"Incoming! {message_data}")
-
-                        dispatch_notification(title=f"{param['current_filename']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
-
-                        with open(message_cache_file, 'a', encoding='utf-8') as f:
-                            json.dump(message_data, f, ensure_ascii=False)
-                            f.write('\n')
-
-                        if param['alert_wav_path']and sys.platform == 'win32':
-                            import winsound
-                            for _ in range(param['num_shouts']):
-                                winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
-
-                        if redis_client:
-                            try:
-                                publish_topic = f"google_search"
-                                redis_client.publish(publish_topic, json_str)
-                                redis_client.setex(message_hash, param['mds']['redis']['ttl_ms'] // 1000, json_str)
-                                log(f"Published message {json_str} to Redis topic {publish_topic}", LogLevel.INFO)
-                            except Exception as e:
-                                log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
-
-            await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
-
-        if processed_messages:
-            oldest_message: Dict[str, Any] = min(processed_messages, key=lambda x: x['timestamp_ms'])
-            newest_message: Dict[str, Any] = max(processed_messages, key=lambda x: x['timestamp_ms'])
-            log(
-                json.dumps(
-                    {
-                        'num_messages': len(processed_messages),
-                        'oldest': {
-                            'timestamp_ms': oldest_message['timestamp_ms'],
-                            'datetime': datetime.fromtimestamp(int(oldest_message['timestamp_ms']/1000),tz=timezone.utc).isoformat()
-                        },
-                        'latest': {
-                            'timestamp_ms': newest_message['timestamp_ms'],
-                            'datetime': datetime.fromtimestamp(int(newest_message['timestamp_ms']/1000),tz=timezone.utc).isoformat()
+                        dt_message = datetime.now()
+                        timestamp_ms  = int(dt_message.timestamp() * 1000)
+                        message_data: Dict[str, Any] = {
+                            "timestamp_ms": timestamp_ms,
+                            "datetime": dt_message.isoformat(), # Always in UTC
+                            "message": snippet
                         }
-                    }, indent=2
-                ),
-                LogLevel.INFO
-            )
+                        json_str: str = json.dumps(message_data, ensure_ascii=False, sort_keys=True)
+                        message_hash: str = hashlib.sha256(snippet.encode('utf-8')).hexdigest()
+                        if (message_hash not in seen_hashes):
+                            seen_hashes.add(message_hash)
+                            processed_messages.append(message_data)
 
-    except Exception as e:
-        log(f"Oops {str(e)} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", LogLevel.ERROR)
+                            log(f"Incoming! {message_data}")
+
+                            dispatch_notification(title=f"{param['current_filename']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+
+                            with open(message_cache_file, 'a', encoding='utf-8') as f:
+                                json.dump(message_data, f, ensure_ascii=False)
+                                f.write('\n')
+
+                            if param['alert_wav_path']and sys.platform == 'win32':
+                                import winsound
+                                for _ in range(param['num_shouts']):
+                                    winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
+
+                            if redis_client:
+                                try:
+                                    publish_topic = f"google_search"
+                                    redis_client.publish(publish_topic, json_str)
+                                    redis_client.setex(message_hash, param['mds']['redis']['ttl_ms'] // 1000, json_str)
+                                    log(f"Published message {json_str} to Redis topic {publish_topic}", LogLevel.INFO)
+                                except Exception as e:
+                                    log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
+
+                await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
+
+            if processed_messages:
+                oldest_message: Dict[str, Any] = min(processed_messages, key=lambda x: x['timestamp_ms'])
+                newest_message: Dict[str, Any] = max(processed_messages, key=lambda x: x['timestamp_ms'])
+                log(
+                    json.dumps(
+                        {
+                            'num_messages': len(processed_messages),
+                            'oldest': {
+                                'timestamp_ms': oldest_message['timestamp_ms'],
+                                'datetime': datetime.fromtimestamp(int(oldest_message['timestamp_ms']/1000),tz=timezone.utc).isoformat()
+                            },
+                            'latest': {
+                                'timestamp_ms': newest_message['timestamp_ms'],
+                                'datetime': datetime.fromtimestamp(int(newest_message['timestamp_ms']/1000),tz=timezone.utc).isoformat()
+                            }
+                        }, indent=2
+                    ),
+                    LogLevel.INFO
+                )
+
+        except Exception as e:
+            log(f"Oops {str(e)} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", LogLevel.ERROR)
+        finally:
+            await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
 
 if __name__ == '__main__':
     try:
