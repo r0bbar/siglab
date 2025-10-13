@@ -213,10 +213,7 @@ async def main() -> None:
             lines = f.readlines()
             for line in lines:
                 message_data = json.loads(line)
-                
-                # json.dumps before converting datetime to type(datetime)
-                json_str: str = json.dumps(message_data, ensure_ascii=False, sort_keys=True)
-                message_hash: str = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
+                message_hash: str = hashlib.sha256(message_data['message'].encode('utf-8')).hexdigest()
 
                 message_data['datetime'] = pytz.UTC.localize(arrow.get(message_data['datetime']).datetime.replace(tzinfo=None))
 
@@ -225,7 +222,6 @@ async def main() -> None:
                     processed_messages.append(message_data)
 
             processed_messages = sorted(processed_messages, key=lambda m: m['datetime'])
-            last_message_date = processed_messages[-1]['datetime']
     
     try:        
         redis_client: Optional[StrictRedis] = init_redis_client()
