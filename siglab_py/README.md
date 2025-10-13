@@ -148,6 +148,8 @@ A simple command line utility to fetch candles from crypto exchanges and dump it
 
 [**tg_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/tg_monitor.py) to monitor Telegram channel.
 
+[**google_monitor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/google_monitor.py) to monitor market via Google API.
+
 a. Save (and accumulate) messages to message cache file (No duplicates) for further analysis.
 
 b. If any of keywords in message_keywords_filter matches words in message (--message_keywords_filter):
