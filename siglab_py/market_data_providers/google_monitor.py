@@ -240,11 +240,21 @@ async def main() -> None:
                         published_date = item.get('pagemap', {}).get('metatags', [{}])[0].get('article:published_time', 'No date')
 
                         dt_message = datetime.now()
+                        pattern = r'^\d+\s+(hours?|minutes?|seconds?)\s+ago\s+\.\.\.\s+Trump\s+-\s+([A-Za-z]+\s+\d+,\s+\d{4},\s+\d+:\d+\s+[AP]M\s+ET)\s+\)'
+                        match = re.match(pattern, snippet)
+                        if published_date == 'No date' and match:
+                            published_date = match.group(2)
+                            dt_message = datetime.strptime(published_date, '%b %d, %Y, %I:%M %p ET')
+                        
+                        snippet = re.sub(pattern, '', snippet).strip()
+                        
                         timestamp_ms  = int(dt_message.timestamp() * 1000)
                         message_data: Dict[str, Any] = {
                             "timestamp_ms": timestamp_ms,
                             "datetime": dt_message.isoformat(), # Always in UTC
-                            "message": snippet
+                            "title" : title,
+                            "message": snippet,
+                            "url" : link
                         }
                         json_str: str = json.dumps(message_data, ensure_ascii=False, sort_keys=True)
                         message_hash: str = hashlib.sha256(snippet.encode('utf-8')).hexdigest()
