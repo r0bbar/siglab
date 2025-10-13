@@ -366,7 +366,7 @@ async def main() -> None:
                         processed_messages.append(message_data)
 
                         if message_date>tm1:
-                            dispatch_notification(title=f"{param['current_filename']} {param['channel_username']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+                            dispatch_notification(title=f"{param['current_filename']} {param['channel_username']} Incoming!", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
 
                             with open(message_cache_file, 'a', encoding='utf-8') as f:
                                 json.dump(message_data, f, ensure_ascii=False)

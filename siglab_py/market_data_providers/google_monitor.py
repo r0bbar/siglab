@@ -252,9 +252,9 @@ async def main() -> None:
                             seen_hashes.add(message_hash)
                             processed_messages.append(message_data)
 
-                            log(f"Incoming! {message_data}")
+                            log(f"{message_data}")
 
-                            dispatch_notification(title=f"{param['current_filename']} started", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+                            dispatch_notification(title=f"{param['current_filename']} Incoming!", message=message_data, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
 
                             with open(message_cache_file, 'a', encoding='utf-8') as f:
                                 json.dump(message_data, f, ensure_ascii=False)
