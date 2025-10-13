@@ -199,9 +199,7 @@ def search_google_custom(query, api_key, search_engine_id, num_results=10):
 async def main() -> None:
     parse_args()
 
-    session_file: str = f"google_search_session"
     message_cache_file: str = f"google_search_messages.json"
-    log(f"session_file: {session_file}")
     log(f"message_cache_file: {message_cache_file}")
 
     notification_params : Dict[str, Any] = param['notification']
