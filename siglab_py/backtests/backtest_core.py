@@ -1850,8 +1850,7 @@ def run_all_scenario(
     all_exceptions = []
 
     start = datetime.now()
-    utc_now = datetime.utcnow()
-    max_test_end_date = utc_now + timedelta(days=-1)
+    max_test_end_date = start
 
     economic_calendars_file = algo_params[0]['economic_calendars_file']
     ecoevents_mapped_regions = algo_params[0]['ecoevents_mapped_regions']
