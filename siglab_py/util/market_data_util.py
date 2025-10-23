@@ -83,7 +83,8 @@ async def async_instantiate_exchange(
     secret : str,
     passphrase : str,
     default_type : str,
-    rate_limit_ms : float = 100
+    rate_limit_ms : float = 100,
+    verbose : bool = False
 ) -> Union[AnyExchange, None]:
     exchange : Union[AnyExchange, None] = None
     exchange_name : str = gateway_id.split('_')[0]
@@ -98,7 +99,8 @@ async def async_instantiate_exchange(
                         'rateLimit' : rate_limit_ms,
                         'options' : {
                             'defaultType' : default_type
-                        }
+                        },
+                        'verbose': verbose
                     }
 
     if exchange_name=='binance':
@@ -156,7 +158,8 @@ async def async_instantiate_exchange(
                 "walletAddress" : api_key,
                 "privateKey" : secret,
                 'enableRateLimit'  : True,
-                'rateLimit' : rate_limit_ms
+                'rateLimit' : rate_limit_ms,
+                'verbose': verbose
             }
         )  # type: ignore
     else:
