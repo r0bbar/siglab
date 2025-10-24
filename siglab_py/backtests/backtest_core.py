@@ -2210,6 +2210,8 @@ def parseargs():
     parser.add_argument("--force_reload", help="Reload candles? Both candles and TA previously computed will be loaded from disk. Y or N (default)", default=False)
     parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
     parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
+    parser.add_argument("--block_entries_on_impacting_ecoevents", help="Block entries on economic event? Y (default) or N", default=True)
+    parser.add_argument("--enable_sliced_entry", help="Block entries on economic event? Y or N (default)", default=False)
     parser.add_argument("--asymmetric_tp_bps", help="A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
     args = parser.parse_args()
     
@@ -2225,12 +2227,31 @@ def parseargs():
         white_list_tickers = args.white_list_tickers.split(',')
         
     reference_ticker = args.reference_ticker if args.reference_ticker else white_list_tickers[0]
+
+    if args.block_entries_on_impacting_ecoevents:
+        if args.block_entries_on_impacting_ecoevents=='Y':
+            block_entries_on_impacting_ecoevents = True
+        else:
+            block_entries_on_impacting_ecoevents = False
+    else:
+        block_entries_on_impacting_ecoevents = True
+
+    if args.enable_sliced_entry:
+        if args.enable_sliced_entry=='Y':
+            enable_sliced_entry = True
+        else:
+            enable_sliced_entry = False
+    else:
+        enable_sliced_entry = False
+
     asymmetric_tp_bps = int(args.asymmetric_tp_bps)
 
     return {
         'force_reload': force_reload,
         'white_list_tickers' : white_list_tickers,
         'reference_ticker' : reference_ticker,
+        'block_entries_on_impacting_ecoevents' : block_entries_on_impacting_ecoevents,
+        'enable_sliced_entry'  : enable_sliced_entry,
         'asymmetric_tp_bps' : asymmetric_tp_bps
     }
 
