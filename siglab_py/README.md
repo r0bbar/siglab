@@ -126,10 +126,14 @@ assert(pd_candles.columns.to_list()==expected_columns)
 
 Further examples on usage of market_data_util and analytic_util in back tests.
 
-### Example on using siglab_py in back tests: A simple buy dip strategy with target using Fibonacci 618
-- Back test: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.py
+### Two examples on using siglab_py in back tests
+- Back test: 
+    Buy dips (Short deadcats) with Fib 618 as target (BTC/Daily bars): https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.py
+    MACD crosses paired with RSI (SOL, 15m bars): https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macdrsi_crosses_15m_tc_crypto.py 
 
-- Notebook to view equity curve and calc Sharpe: https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
+- Notebook to view equity curve and calc Sharpe: 
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macdrsi_15m_tc_crypto.ipynb
 
 - backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing
 
