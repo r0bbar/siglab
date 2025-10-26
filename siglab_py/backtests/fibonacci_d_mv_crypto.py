@@ -318,7 +318,7 @@ def _allow_entry_initial(
     lo_row_tm1,
     hi_row_tm1,
     hi_fib_eval_result,
-) -> bool:
+) -> Dict[str, bool]:
 	if (
           hi_row_tm1 is None
           or (not hi_row_tm1['normalized_ema_long_slope'])
