@@ -128,7 +128,9 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 ### Two examples on using siglab_py in back tests
 - Back test: 
+
     Buy dips (Short deadcats) with Fib 618 as target (BTC/Daily bars): https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.py
+
     MACD crosses paired with RSI (SOL, 15m bars): https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macdrsi_crosses_15m_tc_crypto.py 
 
 - Notebook to view equity curve and calc Sharpe: 
