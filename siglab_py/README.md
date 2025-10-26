@@ -1,5 +1,5 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
-The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. Shortest path to setup a quantitative trading desk.
+The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. "Infrastructure" means everything from fetching candles, indicators calculation, back test engine, to order gateway dispatching orders to exchanges. Shortest path to setup a quantitative trading desk.
 
 ![Overall Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
