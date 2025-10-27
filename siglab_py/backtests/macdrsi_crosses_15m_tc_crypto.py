@@ -308,14 +308,13 @@ def allow_entry_initial(
 	last_candles
 ) -> Dict[str, bool]:
     return {
-        'long' : _allow_entry_initial('long', lo_row_tm1, hi_row_tm1, last_candles),
-        'short' : _allow_entry_initial('short', lo_row_tm1, hi_row_tm1, last_candles)
+        'long' : _allow_entry_initial('long', lo_row_tm1, hi_row_tm1),
+        'short' : _allow_entry_initial('short', lo_row_tm1, hi_row_tm1)
     }
 def _allow_entry_initial(
 	long_or_short : str,  # long or short
     lo_row_tm1,
-    hi_row_tm1,
-	last_candles
+    hi_row_tm1
 ) -> Dict[str, bool]:
 	if long_or_short == "long":
 		if (
