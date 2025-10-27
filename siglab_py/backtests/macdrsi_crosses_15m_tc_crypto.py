@@ -304,8 +304,7 @@ def order_notional_adj(
      
 def allow_entry_initial(
     lo_row_tm1,
-    hi_row_tm1,
-	last_candles
+    hi_row_tm1
 ) -> Dict[str, bool]:
     return {
         'long' : _allow_entry_initial('long', lo_row_tm1, hi_row_tm1),
