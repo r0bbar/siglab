@@ -1433,7 +1433,7 @@ def run_scenario(
                                 loss_trailing = (1 - recovered_pnl_pessimistic/max_recovered_pnl) * 100 if unrealized_pnl_live<0 and recovered_pnl_pessimistic<max_recovered_pnl else 0
 
                             if loss_hard>=running_sl_percent_hard:
-                                unrealized_pnl = unrealized_pnl_sl
+                                unrealized_pnl = (running_sl_percent_hard/algo_param['sl_hard_percent']) * unrealized_pnl_sl
                                 reason2 = "sl_hard_percent"
                             elif (
                                     loss_trailing>=effective_tp_trailing_percent # loss_trailing is evaluated pessimistically.
