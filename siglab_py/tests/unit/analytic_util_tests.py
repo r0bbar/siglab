@@ -47,7 +47,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'datetime', 'datetime_utc', 'year', 'month', 'day', 'hour', 'minute', 'dayofweek', 
             'pct_chg_on_close', 'candle_height', 'candle_body_height',
             'week_of_month', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr', 
-            'is_green', 'pct_change_close', 
+            'is_green', 'candle_class', 'pct_change_close', 
             'sma_short_periods', 'sma_long_periods', 'ema_short_periods', 'ema_long_periods', 'ema_close', 
             'std', 'std_percent', 
             'vwap_short_periods', 'vwap_long_periods',

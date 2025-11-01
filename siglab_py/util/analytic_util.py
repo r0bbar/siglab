@@ -15,6 +15,33 @@ from siglab_py.util.simple_math import bucket_series, bucketize_val
 from siglab_py.util.market_data_util import fix_column_types
 from siglab_py.constants import TrendDirection
 
+def classify_candle(
+    candle : pd.Series,
+    min_candle_height_ratio : float = 3
+) -> Union[str, None]:
+    candle_class : Union[str, None] = None
+    open = candle['open']
+    high = candle['high']
+    low = candle['low']
+    close = candle['close']
+    candle_full_height = high - low # always positive
+    candle_body_height = close - open # can be negative
+    candle_height_ratio = candle_full_height / abs(candle_body_height) if candle_body_height!=0 else float('inf')
+
+    if (
+        candle_height_ratio>=min_candle_height_ratio
+        and close>low
+    ):
+        candle_class = 'hammer'
+    elif (
+        candle_height_ratio>=min_candle_height_ratio
+        and close<high
+    ):
+        candle_class = 'shooting_star'
+    # Keep add more ...
+
+    return candle_class
+
 # Fibonacci
 MAGIC_FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.00, 1.618, 2.618, 3.618, 4.236]
 
@@ -144,6 +171,8 @@ def compute_candles_stats(
     fix_column_types(pd_candles) # Do this AFTER filtering. Or you'd mess up index, introduce error around idmax, idmin. fix_column_types will drop all 'unnamed' columns and reset_index.
 
     pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
+
+    pd_candles['candle_class'] = pd_candles.apply(lambda row: classify_candle(row), axis=1)
 
     close_short_periods_rolling = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio))
     close_long_periods_rolling = pd_candles['close'].rolling(window=sliding_window_how_many_candles)
@@ -447,7 +476,7 @@ def compute_candles_stats(
             mitigated = pd_candles.iloc[idx + 1:row.name]['close'].lt(row['fvg_high']).any()
         return mitigated
 
-    pd_candles['fvg_mitigated'] = pd_candles.apply(lambda row: compute_fvg_mitigated(row, pd_candles), axis=1)
+    pd_candles['fvg_mitigated'] = pd_candles.apply(lambda row: compute_fvg_mitigated(row, pd_candles), axis=1) # type: ignore
 
     '''
         RSI
