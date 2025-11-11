@@ -294,7 +294,7 @@ h. 'additional_trade_fields' to be included in the trade extract file
 '''
 def order_notional_adj(
     algo_param : Dict,
-):
+) -> Dict[str, float]:
     initial_cash : float = algo_param['initial_cash']
     entry_percent_initial_cash : float = algo_param['entry_percent_initial_cash']
     target_order_notional = initial_cash * entry_percent_initial_cash/100
