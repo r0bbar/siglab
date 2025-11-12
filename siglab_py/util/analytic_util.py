@@ -172,7 +172,7 @@ def compute_candles_stats(
 
     pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
 
-    pd_candles['candle_class'] = pd_candles.apply(lambda row: classify_candle(row), axis=1)
+    pd_candles['candle_class'] = pd_candles.apply(lambda row: classify_candle(row), axis=1) # type: ignore
 
     close_short_periods_rolling = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio))
     close_long_periods_rolling = pd_candles['close'].rolling(window=sliding_window_how_many_candles)
@@ -364,14 +364,14 @@ def compute_candles_stats(
                 first_breach_index = aggressive_mask.idxmax()
                 candle_high = pd_candles.at[first_breach_index, 'high'] 
                 candle_low = pd_candles.at[first_breach_index, 'low']
-                candle_height = candle_high - candle_low
+                candle_height = candle_high - candle_low  # type: ignore
         else:
             aggressive_mask = window['close'] <= window['boillenger_lower_agg']
             if aggressive_mask.any():
                 first_breach_index = aggressive_mask.idxmax()
                 candle_high = pd_candles.at[first_breach_index, 'high'] 
                 candle_low = pd_candles.at[first_breach_index, 'low']
-                candle_height = candle_high - candle_low
+                candle_height = candle_high - candle_low  # type: ignore
 
         return {
             'aggressive_move': aggressive_mask.any(),
