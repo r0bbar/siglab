@@ -17,7 +17,8 @@ from siglab_py.constants import TrendDirection
 
 def classify_candle(
     candle : pd.Series,
-    min_candle_height_ratio : float = 3
+    min_candle_height_ratio : float = 5,
+    distance_from_mid_doji_threshold_bps : float = 10
 ) -> Union[str, None]:
     candle_class : Union[str, None] = None
     open = candle['open']
@@ -26,6 +27,10 @@ def classify_candle(
     close = candle['close']
     candle_full_height = high - low # always positive
     candle_body_height = close - open # can be negative
+    candle_full_mid = (high + low)/2
+    candle_body_mid = (open + close)/2
+    distance_from_mid_bps = (candle_full_mid/candle_body_mid -1)*10000 if candle_full_mid>candle_body_mid else (candle_body_mid/candle_full_mid -1)*10000
+
     candle_height_ratio = candle_full_height / abs(candle_body_height) if candle_body_height!=0 else float('inf')
 
     if (
@@ -38,6 +43,12 @@ def classify_candle(
         and close<high
     ):
         candle_class = 'shooting_star'
+    elif(
+        candle_height_ratio>=min_candle_height_ratio
+        and distance_from_mid_bps<=distance_from_mid_doji_threshold_bps
+    ):
+        candle_class = 'doji'
+
     # Keep add more ...
 
     return candle_class
