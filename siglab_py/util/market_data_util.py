@@ -9,6 +9,7 @@ import math
 import pandas as pd
 import numpy as np
 import asyncio
+from tabulate import tabulate
 
 from ccxt.base.exchange import Exchange as CcxtExchange
 from ccxt import deribit
@@ -160,8 +161,8 @@ async def async_instantiate_exchange(
                 'enableRateLimit'  : True,
                 'rateLimit' : rate_limit_ms,
                 'verbose': verbose
-            }
-        )  # type: ignore
+            }  # type: ignore
+        )
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
@@ -195,18 +196,18 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     pd_candles['timestamp_ms'] = pd_candles['timestamp_ms'].apply(_fix_timestamp_ms)
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(lambda x: datetime.fromtimestamp(int(x/1000)))
     pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
-    pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)
+    pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)  # type: ignore
     pd_candles['datetime_utc'] = pd_candles['timestamp_ms'].apply(
         lambda x: datetime.fromtimestamp(int(x.timestamp()) if isinstance(x, pd.Timestamp) else int(x / 1000), tz=timezone.utc)
     )
     
     # This is to make it easy to do grouping with Excel pivot table
-    pd_candles['year'] = pd_candles['datetime'].dt.year
-    pd_candles['month'] = pd_candles['datetime'].dt.month
-    pd_candles['day'] = pd_candles['datetime'].dt.day
-    pd_candles['hour'] = pd_candles['datetime'].dt.hour
-    pd_candles['minute'] = pd_candles['datetime'].dt.minute
-    pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # dayofweek: Monday is 0 and Sunday is 6
+    pd_candles['year'] = pd_candles['datetime'].dt.year  # type: ignore
+    pd_candles['month'] = pd_candles['datetime'].dt.month  # type: ignore
+    pd_candles['day'] = pd_candles['datetime'].dt.day  # type: ignore
+    pd_candles['hour'] = pd_candles['datetime'].dt.hour  # type: ignore
+    pd_candles['minute'] = pd_candles['datetime'].dt.minute  # type: ignore
+    pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # type: ignore dayofweek: Monday is 0 and Sunday is 6
 
     pd_candles['week_of_month'] = pd_candles['timestamp_ms'].apply(
         lambda x: timestamp_to_week_of_month(int(x/1000))
@@ -351,7 +352,7 @@ class NASDAQExchange:
             pd_daily_candles['low'] = pd_daily_candles['low'].astype(str).str.replace('$','')
             pd_daily_candles['close'] = pd_daily_candles['close'].astype(str).str.replace('$','')
             pd_daily_candles['datetime']= pd.to_datetime(pd_daily_candles['datetime'])
-            pd_daily_candles['timestamp_ms'] = pd_daily_candles.datetime.values.astype(np.int64) // 10 ** 6
+            pd_daily_candles['timestamp_ms'] = pd_daily_candles.datetime.values.astype(np.int64) // 10 ** 6  # type: ignore
             pd_daily_candles['symbol'] = symbol
             pd_daily_candles['exchange'] = 'nasdaq'
             fix_column_types(pd_daily_candles)
@@ -370,7 +371,7 @@ class NASDAQExchange:
                 )
 
                 # When you fill foward, a few candles before start date can have null values (open, high, low, close, volume ...)
-                first_candle_dt = pd_hourly_candles[(~pd_hourly_candles.close.isna())  & (pd_hourly_candles['datetime'].dt.time == pd.Timestamp('00:00:00').time())].iloc[0]['datetime']
+                first_candle_dt = pd_hourly_candles[(~pd_hourly_candles.close.isna())  & (pd_hourly_candles['datetime'].dt.time == pd.Timestamp('00:00:00').time())].iloc[0]['datetime']  # type: ignore
                 pd_hourly_candles = pd_hourly_candles[pd_hourly_candles.datetime>=first_candle_dt]
                 exchange_candles[symbol] = pd_hourly_candles
 
@@ -564,6 +565,35 @@ def fetch_candles(
         for symbol in exchange_candles:
             if not exchange_candles[symbol] is None:
                 exchange_candles[symbol] = aggregate_candles(candle_size, exchange_candles[symbol]) #  type: ignore
+
+    # For invalid rows missing timestamps, o/h/l/c/v, fill forward close, set volume to zero.
+    for symbol in exchange_candles:
+        pd_candles = exchange_candles[symbol]
+        
+        if pd_candles is not None:
+            mask_invalid_candles = pd_candles["timestamp_ms"].isna()
+            if mask_invalid_candles.any():
+                pd_invalid_candles = pd_candles[mask_invalid_candles]
+
+                if logger is not None:
+                    logger.warning(f"Dropping {pd_invalid_candles.shape[0]}/{pd_candles.shape[0]} rows from {symbol} candles (null timestamp_ms)") # type: ignore
+                    logger.warning(f"{tabulate(pd_invalid_candles, headers='keys', tablefmt='psql')}") # type: ignore
+                    
+                def _to_timestamp_ms(dt):
+                    if pd.isna(dt):
+                        return pd.NA
+                    if isinstance(dt, str):
+                        dt = pd.to_datetime(dt)
+                    return int(dt.timestamp() * 1000)
+                
+                pd_candles.loc[mask_invalid_candles, "timestamp_ms"] = pd_candles.loc[mask_invalid_candles, "datetime"].apply(_to_timestamp_ms)
+
+                pd_candles["close"] = pd_candles["close"].ffill()
+                
+                pd_candles.loc[mask_invalid_candles, ["open", "high", "low"]] = pd_candles.loc[
+                                                                                    mask_invalid_candles, "close"
+                                                                                ].values[:, None] # type: ignore
+                pd_candles.loc[mask_invalid_candles, "volume"] = 0.0
 
     return exchange_candles # type: ignore
 
