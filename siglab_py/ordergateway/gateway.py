@@ -23,6 +23,7 @@ from util.aws_util import AwsKmsUtil
 
 import ccxt.pro as ccxtpro
 
+from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.any_exchange import AnyExchange
 from util.market_data_util import async_instantiate_exchange
 from siglab_py.ordergateway.client import Order, DivisiblePosition
@@ -428,7 +429,16 @@ async def execute_one_position(
                 slices[-1].amount += last_slice.amount
 
                 log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount_in_base_ccy}") 
-
+        
+        @retry(num_attempts=3, pause_between_retries_ms=3000)
+        async def _fetch_order(
+            id : str, 
+            ticker : str,
+            exchange : AnyExchange,
+        ):
+            order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
+            return order_update
+        
         i = 0
         for slice in slices:
             try:
@@ -596,11 +606,10 @@ async def execute_one_position(
                         elapsed_sec = time.time() - start_time
                         log(f"{position.ticker} waiting for order update ... elapsed_sec: {elapsed_sec}")
                 
-                
                 # Cancel hung limit order, resend as market
                 if order_status!='closed':
                     # If no update from websocket, do one last fetch via REST
-                    order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                    order_update = await _fetch_order(order_id, position.ticker, exchange) 
                     order_status = order_update['status']
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
@@ -654,7 +663,7 @@ async def execute_one_position(
 
                             if (not order_status or order_status!='closed'):
                                 # If no update from websocket, do one last fetch via REST
-                                order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
+                                order_update = await _fetch_order(order_id, position.ticker, exchange) 
                                 order_status = order_update['status']
                                 filled_amount = order_update['filled']
                                 remaining_amount = order_update['remaining']
