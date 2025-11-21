@@ -432,11 +432,11 @@ async def execute_one_position(
         
         @retry(num_attempts=3, pause_between_retries_ms=3000)
         async def _fetch_order(
-            id : str, 
+            order_id : str, 
             ticker : str,
             exchange : AnyExchange,
         ):
-            order_update = await exchange.fetch_order(order_id, position.ticker) # type: ignore 
+            order_update = await exchange.fetch_order(order_id, ticker) # type: ignore 
             return order_update
         
         i = 0
