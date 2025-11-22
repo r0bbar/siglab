@@ -13,10 +13,10 @@ from redis import StrictRedis
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
-from util.market_data_util import async_instantiate_exchange
-from util.trading_util import calc_eff_trailing_sl
-from util.notification_util import dispatch_notification
-from util.aws_util import AwsKmsUtil
+from siglab_py.util.market_data_util import async_instantiate_exchange
+from siglab_py.util.trading_util import calc_eff_trailing_sl
+from siglab_py.util.notification_util import dispatch_notification
+from siglab_py.util.aws_util import AwsKmsUtil
 
 from siglab_py.constants import LogLevel, JSON_SERIALIZABLE_TYPES # type: ignore
 

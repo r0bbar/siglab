@@ -19,16 +19,15 @@ from re import Pattern
 from redis import StrictRedis
 import asyncio
 
-from util.aws_util import AwsKmsUtil
-
 import ccxt.pro as ccxtpro
 
 from siglab_py.util.retry_util import retry
+from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.exchanges.any_exchange import AnyExchange
-from util.market_data_util import async_instantiate_exchange
+from siglab_py.util.market_data_util import async_instantiate_exchange
 from siglab_py.ordergateway.client import Order, DivisiblePosition
 from siglab_py.constants import LogLevel # type: ignore
-from util.notification_util import dispatch_notification
+from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
 
