@@ -297,6 +297,17 @@ def fix_column_types(pd_candles : pd.DataFrame):
     pd_candles.reset_index(drop=True, inplace=True)
     pd_candles.sort_values("datetime", inplace=True)
 
+def interval_to_ms(interval : str) -> int:
+    interval_ms : int = 0
+    if interval=="d":
+        interval_ms = 24*60*60*1000
+    elif interval=="h":
+        interval_ms = 60*60*1000
+    elif interval=="m":
+        interval_ms = 60*1000
+
+    return interval_ms
+
 '''
 https://polygon.io/docs/stocks
 '''
