@@ -12,19 +12,24 @@ from redis.client import PubSub
 
 '''
 set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-python trigger_provider.py --provider_id aaa
+python trigger_provider.py --provider_id aaa --tickers BTC/USDC:USDC,ETH/USDC:USDC,SOL/USDC:USDC
 '''
 
-param : Dict[str, str] = {
+param : Dict[str, str|List[str]] = {
     'provider_id' : '---'
 }
 
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
     parser.add_argument("--provider_id", help="candle_provider will go to work if from redis a matching topic partition_assign_topic with provider_id in it.", default=None)
+    parser.add_argument("--tickers", help="Ticker(s) you're trading, comma separated list. Example BTC/USDC:USDC,ETH/USDC:USDC,SOL/USDC:USDC", default=None)
 
     args = parser.parse_args()
     param['provider_id'] = args.provider_id
+
+    tickers = args.tickers.split(',')
+    assert(len(tickers)>0)
+    param['tickers'] = [ ticker.strip() for ticker in tickers ]
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -51,16 +56,12 @@ def trigger_producers(
 if __name__ == '__main__':
     parse_args()
 
-    provider_id : str = param['provider_id']
+    provider_id : str = param['provider_id'] # type: ignore
     partition_assign_topic = 'mds_assign_$PROVIDER_ID$'
     candles_partition_assign_topic = partition_assign_topic.replace("$PROVIDER_ID$", provider_id)
     redis_client : StrictRedis = init_redis_client()
 
-    exchange_tickers : List[str] = [
-        'okx_linear|BTC/USDT:USDT',
-        'okx_linear|ETH/USDT:USDT',
-        'okx_linear|SOL/USDT:USDT',
-    ]
+    exchange_tickers : List[str] = param['tickers'] # type: ignore
     trigger_producers(
         redis_client=redis_client,
         exchange_tickers=exchange_tickers,
