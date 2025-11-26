@@ -1875,19 +1875,19 @@ def run_all_scenario(
         test_start_date = algo_param['start_date']
         test_fetch_start_date = test_start_date
         lo_candle_size = algo_param['lo_candle_size']
-        lo_num_interval = int(lo_candle_size[0])
+        lo_num_intervals = int(lo_candle_size[0])
         lo_interval = lo_candle_size[-1]
-        lo_number_intervals = algo_param['lo_how_many_candles']
+        lo_how_many_candles = algo_param['lo_how_many_candles']
         if lo_interval=="m":
-            test_end_date = test_start_date + timedelta(minutes=lo_num_interval*lo_number_intervals) 
+            test_end_date = test_start_date + timedelta(minutes=lo_num_intervals*lo_how_many_candles) 
             test_fetch_start_date = test_fetch_start_date - timedelta(minutes=algo_param['lo_stats_computed_over_how_many_candles']*2) 
             test_end_date_ref = test_end_date + timedelta(minutes=algo_param['lo_stats_computed_over_how_many_candles']*4) 
         elif lo_interval=="h":
-            test_end_date = test_start_date + timedelta(hours=lo_num_interval*lo_number_intervals) 
+            test_end_date = test_start_date + timedelta(hours=lo_num_intervals*lo_how_many_candles) 
             test_fetch_start_date = test_fetch_start_date - timedelta(hours=algo_param['lo_stats_computed_over_how_many_candles']*2) 
             test_end_date_ref = test_end_date + timedelta(hours=algo_param['lo_stats_computed_over_how_many_candles']*4) 
         elif lo_interval=="d":
-            test_end_date = test_start_date + timedelta(days=lo_num_interval*lo_number_intervals) 
+            test_end_date = test_start_date + timedelta(days=lo_num_intervals*lo_how_many_candles) 
             test_fetch_start_date = test_fetch_start_date - timedelta(days=algo_param['lo_stats_computed_over_how_many_candles']*2) 
             test_end_date_ref = test_end_date + timedelta(days=algo_param['lo_stats_computed_over_how_many_candles']*4) 
         test_end_date = test_end_date if test_end_date < max_test_end_date else max_test_end_date
