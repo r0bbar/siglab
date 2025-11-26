@@ -28,7 +28,7 @@ To start from command prompt:
 This script is pypy compatible.
 
 Key parameters you may want to modify:
-    provider_id: You can trigger this provider instance using test_provider.py. Of course, you'd write your own.
+    provider_id: You can trigger this provider instance using trigger_provider.py. Of course, you'd write your own.
     instance_capacity: max # tickers this provider instance will handle.
     ts_delta_observation_ms_threshold: default to 150ms. "Observation Delta" is clock diff between orderbook timestamp, and your local server clock.
     ts_delta_consecutive_ms_threshold: default to 150ms. "Consecutive Delta" is time elapsed between consecutive orderbook updates.
@@ -348,7 +348,7 @@ async def main():
     candles_publish_topic : str = param['mds']['topics']['candles_publish_topic']
     redis_pubsub : PubSub = init_redis_channel_subscription(redis_client, partition_assign_topic)
 
-    log(f"orderbooks_provider {param['provider_id']} started, waiting for trigger. (Can use test_provider.py to trigger it)")
+    log(f"orderbooks_provider {param['provider_id']} started, waiting for trigger. (Can use trigger_provider.py to trigger it)")
     
     tasks = []
     for message in redis_pubsub.listen():

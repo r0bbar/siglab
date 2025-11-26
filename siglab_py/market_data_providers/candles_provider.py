@@ -33,7 +33,7 @@ This script is pypy compatible:
     pypy candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 2169 --redis_ttl_ms 3600000
 
 Key parameters you may want to modify:
-    provider_id: You can trigger this provider instance using test_provider.py. Of course, you'd write your own.
+    provider_id: You can trigger this provider instance using trigger_provider.py. Of course, you'd write your own.
     candle_size: 1m, 5m, 15min, 1h, 1d for example.
     how_many_candles: default to 2169 (24 x 90). 
     redis_ttl_ms: This is how long orderbook snapshot will last on redis when provider publishes to it.
@@ -318,7 +318,7 @@ async def main():
             self.universe_reload_id = universe_reload_id
     task = None
 
-    log(f"candles_provider {param['provider_id']} started, waiting for trigger. (Can use test_provider.py to trigger it)")
+    log(f"candles_provider {param['provider_id']} started, waiting for trigger. (Can use trigger_provider.py to trigger it)")
 
     universe_reload_id = 1
     for message in redis_pubsub.listen():

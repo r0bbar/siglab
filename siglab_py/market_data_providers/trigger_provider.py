@@ -12,7 +12,7 @@ from redis.client import PubSub
 
 '''
 set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-python test_provider.py --provider_id aaa
+python trigger_provider.py --provider_id aaa
 '''
 
 param : Dict[str, str] = {
