@@ -416,7 +416,7 @@ async def main():
                             
                             reversal = _reversal(
                                 direction='up' if param['side']=='buy' else 'down',
-                                last_candles=trailing_candles[-param['reversal_num_intervals']:]
+                                last_candles=trailing_candles
                             )
 
                             ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10)
