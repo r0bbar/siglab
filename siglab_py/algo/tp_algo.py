@@ -161,7 +161,7 @@ def parse_args():
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
 
-    parser.add_argument("--load_entry_from_cache", help="Y or N. This is for algo restart scenario where you don't want make entry again. In this case existing/running position loaded from cache.", default='N')
+    parser.add_argument("--load_entry_from_cache", help="Y or N (default). This is for algo restart scenario where you don't want make entry again. In this case existing/running position loaded from cache.", default='N')
 
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
