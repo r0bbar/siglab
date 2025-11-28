@@ -9,18 +9,6 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         pass
     
     @staticmethod
-    def reversal(
-        direction : str,  # up or down
-        last_candles
-    ) -> bool:
-        if direction == "down" and all([ candle[1]<candle[4] for candle in last_candles ]): # All green?
-            return True
-        elif direction == "up" and all([ candle[1]>candle[4] for candle in last_candles ]): # All red?
-            return True
-        else:
-            return False
-        
-    @staticmethod
     def allow_entry(
         lo_row_tm1,
         hi_row_tm1,
