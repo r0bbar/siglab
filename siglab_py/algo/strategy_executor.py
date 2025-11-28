@@ -23,7 +23,8 @@ from util.aws_util import AwsKmsUtil
 
 from siglab_py.constants import LogLevel, JSON_SERIALIZABLE_TYPES # type: ignore
 
-from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
+# from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
+from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
 
 current_filename = os.path.basename(__file__)
 
