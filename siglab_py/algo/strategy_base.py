@@ -27,7 +27,6 @@ class StrategyBase(ABC):
 
     @staticmethod
     def allow_entry(
-        last_candles
     )  -> Dict[str, bool]:
         return {
             'long' : False,
