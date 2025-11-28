@@ -24,4 +24,5 @@ class TrendDirection(enum.Enum):
     def to_string(self) -> str:
         return self.name.lower() if self != TrendDirection.UNDEFINED else ''
 
+OrderSide = enum.Enum('OrderSide', 'UNDEFINED BUY SELL')
 PositionStatus = enum.Enum("PositionStatus", 'UNDEFINED OPEN CLOSED SL')
