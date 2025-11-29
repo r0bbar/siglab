@@ -4,15 +4,19 @@ import os
 import logging
 from dotenv import load_dotenv
 import argparse
+import re
 from datetime import datetime, timezone
 import time
+import arrow
 from typing import List, Dict, Any, Union, Callable
 from io import StringIO
 import json
 import asyncio
 from redis import StrictRedis
 import pandas as pd
+import numpy as np
 import inspect
+from tabulate import tabulate
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -21,10 +25,14 @@ from util.trading_util import calc_eff_trailing_sl
 from util.notification_util import dispatch_notification
 from util.aws_util import AwsKmsUtil
 
-from siglab_py.constants import LogLevel, JSON_SERIALIZABLE_TYPES # type: ignore
+from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, PositionStatus, OrderSide # type: ignore
 
-# from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
-from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
+
+'''
+For dry-runs/testing, swap back to StrategyBase, it will not fire an order.
+'''
+from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
+# from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
 
 current_filename = os.path.basename(__file__)
 
@@ -65,7 +73,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y
+        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y
 
 Debug from VSCode, launch.json:
     {
@@ -159,6 +167,29 @@ sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
+POSITION_CACHE_FILE_NAME = "singlelegta_position_cache_$GATEWAY_ID$.csv"
+POSITION_CACHE_COLUMNS = [ 
+            'exchange', 'ticker',
+            'status', 
+            'pos', 'pos_usdt', 'multiplier', 'created', 'closed', 
+            'pos_entries',
+            'spread_bps', 'entry_px', 'close_px', 'last_interval_px', 'lo_boillenger_upper', 'lo_boillenger_lower', 
+            'hi_rsi_trend', 'hi_rsi',
+            'ob_mid', 'ob_best_bid', 'ob_best_ask',
+            'unreal', 'unreal_live', 'real',
+            'max_unreal_live',
+            'max_unreal_live_bps',
+            'max_unreal_pessimistic_bps',
+            'max_pain',
+            'entry_target_price',
+            'running_sl_percent_hard',
+            'sl_trailing_min_threshold_crossed',
+            'sl_percent_trailing',
+            'tp_min_target',
+            'dt_boillenger_lower_breached',
+            'dt_boillenger_upper_breached'
+        ]
+
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
         logger.info(f"{datetime.now()} {message}")
@@ -185,6 +216,7 @@ def parse_args():
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
+    parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED.", default=100)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
@@ -228,6 +260,7 @@ def parse_args():
     param['ticker'] = args.ticker
     param['order_type'] = args.order_type
     param['amount_base_ccy'] = float(args.amount_base_ccy)
+    param['residual_pos_usdt_threshold'] = float(args.residual_pos_usdt_threshold)
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
@@ -282,6 +315,8 @@ async def main(
     redis_client : StrictRedis = init_redis_client()
 
     gateway_id : str = param['gateway_id']
+    exchange_name : str = gateway_id.split('_')[0]
+    ticker : str = param['ticker']
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
     ordergateway_pending_orders_topic : str = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
     
@@ -301,7 +336,7 @@ async def main(
     lo_num_intervals : int = int(lo_candle_size.replace(lo_interval,''))
     lo_interval_ms : int = interval_to_ms(lo_interval) * lo_num_intervals
 
-    position_cacnle_file : str = f"tp_algo_position_cache_{gateway_id}.csv"
+    pd_position_cache = pd.DataFrame(columns=POSITION_CACHE_COLUMNS)
 
     notification_params : Dict[str, Any] = param['notification']
 
@@ -334,7 +369,7 @@ async def main(
             passphrase = aws_kms.decrypt(passphrase.encode())
 
     exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
-        gateway_id=param['gateway_id'],
+        gateway_id=gateway_id,
         api_key=api_key,
         secret=secret,
         passphrase=passphrase,
@@ -343,7 +378,7 @@ async def main(
     )
     if exchange:
         markets = await exchange.load_markets() # type: ignore
-        market = markets[param['ticker']]
+        market = markets[ticker]
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
 
         balances = await exchange.fetch_balance() # type: ignore
@@ -372,26 +407,13 @@ async def main(
         _trigger_producers(redis_client, [ param['ticker'] ], lo_candles_provider_topic)
 
         # Load cached positions from disk, if any
-        executed_positions : List[DivisiblePosition] = None
-        if param['load_entry_from_cache']:
-            with open(position_cacnle_file, 'r') as f:
-                executed_position = json.load(f)
-                executed_positions = [ executed_position ] # type: ignore
-            
-            executed_position = executed_positions[0] if executed_positions else None # We sent only one DivisiblePosition.
-            log(f"Entry loaded from cache. {json.dumps(executed_position, indent=4)}") # type: ignore
+        if os.path.exists(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", str(gateway_id)))>0:
+            pd_position_cache = pd.read_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+            pd_position_cache.drop(pd_position_cache.columns[pd_position_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+            pd_position_cache.replace([np.nan], [None], inplace=True)
 
-            entry_price = executed_position['average_cost']
-            amount_filled_usdt = entry_price * abs(executed_position['filled_amount'])
-            if param['side'] == 'buy':
-                tp_min_price = entry_price * (1+param['tp_min_percent']/100)
-                tp_max_price = entry_price * (1+param['tp_max_percent']/100)
-                sl_price = entry_price * (1-param['sl_percent']/100)
-            else:
-                tp_min_price = entry_price * (1-param['tp_min_percent']/100)
-                tp_max_price = entry_price * (1-param['tp_max_percent']/100)
-                sl_price = entry_price * (1+param['sl_percent']/100)
-            
+            pd_position_cache = pd_position_cache[POSITION_CACHE_COLUMNS]
+
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         unrealized_pnl : float = 0
@@ -408,6 +430,106 @@ async def main(
         while (not tp and not sl and not position_break):
             try:
                 dt_now = datetime.now()
+
+                position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
+                if position_cache_row.shape[0]==0:
+                    position_cache_row = {
+                        'exchange': exchange_name,
+                        'ticker' : ticker,
+
+                        'status' : PositionStatus.UNDEFINED.name,
+                        
+                        'pos' : None, 
+                        'pos_usdt' : None,
+                        'multiplier' : multiplier,
+                        'created' : None,
+                        'closed' : None,
+
+                        'pos_entries' : [],
+
+                        'spread_bps' : None,
+                        'entry_px' : None,
+                        'close_px' : None,
+
+                        'last_interval_px' : None,
+                        'lo_boillenger_upper' : None,
+                        'lo_boillenger_lower' : None,
+                        'hi_rsi_trend' : None,
+                        'hi_rsi' : None,
+
+                        'ob_mid' : None,
+                        'ob_best_bid' : None,
+                        'ob_best_ask' : None,
+                        
+                        'unreal' : 0,
+                        'unreal_live' : 0,
+                        'real' : 0,
+                        'max_unreal_live' : 0,
+                        'max_unreal_live_bps' : 0,
+                        'max_unreal_pessimistic_bps' : 0,
+                        'max_pain' : 0,
+                        'entry_target_price' : None,
+                        'sl_trailing_min_threshold_crossed' : False,
+                        'running_sl_percent_hard' : param['sl_percent'],
+                        'sl_percent_trailing' : param['sl_percent_trailing'],
+                        'tp_min_target' : None,
+
+                        'dt_boillenger_lower_breached' : None,
+                        'dt_boillenger_upper_breached' : None
+                    }
+                    pd_position_cache = pd.concat([pd_position_cache, pd.DataFrame([position_cache_row])], axis=0, ignore_index=True)
+                    position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
+            
+                position_cache_row = position_cache_row.iloc[0]
+
+                # Note: arrow.get will populate tzinfo
+                pos = position_cache_row['pos'] if position_cache_row['pos'] else 0
+                pos_usdt = position_cache_row['pos_usdt'] if position_cache_row['pos_usdt'] else 0
+                pos_status = position_cache_row['status']
+                if (pos==0 or pos_usdt<=param['residual_pos_usdt_threshold']) and pos_status==PositionStatus.OPEN.name:
+                    pos_status = PositionStatus.CLOSED.name
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
+                if pos_status!=PositionStatus.OPEN.name and (pos and pos!=0):
+                    pos_status = PositionStatus.OPEN.name
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
+                    
+                pos_created = position_cache_row['created']
+                pos_created = arrow.get(pos_created).datetime if pos_created and isinstance(pos_created, str) else pos_created
+                total_sec_since_pos_created = INVALID
+                if pos_created:
+                    pos_created = pos_created.replace(tzinfo=None)
+                    total_sec_since_pos_created = (dt_now - pos_created).total_seconds()
+                pos_closed = position_cache_row['closed']
+                pos_closed = arrow.get(pos_closed).datetime if pos_closed and isinstance(pos_closed, str) else pos_closed
+                if pos_closed:
+                    pos_closed = pos_closed.replace(tzinfo=None)
+                pos_side = OrderSide.BUY if pos and pos>0 else OrderSide.SELL
+                pos_entry_px = position_cache_row['entry_px']
+                max_unreal_live = position_cache_row['max_unreal_live']
+                if not max_unreal_live or pd.isna(max_unreal_live):
+                    max_unreal_live = 0
+
+                max_unreal_live_bps = max_unreal_live / abs(pos_usdt) * 10000 if pos_usdt!=0 else 0
+                max_unreal_pessimistic_bps = position_cache_row['max_unreal_pessimistic_bps']
+                max_pain = position_cache_row['max_pain'] if position_cache_row['max_pain'] else 0
+                tp_max_price = position_cache_row['entry_target_price']
+                running_sl_percent_hard = position_cache_row['running_sl_percent_hard']
+                sl_trailing_min_threshold_crossed = position_cache_row['sl_trailing_min_threshold_crossed']
+                effective_sl_percent_trailing = position_cache_row['sl_percent_trailing']
+                tp_min_price = position_cache_row['tp_min_target']
+
+                pos_entries = position_cache_row['pos_entries']
+                if isinstance(pos_entries, str):
+                    datetime_strings = re.findall(r'datetime\.datetime\(([^)]+)\)', pos_entries)
+                    
+                    pos_entries = []
+                    for dt_str in datetime_strings:
+                        dt_parts = [int(part.strip()) for part in dt_str.split(',')]
+                        if len(dt_parts) == 7:
+                            pos_entries.append(datetime(*dt_parts))
+                        elif len(dt_parts) == 6:
+                            pos_entries.append(datetime(*dt_parts, microsecond=0))
+                num_pos_entries = len(pos_entries) if pos_entries else 0
 
                 '''
                 'fetch_position' is for perpetual. 
@@ -563,96 +685,101 @@ async def main(
 
                         last_candles=trailing_candles # alias
 
+                        pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
+                        pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
+                        pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
+                        pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
+
                         kwargs = {k: v for k, v in locals().items() if k in allow_entry_func_params}
                         allow_entry_func_result = allow_entry_func(**kwargs)
                         allow_entry_long = allow_entry_func_result['long']
                         allow_entry_short = allow_entry_func_result['short']
 
-                        if (
-                            allow_entry_long
-                        ):
-                            entry_positions : List[DivisiblePosition] = [
-                                DivisiblePosition(
-                                    ticker = param['ticker'],
-                                    side = 'buy',
-                                    amount = param['amount_base_ccy'],
-                                    leg_room_bps = param['leg_room_bps'],
-                                    order_type = param['order_type'],
-                                    slices = param['slices'],
-                                    wait_fill_threshold_ms = param['wait_fill_threshold_ms']
-                                )
-                            ]
-                            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
-                                                                                                                            redis_client=redis_client,
-                                                                                                                            positions=entry_positions,
-                                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
-                                                                                                                            )
-                        elif (
-                            allow_entry_short
-                        ):
-                            entry_positions : List[DivisiblePosition] = [
-                                DivisiblePosition(
-                                    ticker = param['ticker'],
-                                    side = 'sell',
-                                    amount = param['amount_base_ccy'],
-                                    leg_room_bps = param['leg_room_bps'],
-                                    order_type = param['order_type'],
-                                    slices = param['slices'],
-                                    wait_fill_threshold_ms = param['wait_fill_threshold_ms']
-                                )
-                            ]
-                            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
-                                                                                                                            redis_client=redis_client,
-                                                                                                                            positions=entry_positions,
-                                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
-                                                                                                                            )
-                        if executed_position['done']:
-                            entry_price = executed_position['average_cost']
-                            amount_filled_usdt = entry_price * abs(executed_position['filled_amount'])
-                            if param['side'] == 'buy':
-                                tp_min_price = entry_price * (1+param['tp_min_percent']/100)
-                                tp_max_price = entry_price * (1+param['tp_max_percent']/100)
-                                sl_price = entry_price * (1-param['sl_percent']/100)
+                        allow_entry = allow_entry_long or allow_entry_short
+                        if allow_entry:
+                            if allow_entry_long:
+                                side = 'buy'
+                            elif allow_entry_short:
+                                side = 'sell'
                             else:
-                                tp_min_price = entry_price * (1-param['tp_min_percent']/100)
-                                tp_max_price = entry_price * (1-param['tp_max_percent']/100)
-                                sl_price = entry_price * (1+param['sl_percent']/100)
+                                raise ValueError("Either allow_long or allow_short!")
+                            entry_positions : List[DivisiblePosition] = [
+                                DivisiblePosition(
+                                    ticker = param['ticker'],
+                                    side = side,
+                                    amount = param['amount_base_ccy'],
+                                    leg_room_bps = param['leg_room_bps'],
+                                    order_type = param['order_type'],
+                                    slices = param['slices'],
+                                    wait_fill_threshold_ms = param['wait_fill_threshold_ms']
+                                )
+                            ]
+                            log(f"dispatching {side} orders to {gateway_id}")
+                            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
+                                                                                                            redis_client=redis_client,
+                                                                                                            positions=entry_positions,
+                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
+                                                                                                            )
+                            for executed_position in executed_positions:
+                                if not executed_position['done']:
+                                    err_msg = executed_position['execution_err']
+                                    self.logger.error(err_msg)
+                                    self.app_context.notification_gizmo.dispatch_notification(title=f"singlelegta error from order gateway {self.param['gateway_id']}!!", message=err_msg, log_level=logging.ERROR)
+                                    raise ValueError(err_msg)
+                            executed_position = executed_positions[0] # We sent only one DivisiblePosition.
 
-                            if not param['load_entry_from_cache']:
-                                executed_position['position'] = {
+                            new_pos_from_exchange =executed_position['filled_amount']
+                            amount_filled_usdt = mid * new_pos_from_exchange
+                            pos_entry_px = executed_position['average_cost']
+                            new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
+                            fees = executed_position['fees']
+
+                            pnl_potential_bps = param['tp_max_percent']*100
+                            min_pnl_potential_bps = param['tp_min_percent']*100
+                            tp_min_price = mid * (1 + pnl_potential_bps/10000)
+                            tp_max_price = mid * (1 + min_pnl_potential_bps/10000)
+                            sl_price = mid * (1+param['sl_percent']/100)
+
+                            executed_position['position'] = {
                                     'status' : 'open',
                                     'max_unrealized_pnl' : 0,
-                                    'entry_price' : entry_price,
+                                    'pos_entry_px' : pos_entry_px,
+                                    'mid' : mid,
                                     'amount_base_ccy' : executed_position['filled_amount'],
                                     'tp_min_price' : tp_min_price,
                                     'tp_max_price' : tp_max_price,
                                     'sl_price' : sl_price,
                                     'multiplier' : multiplier
                                 }
-                                with open(position_cacnle_file, 'w') as f:
-                                    json.dump(executed_position, f)
 
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, Entry succeeded. {param['ticker']} {param['side']} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_price}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-                                
-                        if executed_position:
-                            if executed_position['side']=='long':
-                                unrealized_pnl = (mid - entry_price) * param['amount_base_ccy']
-                            elif executed_position['side']=='short':
-                                unrealized_pnl = (entry_price - mid) * param['amount_base_ccy']
-                            unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
+                            pd_position_cache.loc[position_cache_row.name, 'pos'] = pos + new_pos_from_exchange
+                            pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt + new_pos_usdt_from_exchange
+                            pd_position_cache.loc[position_cache_row.name, 'status'] = PositionStatus.OPEN.name
+                            pos_created = datetime.fromtimestamp(time.time())
+                            pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
+                            pd_position_cache.loc[position_cache_row.name, 'closed'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
+                            pd_position_cache.loc[position_cache_row.name, 'close_px'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'unreal'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
+                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
+                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_pessimistic_bps'] = 0
+                            pd_position_cache.loc[position_cache_row.name, 'max_pain'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'entry_target_price'] = tp_max_price
+                            pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_percent']
+                            pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
+                            pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = float('inf')
+                            pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
 
-                            if unrealized_pnl>max_unrealized_pnl:
-                                max_unrealized_pnl = unrealized_pnl
-                                max_unrealized_pnl_percent = max_unrealized_pnl / amount_filled_usdt * 100
-                                executed_position['position']['max_unrealized_pnl'] = max_unrealized_pnl
+                            pos_entries.append(pos_created)
+                            pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
 
-                                with open(position_cacnle_file, 'w') as f:
-                                    json.dump(executed_position, f)
+                            dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                         if (
-                            (unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl)
+                            (unrealized_pnl_percent>=param['tp_min_percent'] and unrealized_pnl<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
                             or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is (and will remain) active.
                         ):
                             loss_trailing = (1 - unrealized_pnl/max_unrealized_pnl) * 100
@@ -676,7 +803,7 @@ async def main(
 
                         log(f"unrealized_pnl: {round(unrealized_pnl,4)}, unrealized_pnl_percent: {round(unrealized_pnl_percent,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
-                        # STEP 2. Exit
+                        # STEP 2. Unwind position
                         if unrealized_pnl>0:
                             if reversal and unrealized_pnl_percent >= param['tp_min_percent']:
                                 tp = True
@@ -690,7 +817,7 @@ async def main(
                             exit_positions : List[DivisiblePosition] = [
                                 DivisiblePosition(
                                     ticker = param['ticker'],
-                                    side = 'sell' if executed_position['side']=='long' else 'buy',
+                                    side = 'sell' if pos_side==OrderSide.BUY else 'buy',
                                     amount = param['amount_base_ccy'],
                                     leg_room_bps = param['leg_room_bps'],
                                     order_type = param['order_type'],
@@ -703,8 +830,8 @@ async def main(
                             executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                             redis_client=redis_client,
                                                                                                                             positions=exit_positions,
-                                                                                                                        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                                        ordergateway_executions_topic=ordergateway_executions_topic
+                                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+                                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
                                                                                                                         )
                             if executed_positions:
                                 executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
@@ -712,24 +839,45 @@ async def main(
                                 if executed_position_close['done']:
                                     executed_position_close['position'] = executed_position['position']
 
-                                    if param['side']=='buy':
-                                        closed_pnl = (executed_position_close['average_cost'] - entry_price) * param['amount_base_ccy']
+                                    if pos_side==OrderSide.BUY:
+                                        closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
                                     else:
-                                        closed_pnl = (entry_price - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                        closed_pnl = (pos_entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
                                     executed_position_close['position']['max_unrealized_pnl'] = max_unrealized_pnl
                                     executed_position_close['position']['closed_pnl'] = closed_pnl
                                     executed_position_close['position']['status'] = 'closed'
 
-                                    with open(position_cacnle_file, 'w') as f:
-                                        json.dump(executed_position_close, f)
+                                    new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
+                                    new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
+                                    fees = executed_position_close['fees']
 
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Execution done, {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
+                                    pd_position_cache.loc[position_cache_row.name, 'pos'] = new_pos_from_exchange
+                                    pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
+                                    pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
+                                    pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
+                                    pd_position_cache.loc[position_cache_row.name, 'unreal'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
+                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
+                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_pessimistic_bps'] = 0
+                                    pd_position_cache.loc[position_cache_row.name, 'max_pain'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
+                                    pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
+                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_percent']
+                                    pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
+                                    pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
+                                    pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = None
+
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 else:
                                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                                await exchange.close()
-
+                        log(f"[{gateway_id}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        pd_position_cache.to_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+                        
             except Exception as loop_err:
                 log(f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
             finally:
