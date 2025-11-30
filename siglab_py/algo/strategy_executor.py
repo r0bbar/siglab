@@ -31,8 +31,8 @@ from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, Posi
 '''
 For dry-runs/testing, swap back to StrategyBase, it will not fire an order.
 '''
-from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
-# from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
+# from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
+from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
 
 current_filename = os.path.basename(__file__)
 
@@ -185,8 +185,6 @@ POSITION_CACHE_COLUMNS = [
             'sl_trailing_min_threshold_crossed',
             'sl_percent_trailing',
             'tp_min_target',
-            'dt_boillenger_lower_breached',
-            'dt_boillenger_upper_breached'
         ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
@@ -337,7 +335,9 @@ async def main(
     lo_num_intervals : int = int(lo_candle_size.replace(lo_interval,''))
     lo_interval_ms : int = interval_to_ms(lo_interval) * lo_num_intervals
 
-    pd_position_cache = pd.DataFrame(columns=POSITION_CACHE_COLUMNS)
+    strategy_indicators = TargetStrategy.get_strategy_indicators()
+    position_cache_columns = POSITION_CACHE_COLUMNS + strategy_indicators
+    pd_position_cache = pd.DataFrame(columns=position_cache_columns)
 
     notification_params : Dict[str, Any] = param['notification']
 
@@ -451,12 +451,7 @@ async def main(
                         'spread_bps' : None,
                         'entry_px' : None,
                         'close_px' : None,
-
                         'last_interval_px' : None,
-                        'lo_boillenger_upper' : None,
-                        'lo_boillenger_lower' : None,
-                        'hi_rsi_trend' : None,
-                        'hi_rsi' : None,
 
                         'ob_mid' : None,
                         'ob_best_bid' : None,
@@ -474,10 +469,8 @@ async def main(
                         'running_sl_percent_hard' : param['sl_percent'],
                         'sl_percent_trailing' : param['sl_percent_trailing'],
                         'tp_min_target' : None,
-
-                        'dt_boillenger_lower_breached' : None,
-                        'dt_boillenger_upper_breached' : None
                     }
+                    position_cache_row.update({ind: None for ind in strategy_indicators})
                     pd_position_cache = pd.concat([pd_position_cache, pd.DataFrame([position_cache_row])], axis=0, ignore_index=True)
                     position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
             
@@ -679,6 +672,19 @@ async def main(
                         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid orderbook.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
+                        for indicator in strategy_indicators:
+                            indicator_source : str = indicator.split(":")[0]
+                            indicator_name = indicator.split(":")[-1]
+                            if indicator_source=="lo_row":
+                                indicator_value = lo_row[indicator_name]
+                            elif indicator_source=="lo_row_tm1":
+                                indicator_value = lo_row_tm1[indicator_name]
+                            elif indicator_source=="hi_row":
+                                indicator_value = hi_row[indicator_name]
+                            elif indicator_source=="hi_row_tm1":
+                                indicator_value = hi_row_tm1[indicator_name]
+                            pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
+
                         best_ask = min([x[0] for x in ob['asks']])
                         best_bid = max([x[0] for x in ob['bids']])
                         mid = (best_ask+best_bid)/2

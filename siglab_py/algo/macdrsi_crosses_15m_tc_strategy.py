@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import Dict
+from typing import List, Dict
 
 from algo.strategy_base import StrategyBase
 
@@ -38,3 +38,10 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
             'long' : allow_long,
             'short' : allow_short
         }
+    
+    @staticmethod
+    def get_strategy_indicators() -> List[str]:
+        return [ 
+            'lo_row_tm1:macd_cross', 'lo_row_tm1:macd_bullish_cross_last_id', 'lo_row_tm1:macd_bearish_cross_last_id', 
+            'lo_row_tm1:rsi_trend',  'lo_row_tm1:rsi', 'lo_row_tm1:rsi_max', 'lo_row_tm1:rsi_min', 'lo_row_tm1:rsi_idmax', 'lo_row_tm1:rsi_idmin' 
+        ]

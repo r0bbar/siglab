@@ -56,3 +56,8 @@ class StrategyBase(ABC):
             'tp_min_percent' : tp_min_percent,
             'tp_max_percent' : tp_max_percent
         }
+
+    # List of TA/indicators you wish to include in POSITION_CACHE_COLUMNS from strategy_executor (Display concern only)
+    @staticmethod
+    def get_strategy_indicators() -> List[str]:
+        return []
