@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import Dict
+from typing import List, Dict, Any
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
@@ -20,6 +20,7 @@ class StrategyBase(ABC):
         
     @staticmethod
     def order_notional_adj(
+        *args: Any, **kwargs: Any
     ) -> Dict[str, float]:
         return {
          'target_order_notional' : 1
@@ -27,6 +28,7 @@ class StrategyBase(ABC):
 
     @staticmethod
     def allow_entry(
+        *args: Any, **kwargs: Any
     )  -> Dict[str, bool]:
         return {
             'long' : False,
@@ -35,7 +37,8 @@ class StrategyBase(ABC):
 
     @staticmethod
     def sl_adj(
-        algo_param : Dict
+        algo_param : Dict,
+        *args: Any, **kwargs: Any
     ) -> Dict[str, float]:
         running_sl_percent_hard = algo_param['sl_hard_percent']
         return {
@@ -44,7 +47,8 @@ class StrategyBase(ABC):
 
     @staticmethod
     def trailing_stop_threshold_eval(
-        algo_param : Dict
+        algo_param : Dict,
+        *args: Any, **kwargs: Any
     ) -> Dict[str, float]:
         tp_min_percent = algo_param['tp_min_percent']
         tp_max_percent = algo_param['tp_max_percent']
