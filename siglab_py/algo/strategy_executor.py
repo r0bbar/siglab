@@ -432,9 +432,10 @@ async def main(
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         pos_unreal_live : float = 0
-        unrealized_pnl_live_pessimistic : float = 0
+        unrealized_pnl_live_pessimistic : float = 0 # Evaluated using latest candle's open
         max_unrealized_pnl : float = 0
         pnl_live_bps : float = 0
+        pnl_pessimistic_bps : float = 0
         max_unrealized_pnl_percent : float = 0
         loss_trailing : float = 0
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
@@ -865,7 +866,7 @@ async def main(
                             # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
-                        log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pnl_live_bps: {round(pnl_live_bps,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
+                        log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pnl_live_bps: {round(pnl_live_bps,4)}, unrealized_pnl_live_pessimistic: {unrealized_pnl_live_pessimistic}, pnl_pessimistic_bps: {pnl_pessimistic_bps}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
                         # STEP 2. Unwind position
                         if pos_unreal_live>0:
