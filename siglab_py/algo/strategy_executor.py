@@ -433,8 +433,7 @@ async def main(
         pos_unreal_live : float = 0
         unrealized_pnl_live_pessimistic : float = 0
         max_unrealized_pnl : float = 0
-        pos_unreal_live_percent : float = 0
-        pos_unreal_live_bps : float = 0
+        pnl_live_bps : float = 0
         max_unrealized_pnl_percent : float = 0
         loss_trailing : float = 0
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
@@ -718,8 +717,6 @@ async def main(
                             elif pos_side == OrderSide.SELL:
                                 pos_unreal_live = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
                                 unrealized_pnl_live_pessimistic = (pos_entry_px - mid) * param['amount_base_ccy']
-                            pos_unreal_live_percent = pos_unreal_live / pos_usdt * 100
-                            pos_unreal_live_bps = pos_unreal_live_percent * 100
                         pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                         pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
@@ -829,7 +826,7 @@ async def main(
                             dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                         if (
-                            (pos_unreal_live_percent>=param['tp_min_percent'] and pos_unreal_live<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
+                            ((pnl_live_bps/100)>=param['tp_min_percent'] and pos_unreal_live<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
                             or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is (and will remain) active.
                         ):
                             loss_trailing = (1 - pos_unreal_live/max_unrealized_pnl) * 100
@@ -844,6 +841,9 @@ async def main(
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
 
                                 msg = {
+                                    'side' : pos_side.name,
+                                    'mid' : mid,
+                                    'pos_entry_px' : pos_entry_px,
                                     'pnl_pessimistic_bps' : pnl_pessimistic_bps,
                                     'sl_trailing_min_threshold_bps' : sl_trailing_min_threshold_bps
                                 }
@@ -864,16 +864,16 @@ async def main(
                             # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
-                        log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pos_unreal_live_percent: {round(pos_unreal_live_percent,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
+                        log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pnl_live_bps: {round(pnl_live_bps,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
                         # STEP 2. Unwind position
                         if pos_unreal_live>0:
-                            if reversal and pos_unreal_live_percent >= param['tp_min_percent']:
+                            if reversal and (pnl_live_bps/100) >= param['tp_min_percent']:
                                 tp = True
                             elif loss_trailing>=effective_tp_trailing_percent:
                                 tp = True
                         else:
-                            if abs(pos_unreal_live_percent)>=param['sl_percent']:
+                            if abs(pnl_live_bps/100)>=param['sl_percent']:
                                 sl = True
 
                         if tp or sl:
@@ -940,8 +940,8 @@ async def main(
                                                 'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
                                                 'avg_price' : mid, # mid is actually not avg_price!
                                                 'amount': abs(new_pos_usdt_from_exchange),
-                                                'pnl' : pos_unreal_live,
-                                                'pnl_bps' : pos_unreal_live_bps,
+                                                'pos_unreal_live' : pos_unreal_live,
+                                                'pnl_live_bps' : pnl_live_bps,
                                                 'max_pain' : max_pain
                                             }
                                     orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
