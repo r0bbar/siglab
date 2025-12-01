@@ -773,9 +773,15 @@ async def main(
                             new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                             fees = executed_position['fees']
 
-                            tp_max_price = mid * (1 + pnl_potential_bps/10000)
-                            tp_min_price = mid * (1 + sl_trailing_min_threshold_bps/10000)
-                            sl_price = mid * (1 - param['sl_percent']/100)
+                            if side=='buy':
+                                tp_max_price = mid * (1 + pnl_potential_bps/10000)
+                                tp_min_price = mid * (1 + sl_trailing_min_threshold_bps/10000)
+                                sl_price = mid * (1 - param['sl_percent']/100)
+
+                            elif side=='sell':
+                                tp_max_price = mid * (1 - pnl_potential_bps/10000)
+                                tp_min_price = mid * (1 - sl_trailing_min_threshold_bps/10000)
+                                sl_price = mid * (1 + param['sl_percent']/100)
 
                             executed_position['position'] = {
                                     'status' : 'open',
