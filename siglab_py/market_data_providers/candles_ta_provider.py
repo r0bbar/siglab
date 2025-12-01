@@ -219,11 +219,11 @@ def work(
                                     https://redis.io/commands/set/
                                     '''
                                     expiry_sec : int = 0
-                                    if candle_size=="m":
+                                    if candle_size[-1]=="m":
                                         expiry_sec = 60 + 60*15
-                                    elif candle_size=="h":
+                                    elif candle_size[-1]=="h":
                                         expiry_sec = 60*60 + 60*15
-                                    elif candle_size=="d":
+                                    elif candle_size[-1]=="d":
                                         expiry_sec = 60*60*24 
                                     expiry_sec += 60*15 # additional 15min
 
