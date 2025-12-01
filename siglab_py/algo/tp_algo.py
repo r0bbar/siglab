@@ -375,7 +375,7 @@ async def main():
                 unrealized_pnl_percent : float = 0
                 max_unrealized_pnl_percent : float = 0
                 loss_trailing : float = 0
-                effective_tp_trailing_percent : float = float('inf')
+                effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
                 reversal : bool = False
                 tp : bool = False
                 sl : bool = False
