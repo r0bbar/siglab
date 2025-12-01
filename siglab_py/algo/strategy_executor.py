@@ -688,9 +688,8 @@ async def main(
                     if not orderbook_valid:
                         ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10) 
                         err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
-                        log(err_msg, LogLevel.CRITICAL)
-                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid orderbook.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
+                        log(err_msg, LogLevel.WARNING)
+                        
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
                         for indicator in strategy_indicators:
                             indicator_source : str = indicator.split(":")[0]
