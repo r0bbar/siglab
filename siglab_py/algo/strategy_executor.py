@@ -706,9 +706,9 @@ async def main(
                         last_candles=trailing_candles # alias
 
                         if pos_side == OrderSide.BUY:
-                            unrealized_pnl = (mid - entry_price) * param['amount_base_ccy']
+                            unrealized_pnl = (mid - pos_entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
-                            unrealized_pnl = (entry_price - mid) * param['amount_base_ccy']
+                            unrealized_pnl = (pos_entry_px - mid) * param['amount_base_ccy']
                         unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
                         unrealized_pnl_bps = unrealized_pnl_percent * 100
 
