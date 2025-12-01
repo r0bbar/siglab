@@ -189,7 +189,6 @@ POSITION_CACHE_COLUMNS = [
 
 ORDERHIST_CACHE_FILE_NAME = "singlelegta_orderhist_cache_$GATEWAY_ID$.csv"
 ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain' ]
-orderhist_cache = pd.DataFrame(columns=ORDERHIST_CACHE_COLUMNS)
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -343,6 +342,8 @@ async def main(
     position_cache_columns = POSITION_CACHE_COLUMNS + strategy_indicators
     pd_position_cache = pd.DataFrame(columns=position_cache_columns)
 
+    orderhist_cache = pd.DataFrame(columns=ORDERHIST_CACHE_COLUMNS)
+
     notification_params : Dict[str, Any] = param['notification']
 
     if not param['apikey']:
@@ -412,14 +413,14 @@ async def main(
         _trigger_producers(redis_client, [ param['ticker'] ], lo_candles_provider_topic)
 
         # Load cached positions from disk, if any
-        if os.path.exists(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", str(gateway_id)))>0:
+        if os.path.exists(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))>0:
             pd_position_cache = pd.read_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
             pd_position_cache.drop(pd_position_cache.columns[pd_position_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
             pd_position_cache.replace([np.nan], [None], inplace=True)
 
             pd_position_cache = pd_position_cache[POSITION_CACHE_COLUMNS]
 
-        if os.path.exists(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(ORDERHIST_CACHE_FILE_NAME.replace("$ALGO_ORDER_ID$", str(self.param['algo_order_id'])))>0:
+        if os.path.exists(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))>0:
             orderhist_cache = pd.read_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
             orderhist_cache.drop(orderhist_cache.columns[orderhist_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
             orderhist_cache.replace([np.nan], [None], inplace=True)
@@ -510,7 +511,9 @@ async def main(
                 pos_closed = arrow.get(pos_closed).datetime if pos_closed and isinstance(pos_closed, str) else pos_closed
                 if pos_closed:
                     pos_closed = pos_closed.replace(tzinfo=None)
-                pos_side = OrderSide.BUY if pos and pos>0 else OrderSide.SELL
+                pos_side = OrderSide.UNDEFINED
+                if pos_status!=PositionStatus.UNDEFINED.name:
+                    pos_side = OrderSide.BUY if pos and pos>0 else OrderSide.SELL
                 pos_entry_px = position_cache_row['entry_px']
                 max_unreal_live = position_cache_row['max_unreal_live']
                 if not max_unreal_live or pd.isna(max_unreal_live):
@@ -705,12 +708,13 @@ async def main(
 
                         last_candles=trailing_candles # alias
 
-                        if pos_side == OrderSide.BUY:
-                            unrealized_pnl = (mid - pos_entry_px) * param['amount_base_ccy']
-                        elif pos_side == OrderSide.SELL:
-                            unrealized_pnl = (pos_entry_px - mid) * param['amount_base_ccy']
-                        unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
-                        unrealized_pnl_bps = unrealized_pnl_percent * 100
+                        if pos_status!=PositionStatus.UNDEFINED.name:
+                            if pos_side == OrderSide.BUY:
+                                unrealized_pnl = (mid - pos_entry_px) * param['amount_base_ccy']
+                            elif pos_side == OrderSide.SELL:
+                                unrealized_pnl = (pos_entry_px - mid) * param['amount_base_ccy']
+                            unrealized_pnl_percent = unrealized_pnl / pos_usdt * 100
+                            unrealized_pnl_bps = unrealized_pnl_percent * 100
 
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
@@ -916,7 +920,7 @@ async def main(
                                                 'ticker' : ticker,
                                                 'reason' : new_status,
                                                 'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
-                                                'avg_price' : ob_mid, # ob_mid is actually not avg_price!
+                                                'avg_price' : mid, # mid is actually not avg_price!
                                                 'amount': abs(new_pos_usdt_from_exchange),
                                                 'pnl' : unrealized_pnl,
                                                 'pnl_bps' : unrealized_pnl_bps,
