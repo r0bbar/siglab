@@ -775,7 +775,7 @@ async def main(
 
                             tp_max_price = mid * (1 + pnl_potential_bps/10000)
                             tp_min_price = mid * (1 + sl_trailing_min_threshold_bps/10000)
-                            sl_price = mid * (1+param['sl_percent']/100)
+                            sl_price = mid * (1 - param['sl_percent']/100)
 
                             executed_position['position'] = {
                                     'status' : 'open',
