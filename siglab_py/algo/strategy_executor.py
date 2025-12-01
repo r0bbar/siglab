@@ -1,3 +1,4 @@
+# type: ignore
 import sys
 import traceback
 import os
@@ -25,7 +26,7 @@ from util.trading_util import calc_eff_trailing_sl
 from util.notification_util import dispatch_notification
 from util.aws_util import AwsKmsUtil
 
-from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, PositionStatus, OrderSide # type: ignore
+from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, PositionStatus, OrderSide 
 
 
 '''
@@ -201,7 +202,7 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
         logger.error(f"{datetime.now()} {message}")
 
 def parse_args():
-    parser = argparse.ArgumentParser() # type: ignore
+    parser = argparse.ArgumentParser() 
 
     parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
 
@@ -383,12 +384,12 @@ async def main(
         rate_limit_ms=param['rate_limit_ms']
     )
     if exchange:
-        markets = await exchange.load_markets() # type: ignore
+        markets = await exchange.load_markets() 
         market = markets[ticker]
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
 
-        balances = await exchange.fetch_balance() # type: ignore
-        log(f"Balances: {json.dumps(balances, indent=4)}") # type: ignore
+        balances = await exchange.fetch_balance() 
+        log(f"Balances: {json.dumps(balances, indent=4)}") 
 
         # Lambdas preparation
         order_notional_adj_func_sig = inspect.signature(order_notional_adj_func)
@@ -496,10 +497,10 @@ async def main(
                 pos_status = position_cache_row['status']
                 if (pos==0 or pos_usdt<=param['residual_pos_usdt_threshold']) and pos_status==PositionStatus.OPEN.name:
                     pos_status = PositionStatus.CLOSED.name
-                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status # type: ignore
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
                 if pos_status!=PositionStatus.OPEN.name and (pos and pos!=0):
                     pos_status = PositionStatus.OPEN.name
-                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status # type: ignore
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
                     
                 pos_created = position_cache_row['created']
                 pos_created = arrow.get(pos_created).datetime if pos_created and isinstance(pos_created, str) else pos_created
@@ -538,7 +539,7 @@ async def main(
                     for dt_str in datetime_strings:
                         dt_parts = [int(part.strip()) for part in dt_str.split(',')]
                         if len(dt_parts) == 7:
-                            pos_entries.append(datetime(*dt_parts)) # type: ignore
+                            pos_entries.append(datetime(*dt_parts)) 
                         elif len(dt_parts) == 6:
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
@@ -581,13 +582,13 @@ async def main(
                 For spots/margin trading, you should use 'fetch_balance' instsead. If you short you'd see:
                     BTC: { free: -5.2, total: -5.2 })
                 '''
-                position_from_exchange = await exchange.fetch_position(param['ticker']) # type: ignore
+                position_from_exchange = await exchange.fetch_position(param['ticker']) 
 
-                if exchange.options['defaultType']!='spot': # type: ignore
+                if exchange.options['defaultType']!='spot': 
                     if not position_from_exchange and param['load_entry_from_cache']:
                             position_break = True
 
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0" # type: ignore
+                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0" 
                             log(err_msg)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
@@ -598,10 +599,10 @@ async def main(
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                        if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']: # type: ignore
+                        if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']: 
                             position_break = True
 
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" # type: ignore
+                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" 
                             log(err_msg)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 
@@ -614,7 +615,7 @@ async def main(
                     hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
                     trailing_candles = []
 
-                    keys = [item.decode('utf-8') for item in redis_client.keys()] # type: ignore
+                    keys = [item.decode('utf-8') for item in redis_client.keys()] 
                     if hi_candles_w_ta_topic in keys:
                         message = redis_client.get(hi_candles_w_ta_topic)
                         if message:
@@ -684,7 +685,7 @@ async def main(
                         orderbook_valid = False
                         
                     if not orderbook_valid:
-                        ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10) # type: ignore
+                        ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10) 
                         err_msg = "orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
                         log(err_msg, LogLevel.CRITICAL)
                         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid orderbook.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
@@ -898,7 +899,7 @@ async def main(
                                                                                                                         )
                             if executed_positions:
                                 executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
-                                log(f"Position closing. {json.dumps(executed_position, indent=4)}") # type: ignore
+                                log(f"Position closing. {json.dumps(executed_position, indent=4)}") 
                                 if executed_position_close['done']:
                                     executed_position_close['position'] = executed_position['position']
 
