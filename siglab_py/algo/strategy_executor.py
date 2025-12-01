@@ -539,7 +539,7 @@ async def main(
                     for dt_str in datetime_strings:
                         dt_parts = [int(part.strip()) for part in dt_str.split(',')]
                         if len(dt_parts) == 7:
-                            pos_entries.append(datetime(*dt_parts))
+                            pos_entries.append(datetime(*dt_parts)) # type: ignore
                         elif len(dt_parts) == 6:
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
@@ -582,13 +582,13 @@ async def main(
                 For spots/margin trading, you should use 'fetch_balance' instsead. If you short you'd see:
                     BTC: { free: -5.2, total: -5.2 })
                 '''
-                position_from_exchange = await exchange.fetch_position(param['ticker'])
+                position_from_exchange = await exchange.fetch_position(param['ticker']) # type: ignore
 
-                if exchange.options['defaultType']!='spot':
+                if exchange.options['defaultType']!='spot': # type: ignore
                     if not position_from_exchange and param['load_entry_from_cache']:
                             position_break = True
 
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0"
+                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0" # type: ignore
                             log(err_msg)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
@@ -599,10 +599,10 @@ async def main(
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                        if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']:
+                        if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']: # type: ignore
                             position_break = True
 
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}"
+                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" # type: ignore
                             log(err_msg)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 
@@ -714,10 +714,14 @@ async def main(
                         if pos_status!=PositionStatus.UNDEFINED.name:
                             if pos_side == OrderSide.BUY:
                                 pos_unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_live_pessimistic = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
                             elif pos_side == OrderSide.SELL:
-                                pos_unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
+                                pos_unreal_live = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
+                                unrealized_pnl_live_pessimistic = (pos_entry_px - mid) * param['amount_base_ccy']
                             pos_unreal_live_percent = pos_unreal_live / pos_usdt * 100
                             pos_unreal_live_bps = pos_unreal_live_percent * 100
+                        pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
+                        pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
