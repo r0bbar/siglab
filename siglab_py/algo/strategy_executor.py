@@ -497,10 +497,10 @@ async def main(
                 pos_status = position_cache_row['status']
                 if (pos==0 or pos_usdt<=param['residual_pos_usdt_threshold']) and pos_status==PositionStatus.OPEN.name:
                     pos_status = PositionStatus.CLOSED.name
-                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status # type: ignore
                 if pos_status!=PositionStatus.OPEN.name and (pos and pos!=0):
                     pos_status = PositionStatus.OPEN.name
-                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status # type: ignore
                     
                 pos_created = position_cache_row['created']
                 pos_created = arrow.get(pos_created).datetime if pos_created and isinstance(pos_created, str) else pos_created
@@ -762,8 +762,8 @@ async def main(
                             for executed_position in executed_positions:
                                 if not executed_position['done']:
                                     err_msg = executed_position['execution_err']
-                                    self.logger.error(err_msg)
-                                    self.app_context.notification_gizmo.dispatch_notification(title=f"singlelegta error from order gateway {self.param['gateway_id']}!!", message=err_msg, log_level=logging.ERROR)
+                                    log(err_msg, log_level=LogLevel.ERROR)
+                                    dispatch_notification(title=f"singlelegta error from order gateway {gateway_id}!!", message=err_msg, log_level=logging.ERROR)
                                     raise ValueError(err_msg)
                             executed_position = executed_positions[0] # We sent only one DivisiblePosition.
 
