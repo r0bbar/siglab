@@ -187,6 +187,10 @@ POSITION_CACHE_COLUMNS = [
             'tp_min_target',
         ]
 
+ORDERHIST_CACHE_FILE_NAME = "singlelegta_orderhist_cache_$GATEWAY_ID$.csv"
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain' ]
+orderhist_cache = pd.DataFrame(columns=ORDERHIST_CACHE_COLUMNS)
+
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
         logger.info(f"{datetime.now()} {message}")
@@ -415,11 +419,20 @@ async def main(
 
             pd_position_cache = pd_position_cache[POSITION_CACHE_COLUMNS]
 
+        if os.path.exists(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(ORDERHIST_CACHE_FILE_NAME.replace("$ALGO_ORDER_ID$", str(self.param['algo_order_id'])))>0:
+            orderhist_cache = pd.read_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+            orderhist_cache.drop(orderhist_cache.columns[orderhist_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+            orderhist_cache.replace([np.nan], [None], inplace=True)
+
+            if 'datetime' in orderhist_cache.columns:
+                orderhist_cache['datetime'] = pd.to_datetime(orderhist_cache['datetime'])
+
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         unrealized_pnl : float = 0
         max_unrealized_pnl : float = 0
         unrealized_pnl_percent : float = 0
+        unrealized_pnl_bps : float = 0
         max_unrealized_pnl_percent : float = 0
         loss_trailing : float = 0
         effective_tp_trailing_percent : float = float('inf')
@@ -692,6 +705,13 @@ async def main(
 
                         last_candles=trailing_candles # alias
 
+                        if pos_side == OrderSide.BUY:
+                            unrealized_pnl = (mid - entry_price) * param['amount_base_ccy']
+                        elif pos_side == OrderSide.SELL:
+                            unrealized_pnl = (entry_price - mid) * param['amount_base_ccy']
+                        unrealized_pnl_percent = unrealized_pnl / amount_filled_usdt * 100
+                        unrealized_pnl_bps = unrealized_pnl_percent * 100
+
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
@@ -782,6 +802,20 @@ async def main(
 
                             pos_entries.append(pos_created)
                             pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
+
+                            orderhist_cache_row = {
+                                                    'datetime' : dt_now,
+                                                    'exchange' : exchange_name,
+                                                    'ticker' : ticker,
+                                                    'reason' : 'entry',
+                                                    'side' : side,
+                                                    'avg_price' : new_pos_usdt_from_exchange/new_pos_from_exchange,
+                                                    'amount': abs(new_pos_usdt_from_exchange),
+                                                    'pnl' : 0,
+                                                    'pnl_bps' : 0,
+                                                    'max_pain' : 0
+                                                }
+                            orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                             dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
@@ -876,6 +910,20 @@ async def main(
                                     pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
                                     pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = None
 
+                                    orderhist_cache_row = {
+                                                'datetime' : dt_now,
+                                                'exchange' : exchange_name,
+                                                'ticker' : ticker,
+                                                'reason' : new_status,
+                                                'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
+                                                'avg_price' : ob_mid, # ob_mid is actually not avg_price!
+                                                'amount': abs(new_pos_usdt_from_exchange),
+                                                'pnl' : unrealized_pnl,
+                                                'pnl_bps' : unrealized_pnl_bps,
+                                                'max_pain' : max_pain
+                                            }
+                                    orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
+
                                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 else:
@@ -883,7 +931,9 @@ async def main(
 
                         log(f"[{gateway_id}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+
                         pd_position_cache.to_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+                        orderhist_cache.to_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
                         
             except Exception as loop_err:
                 log(f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
