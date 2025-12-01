@@ -913,13 +913,19 @@ async def main(
                                         closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
                                     else:
                                         closed_pnl = (pos_entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
-                                    executed_position_close['position']['max_unrealized_pnl'] = max_unrealized_pnl
-                                    executed_position_close['position']['closed_pnl'] = closed_pnl
-                                    executed_position_close['position']['status'] = 'closed'
-
+                                    
                                     new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
                                     new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
                                     fees = executed_position_close['fees']
+
+                                    executed_position_close['position'] = {
+                                        'status' : 'TP' if tp else 'SL',
+                                        'max_unrealized_pnl' : max_unrealized_pnl,
+                                        'pos_entry_px' : pos_entry_px,
+                                        'mid' : mid,
+                                        'amount_base_ccy' : executed_position_close['filled_amount'],
+                                        'closed_pnl' : closed_pnl,
+                                    }
 
                                     new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
                                     pd_position_cache.loc[position_cache_row.name, 'pos'] = new_pos_from_exchange
