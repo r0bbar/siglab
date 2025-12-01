@@ -527,6 +527,8 @@ async def main(
                 sl_trailing_min_threshold_crossed = position_cache_row['sl_trailing_min_threshold_crossed']
                 effective_sl_percent_trailing = position_cache_row['sl_percent_trailing']
                 tp_min_price = position_cache_row['tp_min_target']
+                pnl_potential_bps = param['tp_max_percent']*100
+                sl_trailing_min_threshold_bps = param['tp_min_percent']*100
 
                 pos_entries = position_cache_row['pos_entries']
                 if isinstance(pos_entries, str):
@@ -766,10 +768,8 @@ async def main(
                             new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                             fees = executed_position['fees']
 
-                            pnl_potential_bps = param['tp_max_percent']*100
-                            min_pnl_potential_bps = param['tp_min_percent']*100
-                            tp_min_price = mid * (1 + pnl_potential_bps/10000)
-                            tp_max_price = mid * (1 + min_pnl_potential_bps/10000)
+                            tp_max_price = mid * (1 + pnl_potential_bps/10000)
+                            tp_min_price = mid * (1 + sl_trailing_min_threshold_bps/10000)
                             sl_price = mid * (1+param['sl_percent']/100)
 
                             executed_position['position'] = {
