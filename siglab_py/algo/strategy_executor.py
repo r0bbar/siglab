@@ -717,8 +717,8 @@ async def main(
                                 pos_unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_live_pessimistic = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
                             elif pos_side == OrderSide.SELL:
-                                pos_unreal_live = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
-                                unrealized_pnl_live_pessimistic = (pos_entry_px - mid) * param['amount_base_ccy']
+                                pos_unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
+                                unrealized_pnl_live_pessimistic = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
                         pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                         pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
