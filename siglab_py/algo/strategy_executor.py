@@ -892,6 +892,7 @@ async def main(
                                     reduce_only=True
                                 )
                             ]
+                            log(f"Closing position. {ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
                             executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                             redis_client=redis_client,
                                                                                                                             positions=exit_positions,
@@ -900,7 +901,6 @@ async def main(
                                                                                                                         )
                             if executed_positions:
                                 executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
-                                log(f"Position closing. {json.dumps(executed_position, indent=4)}") 
                                 if executed_position_close['done']:
                                     if pos_side==OrderSide.BUY:
                                         closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
