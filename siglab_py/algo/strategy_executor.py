@@ -838,18 +838,31 @@ async def main(
                         Have a look at this for a visual explaination how "Gradually tightened stops" works:
                             https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
                         '''
-                        _effective_tp_trailing_percent = calc_eff_trailing_sl(
-                            tp_min_percent = param['tp_min_percent'],
-                            tp_max_percent = param['tp_max_percent'],
-                            sl_percent_trailing = param['sl_percent_trailing'],
-                            pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
-                            default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
-                            linear=True if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
-                            pow=param['non_linear_pow']
-                        )
+                        if pnl_pessimistic_bps >= sl_trailing_min_threshold_bps:
+                            if not sl_trailing_min_threshold_crossed:
+                                sl_trailing_min_threshold_crossed = True
+                                pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
 
-                        # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
-                        effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
+                                msg = {
+                                    'pnl_pessimistic_bps' : pnl_pessimistic_bps,
+                                    'sl_trailing_min_threshold_bps' : sl_trailing_min_threshold_bps
+                                }
+                                log(msg, LogLevel.CRITICAL)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
+
+                            _effective_tp_trailing_percent = calc_eff_trailing_sl(
+                                tp_min_percent = param['tp_min_percent'],
+                                tp_max_percent = param['tp_max_percent'],
+                                sl_percent_trailing = param['sl_percent_trailing'],
+                                pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
+                                default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
+                                linear=True if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
+                                pow=param['non_linear_pow']
+                            )
+
+                            # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
+                            effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
                         log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pos_unreal_live_percent: {round(pos_unreal_live_percent,4)}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
