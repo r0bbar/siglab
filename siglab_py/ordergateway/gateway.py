@@ -212,6 +212,7 @@ param : Dict = {
     "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
 
     "default_fees_ccy" : None,
+    "order_amount_randomize_max_pct" : 10,
     "loop_freq_ms" : 500, # reduce this if you need trade faster
     "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
     "wait_fill_threshold_ms" : 5000,
@@ -301,6 +302,7 @@ def parse_args():
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
     parser.add_argument("--default_fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
+    parser.add_argument("--order_amount_randomize_max_pct", help="Randomize order amount to hide your track? This is max percentage variance applied on sliced amount (not entire order amount)", default=10)
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=500)
     parser.add_argument("--wait_fill_threshold_ms", help="Wait for fills for how long?", default=5000)
 
@@ -328,6 +330,7 @@ def parse_args():
     param['default_type'] = args.default_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
     param['default_fees_ccy'] = args.default_fees_ccy
+    param['order_amount_randomize_max_pct'] = float(args.order_amount_randomize_max_pct)
     param['loop_freq_ms'] = int(args.loop_freq_ms)
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
 
@@ -414,7 +417,9 @@ async def execute_one_position(
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier
 
-        log(f"{position.ticker} min_amount: {min_amount}, multiplier: {multiplier}") 
+        order_amount_randomize_max_pct : float = param['order_amount_randomize_max_pct']
+
+        log(f"{position.ticker} min_amount: {min_amount}, multiplier: {multiplier}, order_amount_randomize_max_pct: {order_amount_randomize_max_pct}") 
 
         slices : List[Order] = position.to_slices()
 
@@ -438,6 +443,9 @@ async def execute_one_position(
             order_update = await exchange.fetch_order(order_id, ticker) # type: ignore 
             return order_update
         
+        randomized_order_amount : float = 0
+        last_randomized_order_amount : float = 0
+        apply_last_randomized_amount : bool = False # False: Apply new variance, True: Apply -1 * last_randomized_order_amount
         i = 0
         for slice in slices:
             try:
@@ -445,7 +453,19 @@ async def execute_one_position(
 
                 dt_now : datetime = datetime.now()
 
-                slice_amount_in_base_ccy : float = slice.amount
+                if len(slices)>1:
+                    if not apply_last_randomized_amount and i<len(slices):
+                        randomized_order_amount = slice.amount * (order_amount_randomize_max_pct * random.uniform(-1, 1)) /100
+                        last_randomized_order_amount = randomized_order_amount
+                        
+                    else:
+                        randomized_order_amount = -1 * last_randomized_order_amount # Apply the opposite of last slice's variance
+                        last_randomized_order_amount = 0 # If # slices == 5, last slice don't apply random amount, so reset last_randomized_order_amount to zero.
+                
+                slice_amount_in_base_ccy : float = slice.amount + randomized_order_amount
+
+                apply_last_randomized_amount = not apply_last_randomized_amount
+                    
                 rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
                 rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
                 rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
