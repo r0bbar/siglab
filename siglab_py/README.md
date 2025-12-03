@@ -361,6 +361,11 @@ Further, a note on entry vs exit:
 
 That's a strategy concern, and gateway.py don't handle that for you.
 
+
+#### Slice order amount
+
+gateway.py argument 'order_amount_randomize_max_pct' adds small variance to sliced order amounts (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
+
 #### Dry Run
 
 [**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has a parameter 'dry_run'. If set to True, it won't actually send orders out to exchange. Instead, it'd respond by faking some fills. This is for integration testing.

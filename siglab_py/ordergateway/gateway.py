@@ -49,6 +49,7 @@ Usage:
 	--passphrase is optional, this depends on the exchange.
     --gateway_id contains two parts separated by underscore. Gateway.py will parse 'hyperliquid_01' into two parts: 'hyperliquid' (Exchange name) and '01' (Use this for your sub account ID). Exchange name need be spelt exactly. Please have a look at market_data_util async_instantiate_exchange.
     --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
+    --order_amount_randomize_max_pct adds small variance to sliced order amount (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
     How to get Slack webhook urls? https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
     Another example:
