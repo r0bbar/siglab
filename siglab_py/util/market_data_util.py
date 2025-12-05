@@ -815,7 +815,7 @@ def build_pair_candles(
     pd_candles1.reset_index(drop=True, inplace=True)
     pd_candles2.reset_index(drop=True, inplace=True)
     pd_candles = pd.concat([pd_candles1, pd_candles2], axis=1)
-    pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms_1'] - pd_candles['timestamp_ms_2']
+    pd_candles['timestamp_ms_gap'] = pd_candles[f'timestamp_ms{left_columns_postfix}'] - pd_candles[f'timestamp_ms{right_columns_postfix}']
     assert(pd_candles[pd_candles.timestamp_ms_gap!=0].shape[0]==0)
 
     pd_candles.drop(pd_candles.columns[pd_candles.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
