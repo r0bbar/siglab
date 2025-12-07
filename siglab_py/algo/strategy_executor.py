@@ -168,7 +168,7 @@ sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
-POSITION_CACHE_FILE_NAME = "singlelegta_position_cache_$GATEWAY_ID$.csv"
+POSITION_CACHE_FILE_NAME = f"{TargetStrategy.__name__}_position_cache_$GATEWAY_ID$.csv"
 POSITION_CACHE_COLUMNS = [ 
             'exchange', 'ticker',
             'status', 
@@ -188,7 +188,7 @@ POSITION_CACHE_COLUMNS = [
             'tp_min_target',
         ]
 
-ORDERHIST_CACHE_FILE_NAME = "singlelegta_orderhist_cache_$GATEWAY_ID$.csv"
+ORDERHIST_CACHE_FILE_NAME = f"{TargetStrategy.__name__}_orderhist_cache_$GATEWAY_ID$.csv"
 ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
