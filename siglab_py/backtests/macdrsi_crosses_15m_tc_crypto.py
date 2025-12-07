@@ -46,6 +46,7 @@ base_dir : str = f"{os.path.dirname(sys.path[0])}\\single_leg_ta"
 REPORT_NAME : str = "backtest_macdrsi_crosses_strategy_15m_tc_crypto"
 CACHE_CANDLES : str = f"{os.path.dirname(sys.path[0])}\\cache\\candles"
 
+'''
 white_list_tickers : List[str] = [
     "BTC/USDT:USDT",
     "ETH/USDT:USDT",
@@ -68,7 +69,7 @@ white_list_tickers : List[str] = [
     "ICP/USDT:USDT",
     "APT/USDT:USDT"
 ]
-
+'''
 white_list_tickers : List[str] = [ "SOL/USDT:USDT" ]
 
 force_reload : bool = False
