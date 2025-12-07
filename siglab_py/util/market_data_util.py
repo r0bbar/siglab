@@ -679,12 +679,13 @@ def _fetch_candles_ccxt(
         A more efficient way is to find listing date. Start looping from there.
         '''
         market = exchange.markets[ticker]
+        this_ticker_start_ts = start_ts
         if market['created']:
-            start_ts = max(start_ts, int(market['created']/1000))
+            this_ticker_start_ts = max(this_ticker_start_ts, int(market['created']/1000))
 
         all_candles = []
         params = {}
-        this_cutoff = start_ts
+        this_cutoff = this_ticker_start_ts
         while this_cutoff<end_ts:
             candles = _fetch_ohlcv(exchange=exchange, symbol=ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
             if candles and len(candles)>0:
