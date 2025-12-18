@@ -394,9 +394,13 @@ async def send_heartbeat(exchange):
         try:
             first_ws_url = next(iter(exchange.clients))
             client = exchange.clients[first_ws_url]
-            message = exchange.ping(client)
-            await client.send(message)
-            log('Heartbeat sent')
+            if exchange.ping:
+                message = exchange.ping(client)
+                await client.send(message)
+                log('Heartbeat sent')
+            else:
+                log(f'Please check https://github.com/ccxt/ccxt/blob/master/python/ccxt/pro/{exchange.name} if ping was implemented')
+            
         except Exception as hb_error:
             log(f'Failed to send heartbeat: {hb_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}')
         finally:
