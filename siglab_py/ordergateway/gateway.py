@@ -398,7 +398,7 @@ async def send_heartbeat(exchange):
             await client.send(message)
             log('Heartbeat sent')
         except Exception as hb_error:
-            log(f'Failed to send heartbeat: {hb_error}')
+            log(f'Failed to send heartbeat: {hb_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}')
         finally:
             await asyncio.sleep(20)
 
@@ -897,7 +897,7 @@ async def main():
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance() # type: ignore
         log(f"{param['gateway_id']}: account balances {balances}")
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
         await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)
 
