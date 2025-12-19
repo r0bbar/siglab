@@ -20,6 +20,8 @@ from redis.client import PubSub
 from ccxt.base.exchange import Exchange
 import ccxt.pro as ccxtpro 
 
+from siglab_py.util.market_data_util import async_instantiate_exchange
+
 '''
 To start from command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab
@@ -126,16 +128,17 @@ async def instantiate_exhange(
         ) -> Exchange:
     if old_exchange:
         await old_exchange.close() # type: ignore Otherwise, Error:  Cannot access attribute "close" for class "Exchange  Attribute "close" is unknown
-    if exchange_name==f"binance_{market_type}":
-        exchange = ccxtpro.binance(exchange_params)
-    elif exchange_name==f"okx_{market_type}":
-        exchange = ccxtpro.okx(exchange_params)
-    elif exchange_name==f"bybit_{market_type}":
-        exchange = ccxtpro.bybit(exchange_params)
-    else:
-        exchange = ccxtpro.binance(exchange_params)
+    _exchange_name = exchange_name.split('_')[0]
+
+    exchange = await async_instantiate_exchange(
+                            gateway_id = _exchange_name,
+                            default_type = market_type,
+                            api_key=None,  # type: ignore
+                            secret=None,  # type: ignore
+                            passphrase=None  # type: ignore
+                            )
     exchange.name = exchange_name # type: ignore Otherwise, Error: Cannot assign to attribute "name" for class "binance" "str" is not assignable to "None"
-    return exchange
+    return exchange  # type: ignore
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -259,7 +262,7 @@ class OrderBook:
         }
 
         data['best_ask'] = min(data['asks'])
-        data['best_bid'] = min(data['bids'])
+        data['best_bid'] = max(data['bids'])
         return data
         
 class ThreadTask:
