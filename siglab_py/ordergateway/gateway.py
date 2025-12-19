@@ -1,3 +1,4 @@
+# type: ignore
 import sys
 import traceback
 import os
@@ -26,7 +27,7 @@ from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import async_instantiate_exchange
 from siglab_py.ordergateway.client import Order, DivisiblePosition
-from siglab_py.constants import LogLevel # type: ignore
+from siglab_py.constants import LogLevel
 from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
@@ -295,7 +296,7 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
         logger.error(f"{datetime.now()} {message}")
 
 def parse_args():
-    parser = argparse.ArgumentParser() # type: ignore
+    parser = argparse.ArgumentParser()
 
     parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
     parser.add_argument("--dry_run", help="Y or N (default, for testing). If Y, orders won't be dispatched to exchange, gateway will fake reply.", default='N')
@@ -375,7 +376,7 @@ async def watch_orders_task(
 ):
     while True:
         try:
-            order_updates = await exchange.watch_orders() # type: ignore
+            order_updates = await exchange.watch_orders()
             for order_update in order_updates:
                 order_id = order_update['id']
                 executions[order_id] = order_update
@@ -414,11 +415,11 @@ async def execute_one_position(
     notification_params : Dict[str, Any]
 ):
     try:
-        market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None # type: ignore
+        market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None
         if not market:
-            raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}") # type: ignore
+            raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}")
 
-        min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # type: ignore
+        min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier
 
@@ -445,7 +446,7 @@ async def execute_one_position(
             ticker : str,
             exchange : AnyExchange,
         ):
-            order_update = await exchange.fetch_order(order_id, ticker) # type: ignore 
+            order_update = await exchange.fetch_order(order_id, ticker)
             return order_update
         
         randomized_order_amount : float = 0
@@ -472,7 +473,7 @@ async def execute_one_position(
                 apply_last_randomized_amount = not apply_last_randomized_amount
                     
                 rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy) # type: ignore
+                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)
                 rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
@@ -480,7 +481,7 @@ async def execute_one_position(
                     log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
                     continue
 
-                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3) # type: ignore
+                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3)
                 if position.side=='buy':
                     asks = [ ask[0] for ask in orderbook['asks'] ]
                     best_asks = min(asks)
@@ -490,7 +491,7 @@ async def execute_one_position(
                     best_bid = max(bids)
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
                     
-                rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price) # type: ignore
+                rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
                 
                 order_params = {
@@ -506,7 +507,7 @@ async def execute_one_position(
                             )
 
                     if not param['dry_run']:
-                        executed_order = await exchange.create_order( # type: ignore
+                        executed_order = await exchange.create_order(
                             symbol = position.ticker,
                             type = position.order_type,
                             amount = rounded_slice_amount_in_base_ccy,
@@ -533,7 +534,7 @@ async def execute_one_position(
 
                 else:
                     if not param['dry_run']:
-                        executed_order = await exchange.create_order( # type: ignore
+                        executed_order = await exchange.create_order(
                             symbol = position.ticker,
                             type = position.order_type,
                             amount = rounded_slice_amount_in_base_ccy,
@@ -643,15 +644,15 @@ async def execute_one_position(
 
                     if order_status!='closed':
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
-                        await exchange.cancel_order(order_id, position.ticker)  # type: ignore
+                        await exchange.cancel_order(order_id, position.ticker)
                         position.get_execution(order_id)['status'] = 'canceled'
                         log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
                         
-                        rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount) # type: ignore
+                        rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
                         rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
                         rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
                         if rounded_slice_amount_in_base_ccy>0:
-                            executed_resent_order = await exchange.create_order(  # type: ignore
+                            executed_resent_order = await exchange.create_order(
                                 symbol=position.ticker,
                                 type='market',
                                 amount=remaining_amount,
@@ -728,9 +729,9 @@ async def execute_one_position(
         position.average_cost = position.get_average_cost()
         position.fees = position.get_fees()
 
-        balances = await exchange.fetch_balance() # type: ignore
+        balances = await exchange.fetch_balance()
         if param['default_type']!='spot':
-            updated_position = await exchange.fetch_position(symbol=position.ticker) # type: ignore
+            updated_position = await exchange.fetch_position(symbol=position.ticker)
             # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
             amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
         else:
@@ -758,7 +759,7 @@ async def execute_one_position(
         err_msg = f"{position.ticker}  Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
         log(err_msg)
 
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {position.ticker} execute_one_position failed!!!", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger) # type: ignore
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {position.ticker} execute_one_position failed!!!", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
 
         position.done = False
         position.execution_err = err_msg
@@ -899,7 +900,7 @@ async def main():
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
-        balances = await exchange.fetch_balance() # type: ignore
+        balances = await exchange.fetch_balance()
         log(f"{param['gateway_id']}: account balances {balances}")
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
