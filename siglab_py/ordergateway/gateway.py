@@ -214,7 +214,7 @@ param : Dict = {
     "executions_publish_topic" : r"ordergateway_executions_$GATEWAY_ID$",
 
     "default_fees_ccy" : None,
-    "order_amount_randomize_max_pct" : 10,
+    "order_amount_randomize_max_pct" : 0,
     "loop_freq_ms" : 500, # reduce this if you need trade faster
     "loops_random_delay_multiplier" : 1, # Add randomness to time between slices are sent off. Set to 1 if no random delay needed.
     "wait_fill_threshold_ms" : 5000,
@@ -724,6 +724,10 @@ async def execute_one_position(
         log(f"Dispatched slices:")
         for dispatched_slice in position.dispatched_slices:
             log(f"{json.dumps(dispatched_slice.to_dict(), indent=4)}")
+
+        position_from_exchange = await exchange.fetch_position(position.ticker)
+        log(f"position update:")
+        log(f"{json.dumps(position_from_exchange, indent=4)}")
 
         position.filled_amount = position.get_filled_amount()
         position.average_cost = position.get_average_cost()
