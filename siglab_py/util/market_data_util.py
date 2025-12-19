@@ -24,6 +24,7 @@ import yfinance as yf
 from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.futubull import Futubull
 from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.exchanges.deribit import Deribit, DeribitAsync
 
 def instantiate_exchange(
     exchange_name : str,
@@ -60,7 +61,7 @@ def instantiate_exchange(
     elif exchange_name=='okx':
         exchange = ccxt.okx(exchange_params) # type: ignore
     elif exchange_name=='deribit':
-        exchange = ccxt.deribit(exchange_params)  # type: ignore
+        exchange = Deribit(exchange_params)  # type: ignore
     elif exchange_name=='hyperliquid':
         exchange = ccxt.hyperliquid(
             {
@@ -119,7 +120,7 @@ async def async_instantiate_exchange(
     elif exchange_name=='deribit':
         # spot, swap, future
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/deribit.py#L360
-        exchange = ccxtpro.deribit(exchange_params)  # type: ignore
+        exchange = DeribitAsync(exchange_params)  # type: ignore
     elif exchange_name=='kraken':
         exchange = ccxtpro.kraken(exchange_params) # type: ignore
     elif exchange_name=='hyperliquid':
