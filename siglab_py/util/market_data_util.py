@@ -12,7 +12,6 @@ import asyncio
 from tabulate import tabulate
 
 from ccxt.base.exchange import Exchange as CcxtExchange
-from ccxt import deribit
 import ccxt
 import ccxt.pro as ccxtpro
 
@@ -719,7 +718,7 @@ def fetch_deribit_btc_option_expiries(
         Dict[str, Dict[str, Union[str, float]]]
     ]
 ]:
-    exchange = deribit()
+    exchange = ccxt.deribit()
     instruments = exchange.public_get_get_instruments({
         'currency': market,
         'kind': 'option',
