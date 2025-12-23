@@ -909,8 +909,7 @@ async def main():
         secret=secret,
         passphrase=passphrase,
         default_type=param['default_type'],
-        rate_limit_ms=param['rate_limit_ms'],
-        verbose=True
+        rate_limit_ms=param['rate_limit_ms']
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
