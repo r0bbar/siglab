@@ -388,6 +388,9 @@ async def watch_orders_task(
         await asyncio.sleep(param['loop_freq_ms']/1000)
 
 async def send_heartbeat(exchange):
+    if not exchange.clients:
+        log(f'Please check https://github.com/ccxt/ccxt/blob/master/python/ccxt/pro/{exchange.name}, exchange.clients empty?')
+        return
 
     await asyncio.sleep(10)
 
@@ -401,7 +404,7 @@ async def send_heartbeat(exchange):
                 log('Heartbeat sent')
             else:
                 log(f'Please check https://github.com/ccxt/ccxt/blob/master/python/ccxt/pro/{exchange.name} if ping was implemented')
-            
+        
         except Exception as hb_error:
             log(f'Failed to send heartbeat: {hb_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}')
         finally:
@@ -900,7 +903,8 @@ async def main():
         secret=secret,
         passphrase=passphrase,
         default_type=param['default_type'],
-        rate_limit_ms=param['rate_limit_ms']
+        rate_limit_ms=param['rate_limit_ms'],
+        verbose=True
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
