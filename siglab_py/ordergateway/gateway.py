@@ -791,6 +791,7 @@ async def work(
 
     asyncio.create_task(send_heartbeat(exchange))
 
+    loop_i : int = 0
     while True:
         try:
             keys = redis_client.keys()
@@ -852,9 +853,14 @@ async def work(
                         log_level=LogLevel.ERROR
                         )
 
+            if i%10==0:
+                balances = await exchange.fetch_balance()
+                log(f"{param['gateway_id']}: account balances {balances}")
+                
         except Exception as loop_error:
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
         finally:
+            loop_i += 1
             await asyncio.sleep(param['loop_freq_ms']/1000)
 
 async def main():
