@@ -33,6 +33,7 @@ def instantiate_exchange(
     secret : Union[str, None]  = None,
     passphrase : Union[str, None] = None,
     default_type : Union[str, None] = 'spot',
+    default_sub_type : Union[str, None] = None,
     rate_limit_ms : float = 100
 ) -> Union[AnyExchange, None]:
     exchange_name = exchange_name.lower().strip()
@@ -48,6 +49,10 @@ def instantiate_exchange(
                             'defaultType' : default_type
                         }
                     }
+    
+    if default_sub_type:
+        exchange_params['defaultSubType'] = default_sub_type
+
     if api_key:
         exchange_params['apiKey'] = api_key
     if secret:
@@ -84,7 +89,8 @@ async def async_instantiate_exchange(
     api_key : str,
     secret : str,
     passphrase : str,
-    default_type : str,
+    default_type : Union[str, None] = 'spot',
+    default_sub_type : Union[str, None] = None,
     rate_limit_ms : float = 100,
     verbose : bool = False
 ) -> Union[AnyExchange, None]:
@@ -104,6 +110,9 @@ async def async_instantiate_exchange(
                         },
                         'verbose': verbose
                     }
+    
+    if default_sub_type:
+        exchange_params['defaultSubType'] = default_sub_type
 
     if exchange_name=='binance':
         # spot, future, margin, delivery, option
