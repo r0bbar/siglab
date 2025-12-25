@@ -42,12 +42,14 @@ if sys.platform == 'win32':
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
+    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --verbose N --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
 
     --default_type defaults to linear
+    --default_sub_type defaults to None (Depends on your exchange/broker, if they requires this)
     --rate_limit_ms defaults to 100
     --encrypt_decrypt_with_aws_kms If you encrypt apikey and secret using AMS KMS, then set to Y. If apikey and secret in unencrypted plain text, set to N.
 	--passphrase is optional, this depends on the exchange.
+    --verbose logging verbosity, Y or N (default)
     --gateway_id contains two parts separated by underscore. Gateway.py will parse 'hyperliquid_01' into two parts: 'hyperliquid' (Exchange name) and '01' (Use this for your sub account ID). Exchange name need be spelt exactly. Please have a look at market_data_util async_instantiate_exchange.
     --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
     --order_amount_randomize_max_pct adds small variance to sliced order amount (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
@@ -108,6 +110,7 @@ To debug from vscode, launch.json:
                     "--apikey", "xxx",
                     "--secret", "xxx",
                     "--passphrase", "xxx",
+                    "--verbose", "N",
 
                     "--slack_info_url", "https://hooks.slack.com/services/xxx",
                     "--slack_critial_url", "https://hooks.slack.com/services/xxx",
@@ -314,6 +317,7 @@ def parse_args():
     parser.add_argument("--apikey", help="Exchange apikey", default=None)
     parser.add_argument("--secret", help="Exchange secret", default=None)
     parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
+    parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
@@ -350,6 +354,13 @@ def parse_args():
     param['apikey'] = args.apikey
     param['secret'] = args.secret
     param['passphrase'] = args.passphrase
+    if args.verbose:
+        if args.verbose=='Y':
+            param['verbose'] = True
+        else:
+            param['verbose'] = False
+    else:
+        param['verbose'] = False
 
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
@@ -912,7 +923,8 @@ async def main():
         passphrase=passphrase,
         default_type=param['default_type'],
         default_sub_type=param['default_sub_type'],
-        rate_limit_ms=param['rate_limit_ms']
+        rate_limit_ms=param['rate_limit_ms'],
+        verbose=param['verbose']
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
