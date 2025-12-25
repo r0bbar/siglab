@@ -1797,7 +1797,7 @@ def run_scenario(
             sorted_filtered_tickers = None
 
         if gloabl_state.total_equity<target_order_notional:
-            logger.warning(f"total_equity {gloabl_state.total_equity} < target_order_notional {target_order_notional} exiting!!!")
+            logger.warning(f"total_equity {gloabl_state.total_equity} < target_order_notional {target_order_notional} exiting  prematurely on {lo_datetime}!!!")
             break
 
     if plot_timeseries:
