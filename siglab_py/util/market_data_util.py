@@ -610,10 +610,9 @@ def fetch_candles(
                 pd_candles.loc[mask_invalid_candles, "timestamp_ms"] = pd_candles.loc[mask_invalid_candles, "datetime"].apply(_to_timestamp_ms)
 
                 pd_candles["close"] = pd_candles["close"].ffill()
-                
                 pd_candles.loc[mask_invalid_candles, ["open", "high", "low"]] = pd_candles.loc[
-                                                                                    mask_invalid_candles, "close"
-                                                                                ].values[:, None] # type: ignore
+                                                                                    mask_invalid_candles, ["close"]
+                                                                                ]
                 pd_candles.loc[mask_invalid_candles, "volume"] = 0.0
 
     return exchange_candles # type: ignore
