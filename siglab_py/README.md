@@ -1,5 +1,5 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
-The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. "Infrastructure" means everything from fetching candles, indicators calculation, [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine, to [**order gateway**](https://github.com/r0bbar/siglab/tree/master/siglab_py/ordergateway) dispatching orders to exchanges. Shortest path to setup a quantitative trading desk.
+The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. "Infrastructure" means everything from fetching candles, indicators calculation, [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine, to [**order gateway**](https://medium.com/@norman-lm-fung/standalone-order-gateway-on-top-of-ccxt-576680a2d603) dispatching orders to exchanges. Shortest path to setup a quantitative trading desk.
 
 ![Overall Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
