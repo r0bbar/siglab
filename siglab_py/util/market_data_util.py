@@ -259,13 +259,18 @@ US Trading Hours
 
 utcnow and utcfromtimestamp been deprecated in Python 3.12 
 https://www.pythonmorsels.com/converting-to-utc-time/
+
+Example, UTC 23:00 is 3rd hour in APAC trading session
+    utc_hour = 23
+    i = get_regions_trading_utc_hours()['APAC'].index(utc_hour)
+    assert(i==2)
 '''
 def get_regions_trading_utc_hours():
-			return {
-				'APAC' : [21,22,23,0,1,2,3,4,5,6,7,8,9],
-				'EMEA' : [7,8,9,10,11,12,13,14,15,16],
-				'AMER' : [13,14,15,16,17,18,19,20,21,22]
-			}
+    return {
+        'APAC' : [21,22,23,0,1,2,3,4,5,6,7,8,9],
+        'EMEA' : [7,8,9,10,11,12,13,14,15,16],
+        'AMER' : [13,14,15,16,17,18,19,20,21,22]
+    }
 			
 def timestamp_to_active_trading_regions(
         timestamp_ms : int
