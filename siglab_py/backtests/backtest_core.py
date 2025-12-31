@@ -2040,6 +2040,7 @@ def run_all_scenario(
                         else:
                             pd_hi_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
                             fix_column_types(pd_hi_candles)
+                            logger.info(f"pd_hi_candles {ticker} loaded from {target_candle_file_name}")
 
                         if not algo_param['pypy_compat']:
                             pd_hi_candles_partitions = partition_sliding_window(
@@ -2094,6 +2095,7 @@ def run_all_scenario(
                         else:
                             pd_lo_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
                             fix_column_types(pd_lo_candles)
+                            logger.info(f"pd_lo_candles {ticker} loaded from {target_candle_file_name}")
 
                         if not algo_param['pypy_compat']:
                             pd_lo_candles_partitions = partition_sliding_window(
