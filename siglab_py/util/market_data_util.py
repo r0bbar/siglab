@@ -243,38 +243,44 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
         assert(num_rows_with_expected_gap/pd_candles.shape[0]>0.9)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
 
+'''
+APAC (Asia-Pacific) Trading Hours
+    UTC 21:00 - 09:00 (approximate range)
+    Major financial centers: Tokyo, Hong Kong, Singapore, Sydney
+
+EMEA (Europe, Middle East, Africa) Trading Hours
+    UTC 07:00 - 16:00 (approximate range)
+    Major financial centers: London, Frankfurt, Paris, Zurich, Dubai
+
+US Trading Hours
+    UTC 13:00 - 22:00 (approximate range)
+    Major financial centers: New York, Chicago
+    Key markets: NYSE, NASDAQ
+
+utcnow and utcfromtimestamp been deprecated in Python 3.12 
+https://www.pythonmorsels.com/converting-to-utc-time/
+'''
+def get_regions_trading_utc_hours():
+			return {
+				'APAC' : [21,22,23,0,1,2,3,4,5,6,7,8,9],
+				'EMEA' : [7,8,9,10,11,12,13,14,15,16],
+				'AMER' : [13,14,15,16,17,18,19,20,21,22]
+			}
+			
 def timestamp_to_active_trading_regions(
         timestamp_ms : int
 ) -> List[str]:
-    
-    '''
-	APAC (Asia-Pacific) Trading Hours
-        UTC 21:00 - 09:00 (approximate range)
-        Major financial centers: Tokyo, Hong Kong, Singapore, Sydney
-
-    EMEA (Europe, Middle East, Africa) Trading Hours
-        UTC 07:00 - 16:00 (approximate range)
-        Major financial centers: London, Frankfurt, Paris, Zurich, Dubai
-
-    US Trading Hours
-        UTC 13:00 - 22:00 (approximate range)
-        Major financial centers: New York, Chicago
-        Key markets: NYSE, NASDAQ
-
-    utcnow and utcfromtimestamp been deprecated in Python 3.12 
-    https://www.pythonmorsels.com/converting-to-utc-time/
-    '''
     active_trading_regions : List[str] = []
 
     dt_utc = datetime.fromtimestamp(int(timestamp_ms / 1000), tz=timezone.utc)
     utc_hour = dt_utc.hour
-    if (utc_hour >= 21) or (utc_hour <= 9):
+    if utc_hour in get_regions_trading_utc_hours()['APAC']:
         active_trading_regions.append("APAC") 
 
-    if 7 <= utc_hour <= 16:
+    if utc_hour in get_regions_trading_utc_hours()['EMEA']:
         active_trading_regions.append("EMEA")
 
-    if 13 <= utc_hour <= 22:
+    if utc_hour in get_regions_trading_utc_hours()['AMER']:
         active_trading_regions.append("AMER")
 
     return active_trading_regions
