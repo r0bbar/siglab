@@ -248,8 +248,8 @@ def timestamp_to_active_trading_regions(
 ) -> List[str]:
     
     '''
-    APAC (Asia-Pacific) Trading Hours
-        UTC 22:00 - 09:00 (approximate range)
+	APAC (Asia-Pacific) Trading Hours
+        UTC 21:00 - 09:00 (approximate range)
         Major financial centers: Tokyo, Hong Kong, Singapore, Sydney
 
     EMEA (Europe, Middle East, Africa) Trading Hours
@@ -257,7 +257,7 @@ def timestamp_to_active_trading_regions(
         Major financial centers: London, Frankfurt, Paris, Zurich, Dubai
 
     US Trading Hours
-        UTC 13:30 - 20:00 (approximate range)
+        UTC 13:00 - 22:00 (approximate range)
         Major financial centers: New York, Chicago
         Key markets: NYSE, NASDAQ
 
@@ -268,13 +268,13 @@ def timestamp_to_active_trading_regions(
 
     dt_utc = datetime.fromtimestamp(int(timestamp_ms / 1000), tz=timezone.utc)
     utc_hour = dt_utc.hour
-    if (utc_hour >= 22) or (utc_hour <= 9):
+    if (utc_hour >= 21) or (utc_hour <= 9):
         active_trading_regions.append("APAC") 
 
     if 7 <= utc_hour <= 16:
         active_trading_regions.append("EMEA")
 
-    if 13 <= utc_hour <= 20:
+    if 13 <= utc_hour <= 22:
         active_trading_regions.append("AMER")
 
     return active_trading_regions
