@@ -1912,14 +1912,18 @@ def run_all_scenario(
         '''
         delisted : List[str] = []
 
+        data_fetch_start : float = time.time()
+        
         # Fetch BTC
         reference_ticker : str = algo_param['reference_ticker']
         target_candle_file_name_fast : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_file_name_slow : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        logger.info(f"reference_ticker: {reference_ticker}, target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}, reference_candles_file: {algo_param['reference_candles_file'] if 'reference_candles_file' in algo_param else '---'}")
         if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name_fast):
             if algo_param['force_reload'] and 'reference_candles_file' in algo_param and algo_param['reference_candles_file'] and os.path.isfile(algo_param['reference_candles_file']):
                 pd_ref_candles_fast = pd.read_csv(algo_param['reference_candles_file'])
                 pd_ref_candles_slow : pd.DataFrame = pd_ref_candles_fast.copy(deep=True)
+                logger.info(f"reference candles loaded from {algo_param['reference_candles_file']}")
 
             else:
                 ref_candles : Dict[str, pd.DataFrame] = fetch_candles(
@@ -1933,11 +1937,13 @@ def run_all_scenario(
                                                                                         cache_dir=algo_param['cache_candles'],
                                                                                         list_ts_field=exchanges[0].options['list_ts_field'] if 'list_ts_field' in exchanges[0].options else None
                                                                                         )
+                logger.info(f"Reference candles fetched: {reference_ticker}, start: {reference_start_dt}, end: {test_end_date_ref}")
                 pd_ref_candles_fast : pd.DataFrame = ref_candles[reference_ticker]
                 pd_ref_candles_slow : pd.DataFrame = pd_ref_candles_fast.copy(deep=True)
 
             compute_candles_stats(pd_candles=pd_ref_candles_fast, boillenger_std_multiples=2, sliding_window_how_many_candles=algo_param['ref_ema_num_days_fast'], slow_fast_interval_ratio=int(algo_param['ref_ema_num_days_fast']/2), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
             compute_candles_stats(pd_candles=pd_ref_candles_slow, boillenger_std_multiples=2, sliding_window_how_many_candles=algo_param['ref_ema_num_days_slow'], slow_fast_interval_ratio=int(algo_param['ref_ema_num_days_slow']/2), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
+            logger.info(f"Reference candles {reference_ticker} compute_candles_stats done.")
             
             pd_ref_candles_fast.to_csv(target_candle_file_name_fast)
             pd_ref_candles_slow.to_csv(target_candle_file_name_slow)
@@ -1947,6 +1953,7 @@ def run_all_scenario(
             pd_ref_candles_slow : pd.DataFrame = pd.read_csv(target_candle_file_name_slow)
             fix_column_types(pd_ref_candles_fast)
             fix_column_types(pd_ref_candles_slow)
+            logger.info(f"Reference candles {reference_ticker} loaded from target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}")
 
         total_seconds = (test_end_date_ref - test_start_date).total_seconds()
         total_hours = total_seconds / 3600
@@ -1973,7 +1980,6 @@ def run_all_scenario(
             pd_ref_candles_segments = segments_to_df(ref_candles_partitions['segments'])
             pd_ref_candles_segments.to_csv(candle_segments_file_name)
         
-        data_fetch_start : float = time.time()
         all_exchange_candles : Dict[str, Dict[str, Dict[str, pd.DataFrame]]] = {}
         for exchange in exchanges:
             markets = exchange.load_markets()
@@ -2018,7 +2024,9 @@ def run_all_scenario(
                                                                                                 list_ts_field=exchange.options['list_ts_field']
                                                                                                 )
                                 pd_hi_candles : pd.DataFrame = hi_candles[ticker]
+                                logger.info(f"pd_hi_candles fetched: {ticker} {pd_hi_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())}")
                             compute_candles_stats(pd_candles=pd_hi_candles, boillenger_std_multiples=algo_param['boillenger_std_multiples'], sliding_window_how_many_candles=algo_param['hi_stats_computed_over_how_many_candles'], slow_fast_interval_ratio=(algo_param['hi_stats_computed_over_how_many_candles']/algo_param['hi_ma_short_interval']), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
+                            logger.info(f"pd_hi_candles {ticker} compute_candles_stats done: {target_candle_file_name}")
                             pd_hi_candles.to_csv(target_candle_file_name)
 
                             if pd_hi_candles is not None and pd_hi_candles.shape[0]>0:
@@ -2070,7 +2078,9 @@ def run_all_scenario(
                                                                                                 list_ts_field=exchange.options['list_ts_field']
                                                                                                 )
                                 pd_lo_candles : pd.DataFrame = lo_candles[ticker]
+                                logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())}")
                             compute_candles_stats(pd_candles=pd_lo_candles, boillenger_std_multiples=algo_param['boillenger_std_multiples'], sliding_window_how_many_candles=algo_param['lo_stats_computed_over_how_many_candles'], slow_fast_interval_ratio=(algo_param['lo_stats_computed_over_how_many_candles']/algo_param['lo_ma_short_interval']), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
+                            logger.info(f"pd_lo_candles {ticker} compute_candles_stats done. {target_candle_file_name}")
                             pd_lo_candles.to_csv(target_candle_file_name)
                             
                             if pd_lo_candles is not None and pd_lo_candles.shape[0]>0:
@@ -2109,6 +2119,7 @@ def run_all_scenario(
         data_fetch_finish : float = time.time()
 
         ####################################### STEP 2. Trade simulation #######################################
+        logger.info(f"Start run_scenario")
         scenario_start : float = time.time()
         result = run_scenario(
                 algo_param=algo_param, 
@@ -2139,6 +2150,11 @@ def run_all_scenario(
                 plot_timeseries=True
             )
         scenario_finish = time.time()
+        
+        data_fetch_elapsed_ms = (data_fetch_finish - data_fetch_start) * 1000
+        scenario_elapsed_ms = (scenario_finish - scenario_start) * 1000
+
+        logger.info(f"Done run_scenario. data_fetch_elapsed_ms: {data_fetch_elapsed_ms} ms, scenario_elapsed_ms: {scenario_elapsed_ms}")
         
         algo_result['orders'] = result['trades']
         result.pop('trades')
@@ -2173,8 +2189,8 @@ def run_all_scenario(
             'num_sl' : result['num_sl'],
             'num_hc' : result['num_hc'],
             'num_entry' : result['num_entry'],
-            'data_fetch_elapsed_ms' : (data_fetch_finish - data_fetch_start) * 1000,
-            'scenario_elapsed_ms' : (scenario_finish - scenario_start) * 1000,
+            'data_fetch_elapsed_ms' : data_fetch_elapsed_ms,
+            'scenario_elapsed_ms' : scenario_elapsed_ms,
             'num_exceptions' : len(result['exceptions'])
         }
 
