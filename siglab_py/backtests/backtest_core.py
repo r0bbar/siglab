@@ -2040,7 +2040,7 @@ def run_all_scenario(
                         else:
                             pd_hi_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
                             fix_column_types(pd_hi_candles)
-                            logger.info(f"pd_hi_candles {ticker} loaded from {target_candle_file_name}")
+                            logger.info(f"pd_hi_candles {ticker} {pd_hi_candles.shape} loaded from {target_candle_file_name}")
 
                         if not algo_param['pypy_compat']:
                             pd_hi_candles_partitions = partition_sliding_window(
@@ -2081,7 +2081,7 @@ def run_all_scenario(
                                 pd_lo_candles : pd.DataFrame = lo_candles[ticker]
                                 logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())}")
                             compute_candles_stats(pd_candles=pd_lo_candles, boillenger_std_multiples=algo_param['boillenger_std_multiples'], sliding_window_how_many_candles=algo_param['lo_stats_computed_over_how_many_candles'], slow_fast_interval_ratio=(algo_param['lo_stats_computed_over_how_many_candles']/algo_param['lo_ma_short_interval']), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
-                            logger.info(f"pd_lo_candles {ticker} compute_candles_stats done. {target_candle_file_name}")
+                            logger.info(f"pd_lo_candles {ticker} {pd_lo_candles.shape} compute_candles_stats done. {target_candle_file_name}")
                             pd_lo_candles.to_csv(target_candle_file_name)
                             
                             if pd_lo_candles is not None and pd_lo_candles.shape[0]>0:
