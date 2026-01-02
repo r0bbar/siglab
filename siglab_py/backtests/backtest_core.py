@@ -1786,7 +1786,11 @@ def run_scenario(
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].axvline(x=lo_datetime, color='gray', linewidth=1, linestyle='-')
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].scatter([lo_datetime, lo_datetime], [lo_low, lo_high], color='gray')
                     
-                    logger.info(f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}")
+                    iter_info = f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}"
+                    if i%100==0 and i%1000!=0:
+                        print(iter_info)
+                    elif i%1000==0:
+                        logger.info(iter_info)
                     
                 if i==pd_lo_candles.shape[0]-1:
                     # HC
