@@ -1324,6 +1324,10 @@ def run_scenario(
                         max_camp = max([ trade['max_camp'] for trade in this_ticker_open_trades])
                         running_sl_percent_hard = max([ trade['running_sl_percent_hard'] for trade in this_ticker_open_trades])
 
+                        max_pnl_potential_percent = None
+                        if any([ trade for trade in this_ticker_open_trades if 'target_price' in trade ]):
+                            max_pnl_potential_percent = max([ (trade['target_price']/trade['entry_price'] -1) *100 if trade['side']=='buy' else (trade['entry_price']/trade['target_price'] -1) *100 for trade in this_ticker_open_trades if 'target_price' in trade ])
+
                         kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                         sl_adj_func_result = sl_adj_func(**kwargs)
                         running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
@@ -1338,6 +1342,12 @@ def run_scenario(
                         tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
                         recover_min_percent = algo_param['recover_min_percent'] if 'recover_min_percent' in algo_param else None
                         recover_max_pain_percent = algo_param['recover_max_pain_percent'] if 'recover_max_pain_percent' in algo_param else None
+
+                        # tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
+                        if max_pnl_potential_percent and max_pnl_potential_percent<tp_max_percent:
+                            tp_minmax_ratio = tp_min_percent/tp_max_percent
+                            tp_max_percent = max_pnl_potential_percent
+                            tp_min_percent = tp_minmax_ratio * tp_max_percent
 
                         unrealized_pnl_eval_result = pnl_eval_func(lo_row, lo_row_tm1, running_sl_percent_hard, this_ticker_open_trades, algo_param)
                         unrealized_pnl_interval = unrealized_pnl_eval_result['unrealized_pnl_interval']
