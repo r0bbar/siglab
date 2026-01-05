@@ -117,6 +117,13 @@ class SimpleMathTests(unittest.TestCase):
         assert(len(adjacent_levels)==7)
         equal(adjacent_levels, [4100,4200,4300,4400,4500,4600,4700])
 
+        btc_price = 95000
+        level_granularity = 0.01 # So levels are $1000 apart
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [92000,93000,94000,95000,96000,97000,98000])
+
     def test_bucket_series(self):
 
         level_granularity : float = 0.1
