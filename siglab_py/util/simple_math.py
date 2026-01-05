@@ -32,6 +32,18 @@ def generate_rand_nums(
 
     return result
 
+def compute_level_increment(
+    num : float,
+    level_granularity : float = 0.01
+) -> float:
+    if math.isnan(num):
+        return num
+    level_size = num * level_granularity
+    magnitude = math.floor(math.log10(abs(level_size)))
+    base_increment = 10 ** magnitude
+    rounded_level_size = round(level_size / base_increment) * base_increment
+    return rounded_level_size
+
 # https://norman-lm-fung.medium.com/levels-are-psychological-7176cdefb5f2
 def round_to_level(
             num : float,
@@ -39,12 +51,22 @@ def round_to_level(
         ) -> float:
     if math.isnan(num):
         return num
-    level_size = num * level_granularity
-    magnitude = math.floor(math.log10(abs(level_size)))
-    base_increment = 10 ** magnitude
-    rounded_level_size = round(level_size / base_increment) * base_increment
+    rounded_level_size = compute_level_increment(num, level_granularity)
     rounded_num = round(num / rounded_level_size) * rounded_level_size
     return rounded_num
+
+def compute_adjacent_levels(
+            num : float,
+            level_granularity : float = 0.01,
+            num_levels_per_side : int = 1
+        ) -> Union[None, List[float]]:
+    if math.isnan(num):
+        return None
+    rounded_level_size = compute_level_increment(num, level_granularity)
+    rounded_num = round(num / rounded_level_size) * rounded_level_size
+    levels = [ rounded_num ]
+    levels = list(reversed([ rounded_num - (i+1)*rounded_level_size for i in list(range(num_levels_per_side))])) + levels + [ rounded_num + (i+1)*rounded_level_size for i in list(range(num_levels_per_side))]
+    return levels
 
 def bucket_series(
     values : List[float],

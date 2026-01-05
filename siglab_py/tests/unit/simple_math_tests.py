@@ -1,7 +1,9 @@
 import unittest
 from typing import List, Dict, Union
 
-from util.simple_math import generate_rand_nums, round_to_level, bucket_series, bucketize_val
+from numpy import equal
+
+from util.simple_math import generate_rand_nums, round_to_level, compute_adjacent_levels, bucket_series, bucketize_val
 
 class SimpleMathTests(unittest.TestCase):
 
@@ -106,6 +108,14 @@ class SimpleMathTests(unittest.TestCase):
             rounded_price = round_to_level(price, level_granularity=0.01)
             print(f"{price} rounded to: {rounded_price}")
             assert(rounded_price==expected)
+
+    def test_compute_adjacent_levels(self):
+        gold_price = 4450
+        level_granularity = 0.025 # So levels are $100 apart
+        adjacent_levels = compute_adjacent_levels(num=gold_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [4100,4200,4300,4400,4500,4600,4700])
 
     def test_bucket_series(self):
 
