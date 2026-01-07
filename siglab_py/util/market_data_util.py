@@ -591,7 +591,8 @@ def fetch_candles(
             exchange=exchange,
             normalized_symbols=normalized_symbols,
             candle_size=candle_size,
-            num_candles_limit=num_candles_limit
+            num_candles_limit=num_candles_limit,
+            logger=logger
         )
     if num_intervals!=1:
         for symbol in exchange_candles:
@@ -656,10 +657,9 @@ def _fetch_candles_ccxt(
     exchange,
     normalized_symbols : List[str],
     candle_size : str,
-    num_candles_limit : int = 100
+    num_candles_limit : int = 100,
+    logger = None
 ) -> Dict[str, Union[pd.DataFrame, None]]:
-    logger = logging.getLogger()
-
     rsp = {}
 
     exchange.load_markets()
@@ -667,7 +667,7 @@ def _fetch_candles_ccxt(
     num_tickers = len(normalized_symbols)
     i = 0
     for ticker in normalized_symbols:
-        @retry(num_attempts=3, pause_between_retries_ms=1000)
+        @retry(num_attempts=3, pause_between_retries_ms=1000, logger=logger)
         def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
                 one_timeframe = f"1{timeframe[-1]}"
                 candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
@@ -690,7 +690,8 @@ def _fetch_candles_ccxt(
                 raise ValueError(f"Invalid candle_size {candle_size}")
             return num_intervals * increment
         
-        logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
+        if logger:
+            logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
 
         '''
         It uses a while loop to implement a sliding window to download candles between start_ts and end_ts. 

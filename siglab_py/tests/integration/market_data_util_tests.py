@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from typing import Union
+import logging
 from pathlib import Path
 
 from util.market_data_util import *
@@ -107,7 +108,8 @@ class MarketDataUtilTests(unittest.TestCase):
             end_ts=end_date.timestamp(),
             exchange=exchange,
             normalized_symbols=normalized_symbols,
-            candle_size='1h'
+            candle_size='1h',
+            logger=logging.getLogger()
         )[normalized_symbols[0]]
 
         assert pd_candles is not None

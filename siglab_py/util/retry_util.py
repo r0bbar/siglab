@@ -2,7 +2,8 @@ import time
 
 def retry(
         num_attempts : int = 1,
-        pause_between_retries_ms : int = 1000
+        pause_between_retries_ms : int = 1000,
+        logger = None
         ):
     def decorator(method):
         def wrapper(*args, **kw):
@@ -15,6 +16,10 @@ def retry(
                 except Exception as retry_error:
                     if i==(num_attempts-1):
                         err_msg = f"retry_util.retry gave up {method.__name__} after {num_attempts} calls. {args} {kw}. {retry_error}"
+                        if logger:
+                            logger.error(err_msg)
+                        else:
+                            print(err_msg)
                         raise Exception(err_msg) from retry_error
                 finally:
                     time.sleep(int(pause_between_retries_ms/1000))
