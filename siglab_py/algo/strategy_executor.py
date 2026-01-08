@@ -714,10 +714,29 @@ async def main(
                         if pos_status!=PositionStatus.UNDEFINED.name:
                             if pos_side == OrderSide.BUY:
                                 pos_unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_live_pessimistic = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_live_pessimistic = pos_unreal_live
+                                if total_sec_since_pos_created > (lo_interval_ms/1000):
+                                    '''
+                                    "pessimistic": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
+                                    But we need be careful with tall candles immediately upon entries.
+                                       trailing_candles[-1] is latest candle
+                                       trailing_candles[-1][1] is 'open' from latest candle
+                                    Example long BTC, a mean reversion trade
+                                        pos_entry_px    $97,000
+                                        open            $99,000 (This is trailing_candles[-1][1], so it's big red candle)
+                                        mid             $97,200 (Seconds after entry)
+
+                                        pos_unreal_live                 $200 per BTC
+                                        unrealized_pnl_live_pessimistic $2000 per BTC (This is very misleading! This would cause algo to TP prematurely!)
+                                    Thus for new entries, 
+                                        unrealized_pnl_live_pessimistic = pos_unreal_live
+                                    '''
+                                    unrealized_pnl_live_pessimistic = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
                             elif pos_side == OrderSide.SELL:
                                 pos_unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
-                                unrealized_pnl_live_pessimistic = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
+                                unrealized_pnl_live_pessimistic = pos_unreal_live
+                                if total_sec_since_pos_created > lo_interval_ms/1000:
+                                    unrealized_pnl_live_pessimistic = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
                         pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                         pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
