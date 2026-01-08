@@ -473,9 +473,10 @@ async def main(
                         'ob_best_bid' : None,
                         'ob_best_ask' : None,
                         
-                        'unreal' : 0,
                         'unreal_live' : 0,
-                        'real' : 0,
+                        'pnl_live_bps' : 0,
+                        'pnl_pessimistic_bps' : 0,
+
                         'max_unreal_live' : 0,
                         'max_unreal_live_bps' : 0,
                         'max_unreal_pessimistic_bps' : 0,
@@ -740,6 +741,10 @@ async def main(
                         pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                         pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
+                        pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = pos_unreal_live
+                        pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
+                        pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = pnl_pessimistic_bps
+
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
@@ -821,8 +826,9 @@ async def main(
                             pd_position_cache.loc[position_cache_row.name, 'closed'] = None
                             pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
                             pd_position_cache.loc[position_cache_row.name, 'close_px'] = None
-                            pd_position_cache.loc[position_cache_row.name, 'unreal'] = None
                             pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = None
+                            pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = None
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_pessimistic_bps'] = 0
@@ -950,8 +956,9 @@ async def main(
                                     pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
                                     pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
                                     pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
-                                    pd_position_cache.loc[position_cache_row.name, 'unreal'] = None
                                     pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = None
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_pessimistic_bps'] = 0
