@@ -545,21 +545,21 @@ async def main(
                 dt_now = datetime.now()
                 block_entries = False
 
-                dt_rolldate = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
-                today_dayofweek = dt_rolldate.weekday()
+                dt_targettz = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
+                today_dayofweek = dt_targettz.weekday()
 
                 delta_hour = int(
-                                    (dt_rolldate.replace(tzinfo=None) - dt_now).total_seconds()/3600
+                                    (dt_targettz.replace(tzinfo=None) - dt_now).total_seconds()/3600
                                 )
                 
-                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now: {dt_now}, dt_rolldate: {dt_rolldate}, delta_hour: {delta_hour}")
+                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}")
                 
                 if param['trading_window_start'] and param['trading_window_end']:
                     trading_window : Dict[str, str] = {
                         'start' : param['trading_window_start'],
                         'end' : param['trading_window_end']
                     }
-                    parsed_trading_window = parse_trading_window(dt_rolldate, trading_window)
+                    parsed_trading_window = parse_trading_window(dt_targettz, trading_window)
                     if not parsed_trading_window['in_window']:
                         block_entries = True
 
