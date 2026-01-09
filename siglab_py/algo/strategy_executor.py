@@ -705,7 +705,7 @@ async def main(
                         elif len(dt_parts) == 6:
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
-
+                
                 '''
                 'fetch_position' is for perpetual. 
                     If you long, you'd see side = 'long' 
@@ -905,6 +905,11 @@ async def main(
                         pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
                         pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = pnl_pessimistic_bps
 
+                        kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                        trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                        tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                        tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
@@ -1024,7 +1029,7 @@ async def main(
                             dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                         if (
-                            ((pnl_live_bps/100)>=param['tp_min_percent'] and pos_unreal_live<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
+                            ((pnl_live_bps/100)>=tp_min_percent and pos_unreal_live<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
                             or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is (and will remain) active.
                         ):
                             loss_trailing = (1 - pos_unreal_live/max_unrealized_pnl) * 100
@@ -1050,12 +1055,12 @@ async def main(
 
 
                             _effective_tp_trailing_percent = calc_eff_trailing_sl(
-                                tp_min_percent = param['tp_min_percent'],
-                                tp_max_percent = param['tp_max_percent'],
-                                sl_percent_trailing = param['sl_percent_trailing'],
+                                tp_min_percent = tp_min_percent,
+                                tp_max_percent = tp_max_percent,
+                                sl_percent_trailing = tp_max_percent,
                                 pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
-                                linear=True if param['tp_max_percent'] >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
+                                linear=True if tp_max_percent >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
                                 pow=param['non_linear_pow']
                             )
 

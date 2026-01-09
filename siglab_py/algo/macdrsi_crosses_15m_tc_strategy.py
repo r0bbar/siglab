@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from algo.strategy_base import StrategyBase
 
@@ -48,6 +48,19 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
             'short' : allow_short
         }
     
+    @staticmethod
+    def trailing_stop_threshold_eval(
+        algo_param : Dict,
+        *args: Any, **kwargs: Any
+    ) -> Dict[str, float]:
+        result = StrategyBase.trailing_stop_threshold_eval(algo_param)
+        tp_min_percent = result['tp_min_percent']
+        tp_max_percent = result['tp_max_percent']
+        return {
+            'tp_min_percent' : tp_min_percent,
+            'tp_max_percent' : tp_max_percent
+        }
+
     @staticmethod
     def get_strategy_indicators() -> List[str]:
         return [ 
