@@ -251,6 +251,7 @@ def parse_args():
     parser.add_argument("--apikey", help="Exchange apikey", default=None)
     parser.add_argument("--secret", help="Exchange secret", default=None)
     parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
+    parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
 
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
@@ -303,6 +304,13 @@ def parse_args():
     param['apikey'] = args.apikey
     param['secret'] = args.secret
     param['passphrase'] = args.passphrase
+    if args.verbose:
+        if args.verbose=='Y':
+            param['verbose'] = True
+        else:
+            param['verbose'] = False
+    else:
+        param['verbose'] = False
 
     param['ticker'] = args.ticker
     param['order_type'] = args.order_type
@@ -476,7 +484,8 @@ async def main(
         secret=secret,
         passphrase=passphrase,
         default_type=param['default_type'],
-        rate_limit_ms=param['rate_limit_ms']
+        rate_limit_ms=param['rate_limit_ms'],
+        verbose=param['verbose']
     )
     if exchange:
         markets = await exchange.load_markets() 
