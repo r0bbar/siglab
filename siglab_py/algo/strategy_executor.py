@@ -924,11 +924,16 @@ async def main(
                                 side = 'sell'
                             else:
                                 raise ValueError("Either allow_long or allow_short!")
+
+                            kwargs = {k: v for k, v in locals().items() if k in order_notional_adj_func_params}
+                            order_notional_adj_func_result = order_notional_adj_func(**kwargs)
+                            target_order_notional = order_notional_adj_func_result['target_order_notional']
+                            
                             entry_positions : List[DivisiblePosition] = [
                                 DivisiblePosition(
                                     ticker = param['ticker'],
                                     side = side,
-                                    amount = param['amount_base_ccy'],
+                                    amount = target_order_notional,
                                     leg_room_bps = param['leg_room_bps'],
                                     order_type = param['order_type'],
                                     slices = param['slices'],
