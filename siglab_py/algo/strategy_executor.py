@@ -914,7 +914,7 @@ async def main(
 
                         allow_entry = allow_entry_long or allow_entry_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
-                        if allow_entry:
+                        if allow_entry and not block_entries:
                             if allow_entry_long:
                                 side = 'buy'
                             elif allow_entry_short:
