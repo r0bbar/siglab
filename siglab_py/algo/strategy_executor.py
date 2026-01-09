@@ -22,6 +22,7 @@ from tabulate import tabulate
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
+from util.datetime_util import parse_trading_window
 from util.market_data_util import async_instantiate_exchange, interval_to_ms
 from util.trading_util import calc_eff_trailing_sl
 from util.notification_util import dispatch_notification
@@ -388,43 +389,6 @@ def fetch_economic_events(redis_client, topic) -> List[Dict]:
             economic_calendar['datetime'] = arrow.get(economic_calendar['datetime']).datetime
             economic_calendar['datetime'] = economic_calendar['datetime'].replace(tzinfo=None) 
     return restored
-
-def parse_trading_window(
-            today : datetime,
-            window : Dict[str, str]
-        ) :
-        window_start : str = window['start']
-        window_end : str = window['end']
-
-        DayOfWeekMap : Dict[str, int] = {
-            'Mon' : 0,
-            'Tue' : 1,
-            'Wed' : 2,
-            'Thur' : 3,
-            'Fri' : 4,
-            'Sat' : 5,
-            'Sun' : 6
-        }
-        today_dayofweek = today.weekday()
-
-        window_start_dayofweek : int = DayOfWeekMap[window_start.split('_')[0]]
-        window_start_hr : int = int(window_start.split('_')[-1].split(':')[0])
-        window_start_min : int = int(window_start.split('_')[-1].split(':')[1])
-        dt_window_start = today + timedelta(days=(window_start_dayofweek-today_dayofweek))
-        dt_window_start = dt_window_start.replace(hour=window_start_hr, minute=window_start_min)
-
-        window_end_dayofweek : int = DayOfWeekMap[window_end.split('_')[0]]
-        window_end_hr : int = int(window_end.split('_')[-1].split(':')[0])
-        window_end_min : int = int(window_end.split('_')[-1].split(':')[1])
-        dt_window_end = today + timedelta(days=(window_end_dayofweek-today_dayofweek))
-        dt_window_end = dt_window_end.replace(hour=window_end_hr, minute=window_end_min)
-
-        return {
-            'today' : today,
-            'start' : dt_window_start,
-            'end' : dt_window_end,
-            'in_window' : (today<=dt_window_end) and (today>=dt_window_start)
-        }
 
 async def main(
     order_notional_adj_func : Callable[..., Dict[str, float]],
