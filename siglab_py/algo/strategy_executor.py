@@ -74,7 +74,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y
+        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96
 
 Debug from VSCode, launch.json:
     {
@@ -107,6 +107,10 @@ Debug from VSCode, launch.json:
                         "--sl_percent", "2.5",
                         "--reversal_num_intervals", "3",
 
+                        "--economic_calendar_source", "xxx",
+                        "--block_entry_impacting_events","Y",
+                        "--num_intervals_current_ecoevents", "96"
+
                         "--load_entry_from_cache", "Y",
 
                         "--slack_info_url", "https://hooks.slack.com/services/xxx",
@@ -123,6 +127,27 @@ Debug from VSCode, launch.json:
 param : Dict = {
     'trailing_sl_min_percent_linear': 1.0, # This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps), there's more uncertainty if target can be reached: Go with linear.
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
+
+    # economic_calendar related
+    'mapped_regions' : [ 'united_states' ],
+
+    'mapped_event_codes' : [ 
+        'core_inflation_rate_mom', 'core_inflation_rate_yoy',
+        'inflation_rate_mom', 'inflation_rate_yoy', 
+        'fed_interest_rate_decision',
+        'fed_chair_speech',
+        'core_pce_price_index_mom',
+        'core_pce_price_index_yoy',
+        'unemployment_rate',
+        'non_farm_payrolls',
+        'gdp_growth_rate_qoq_adv', 
+        'gdp_growth_rate_qoq_final', 
+        'gdp_growth_rate_yoy',
+
+        'manual_event'
+    ],
+    'max_current_economic_calendar_age_sec' : 10,
+    'num_intervals_current_ecoevents' : 4* 24, # x4 because lo_interval "15m" per 'lo_candles_w_ta_topic': If you want to convert to 24 hrs ...
 
     "loop_freq_ms" : 5000, # reduce this if you need trade faster
 
@@ -147,6 +172,8 @@ param : Dict = {
             "hi_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx_linear-1h",
             "lo_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx_linear-15m",
             "orderbook_topic" : "orderbooks_SOL/USDT:USDT_okx_linear",
+            
+            "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
         },
         'redis' : {
             'host' : 'localhost',
@@ -234,6 +261,10 @@ def parse_args():
     parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>200bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 2% (200 bps)", default=2.0)
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     
+    parser.add_argument("--economic_calendar_source", help="Source of economic calendar'. Default: None", default=None)
+    parser.add_argument("--num_intervals_current_ecoevents", help="Num intervals to block on incoming/outgoing economic events. For 15m bars for example, num_intervals_current_ecoevents=4*24 means 24 hours. Default: 0", default=0)
+    parser.add_argument("--block_entry_impacting_events", help="Block entries if any impacting economic events 'impacting_economic_calendars'. Default N", default='N')
+    
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
@@ -284,6 +315,16 @@ def parse_args():
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
     param['trailing_sl_min_percent_linear'] = float(args.trailing_sl_min_percent_linear)
     param['non_linear_pow'] = float(args.non_linear_pow)
+
+    param['economic_calendar_source'] = args.economic_calendar_source
+
+    if args.block_entry_impacting_events:
+        if args.block_entry_impacting_events=='Y':
+            param['block_entry_impacting_events'] = True
+        else:
+            param['block_entry_impacting_events'] = False
+    else:
+        param['block_entry_impacting_events'] = False
     
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
@@ -308,6 +349,33 @@ def init_redis_client() -> StrictRedis:
     
     return redis_client
 
+def fetch_economic_events(redis_client, topic) -> List[Dict]:
+    restored = redis_client.get(topic)
+    if restored:
+        restored = json.loads(restored)
+        for economic_calendar in restored:
+            '''
+            Format: 
+                'calendar_id': '1234567'
+                'category': 'Building Permits'
+                'region': 'united_states'
+                'event': 'Building Permits Prel'
+                'event_code': 'building_permits_prel'
+                'ccy': ''
+                'importance': '3'
+                'actual': 1.386
+                'forecast': 1.45
+                'previous': 1.44
+                'pos_neg': 'bearish'
+                'datetime': datetime.datetime(2024, 6, 20, 20, 30)
+                'calendar_item_timestamp_ms': 1718886600000
+                'calendar_item_timestamp_sec': 1718886600
+                'source': 'xxx'    
+            '''
+            economic_calendar['datetime'] = arrow.get(economic_calendar['datetime']).datetime
+            economic_calendar['datetime'] = economic_calendar['datetime'].replace(tzinfo=None) 
+    return restored
+
 async def main(
     order_notional_adj_func : Callable[..., Dict[str, float]],
     allow_entry_func : Callable[..., Dict[str, bool]],
@@ -330,6 +398,17 @@ async def main(
     lo_candles_w_ta_topic : str = param['mds']['topics']['lo_candles_w_ta_topic']
     orderbook_topic : str = param['mds']['topics']['orderbook_topic']
 
+    # economic_calendar_source
+    full_economic_calendars_topic : str = param['mds']['topics']['full_economic_calendars_topic']
+    full_economic_calendars_topic  = full_economic_calendars_topic.replace('$SOURCE$', param['economic_calendar_source']) if param['economic_calendar_source'] else None
+
+    log(f"hi_candles_w_ta_topic: {hi_candles_w_ta_topic}")
+    log(f"lo_candles_w_ta_topic: {lo_candles_w_ta_topic}")
+    log(f"orderbook_topic: {orderbook_topic}")
+    log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
+    log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
+    log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
+
     hi_candle_size : str = hi_candles_w_ta_topic.split('-')[-1]
     lo_candle_size : str = lo_candles_w_ta_topic.split('-')[-1]
     hi_interval = hi_candle_size[-1]
@@ -338,7 +417,9 @@ async def main(
     lo_interval = lo_candle_size[-1]
     lo_num_intervals : int = int(lo_candle_size.replace(lo_interval,''))
     lo_interval_ms : int = interval_to_ms(lo_interval) * lo_num_intervals
-
+    
+    num_intervals_current_ecoevents_ms : int = lo_interval_ms * param['num_intervals_current_ecoevents']
+    
     strategy_indicators = TargetStrategy.get_strategy_indicators()
     position_cache_columns = POSITION_CACHE_COLUMNS + strategy_indicators
     pd_position_cache = pd.DataFrame(columns=position_cache_columns)
@@ -429,6 +510,7 @@ async def main(
             if 'datetime' in orderhist_cache.columns:
                 orderhist_cache['datetime'] = pd.to_datetime(orderhist_cache['datetime'])
 
+        block_entries : bool = False
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         pos_unreal_live : float = 0
@@ -447,6 +529,36 @@ async def main(
         while (not tp and not sl and not position_break):
             try:
                 dt_now = datetime.now()
+                block_entries = False
+
+                if full_economic_calendars_topic:
+                    full_economic_calendars = fetch_economic_events(redis_client, full_economic_calendars_topic)
+
+                    impacting_economic_calendars = None
+                    if full_economic_calendars:
+                        impacting_economic_calendars = [ x for x in full_economic_calendars 
+                                                            if x['event_code'] in param['mapped_event_codes']  
+                                                            and x['region'] in param['mapped_regions']
+                                                        ]
+                        if impacting_economic_calendars:
+                            impacting_economic_calendars =  [ x for x in impacting_economic_calendars 
+                                                                if(
+                                                                    (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)>0 # Incoming events
+                                                                    and (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000) < num_intervals_current_ecoevents_ms
+                                                                ) or (
+                                                                    (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)<0 # Passed events
+                                                                    and (datetime.now().timestamp()*1000 - x['calendar_item_timestamp_ms']) < num_intervals_current_ecoevents_ms/3 
+                                                                )
+                                                            ]
+                            s_impacting_economic_calendars = " ".join([ x['event_code'] if x['event_code']!='manual_event' else x['event'] for x in impacting_economic_calendars ])
+
+                    log(f"full_economic_calendars #rows: {len(full_economic_calendars) if full_economic_calendars else 0}")
+                    log(f"impacting_economic_calendars #rows: {len(impacting_economic_calendars) if impacting_economic_calendars else 0} {s_impacting_economic_calendars}. block_entries: {block_entries}")
+                    
+                    if param['block_entry_impacting_events'] and impacting_economic_calendars:
+                        block_entries = True
+                
+                log(f"block_entries: {block_entries}")
 
                 position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
                 if position_cache_row.shape[0]==0:
