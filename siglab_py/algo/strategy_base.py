@@ -20,9 +20,9 @@ class StrategyBase(ABC):
         
     @staticmethod
     def order_notional_adj(
+        algo_param : Dict,
         *args: Any, **kwargs: Any
     ) -> Dict[str, float]:
-        algo_param = args[0]
         target_order_notional = algo_param['amount_base_ccy']
         return {
             'target_order_notional' : target_order_notional
