@@ -9,6 +9,15 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         pass
     
     @staticmethod
+    def order_notional_adj(
+        algo_param : Dict,
+    ) -> Dict[str, float]:
+        target_order_notional = StrategyBase.order_notional_adj(algo_param)
+        return {
+            'target_order_notional' : target_order_notional
+        }
+
+    @staticmethod
     def allow_entry(
         lo_row_tm1,
         hi_row_tm1,
