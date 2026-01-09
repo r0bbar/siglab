@@ -431,6 +431,9 @@ async def main(
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
 
+    # aliases
+    algo_param = param
+
     hi_candle_size : str = hi_candles_w_ta_topic.split('-')[-1]
     lo_candle_size : str = lo_candles_w_ta_topic.split('-')[-1]
     hi_interval = hi_candle_size[-1]
