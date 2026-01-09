@@ -6,9 +6,10 @@ import logging
 from dotenv import load_dotenv
 import argparse
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import time
 import arrow
+from zoneinfo import ZoneInfo
 from typing import List, Dict, Any, Union, Callable
 from io import StringIO
 import json
@@ -74,7 +75,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96
+        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
 Debug from VSCode, launch.json:
     {
@@ -109,7 +110,10 @@ Debug from VSCode, launch.json:
 
                         "--economic_calendar_source", "xxx",
                         "--block_entry_impacting_events","Y",
-                        "--num_intervals_current_ecoevents", "96"
+                        "--num_intervals_current_ecoevents", "96",
+
+                        "--trading_window_start", "Mon_00:00",
+                        "--trading_window_end", "Fri_17:00",
 
                         "--load_entry_from_cache", "Y",
 
@@ -127,6 +131,8 @@ Debug from VSCode, launch.json:
 param : Dict = {
     'trailing_sl_min_percent_linear': 1.0, # This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps), there's more uncertainty if target can be reached: Go with linear.
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
+
+    'rolldate_tz' : 'Asia/Hong_Kong', # Roll date based on what timezone?
 
     # economic_calendar related
     'mapped_regions' : [ 'united_states' ],
@@ -235,6 +241,10 @@ def parse_args():
 
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
+
+    parser.add_argument("--trading_window_start", help="Start of trading window. Set as blank if trading not confined to particular trading window. Format: Fri_00:00", default='')
+    parser.add_argument("--trading_window_end", help="End of trading window.", default='')
+
     parser.add_argument("--encrypt_decrypt_with_aws_kms", help="Y or N. If encrypt_decrypt_with_aws_kms=N, pass in apikey, secret and passphrase unencrypted (Not recommended, for testing only). If Y, they will be decrypted using AMS KMS key.", default='N')
     parser.add_argument("--aws_kms_key_id", help="AWS KMS key ID", default=None)
     parser.add_argument("--apikey", help="Exchange apikey", default=None)
@@ -276,6 +286,9 @@ def parse_args():
     param['gateway_id'] = args.gateway_id
     param['default_type'] = args.default_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
+
+    param['trading_window_start'] = args.trading_window_start
+    param['trading_window_end'] = args.trading_window_end
     
     if args.encrypt_decrypt_with_aws_kms:
         if args.encrypt_decrypt_with_aws_kms=='Y':
@@ -375,6 +388,43 @@ def fetch_economic_events(redis_client, topic) -> List[Dict]:
             economic_calendar['datetime'] = arrow.get(economic_calendar['datetime']).datetime
             economic_calendar['datetime'] = economic_calendar['datetime'].replace(tzinfo=None) 
     return restored
+
+def parse_trading_window(
+            today : datetime,
+            window : Dict[str, str]
+        ) :
+        window_start : str = window['start']
+        window_end : str = window['end']
+
+        DayOfWeekMap : Dict[str, int] = {
+            'Mon' : 0,
+            'Tue' : 1,
+            'Wed' : 2,
+            'Thur' : 3,
+            'Fri' : 4,
+            'Sat' : 5,
+            'Sun' : 6
+        }
+        today_dayofweek = today.weekday()
+
+        window_start_dayofweek : int = DayOfWeekMap[window_start.split('_')[0]]
+        window_start_hr : int = int(window_start.split('_')[-1].split(':')[0])
+        window_start_min : int = int(window_start.split('_')[-1].split(':')[1])
+        dt_window_start = today + timedelta(days=(window_start_dayofweek-today_dayofweek))
+        dt_window_start = dt_window_start.replace(hour=window_start_hr, minute=window_start_min)
+
+        window_end_dayofweek : int = DayOfWeekMap[window_end.split('_')[0]]
+        window_end_hr : int = int(window_end.split('_')[-1].split(':')[0])
+        window_end_min : int = int(window_end.split('_')[-1].split(':')[1])
+        dt_window_end = today + timedelta(days=(window_end_dayofweek-today_dayofweek))
+        dt_window_end = dt_window_end.replace(hour=window_end_hr, minute=window_end_min)
+
+        return {
+            'today' : today,
+            'start' : dt_window_start,
+            'end' : dt_window_end,
+            'in_window' : (today<=dt_window_end) and (today>=dt_window_start)
+        }
 
 async def main(
     order_notional_adj_func : Callable[..., Dict[str, float]],
@@ -530,6 +580,28 @@ async def main(
             try:
                 dt_now = datetime.now()
                 block_entries = False
+
+                dt_rolldate = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
+                today_dayofweek = dt_rolldate.weekday()
+
+                delta_hour = int(
+                                    (dt_rolldate.replace(tzinfo=None) - dt_now).total_seconds()/3600
+                                )
+                
+                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now: {dt_now}, dt_rolldate: {dt_rolldate}, delta_hour: {delta_hour}")
+                
+                if param['trading_window_start'] and param['trading_window_end']:
+                    trading_window : Dict[str, str] = {
+                        'start' : param['trading_window_start'],
+                        'end' : param['trading_window_end']
+                    }
+                    parsed_trading_window = parse_trading_window(dt_rolldate, trading_window)
+                    if not parsed_trading_window['in_window']:
+                        block_entries = True
+
+                    log(f"trading_window start: {param['trading_window_start']}, end: {param['trading_window_end']}, in_window: {parsed_trading_window['in_window']}")
+                else:
+                    log(f"No trading window specified")
 
                 if full_economic_calendars_topic:
                     full_economic_calendars = fetch_economic_events(redis_client, full_economic_calendars_topic)
