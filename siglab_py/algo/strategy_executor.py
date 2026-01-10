@@ -1110,9 +1110,13 @@ async def main(
                                 tp = True
                             elif loss_trailing>=effective_tp_trailing_percent:
                                 tp = True
-                                
+
                         else:
-                            if abs(pnl_live_bps/100)>=param['sl_percent']:
+                            kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
+                            sl_adj_func_result = sl_adj_func(**kwargs)
+                            running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
+                            
+                            if abs(pnl_live_bps/100)>=running_sl_percent_hard:
                                 sl = True
 
                         if tp or sl:
