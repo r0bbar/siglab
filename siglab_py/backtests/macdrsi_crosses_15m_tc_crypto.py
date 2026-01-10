@@ -29,7 +29,7 @@ import argparse
 import json
 from datetime import datetime, timedelta, timezone
 import time
-from typing import Dict, List, Tuple, Any, Callable
+from typing import Dict, List, Tuple, Any, Callable, Union
 import pandas as pd
 
 from ccxt.base.exchange import Exchange
@@ -349,7 +349,7 @@ def allow_entry_final(
     lo_row,
     algo_param : Dict
     
-) -> bool:
+) -> Dict[str, Union[bool, float, None]]:
     reference_ticker = algo_param['reference_ticker']
     timestamp_ms : int = lo_row['timestamp_ms']
     open : float = lo_row['open']
