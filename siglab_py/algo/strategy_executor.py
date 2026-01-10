@@ -1104,8 +1104,13 @@ async def main(
                         # STEP 2. Unwind position
                         if pos_unreal_live>0:
                             kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
-                            tp = tp_eval_func(**kwargs)
-                            
+                            tp_final = tp_eval_func(**kwargs)
+
+                            if tp_final:
+                                tp = True
+                            elif loss_trailing>=effective_tp_trailing_percent:
+                                tp = True
+                                
                         else:
                             if abs(pnl_live_bps/100)>=param['sl_percent']:
                                 sl = True
