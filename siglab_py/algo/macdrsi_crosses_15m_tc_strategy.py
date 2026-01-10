@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 from algo.strategy_base import StrategyBase
 
@@ -12,13 +12,10 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
     def order_notional_adj(
         algo_param : Dict,
     ) -> Dict[str, float]:
-        target_order_notional = StrategyBase.order_notional_adj(algo_param)
-        return {
-            'target_order_notional' : target_order_notional
-        }
+        return StrategyBase.order_notional_adj(algo_param) # type: ignore
 
     @staticmethod
-    def allow_entry(
+    def allow_entry_initial(
         lo_row_tm1,
         hi_row_tm1,
         last_candles
@@ -47,6 +44,34 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
             'long' : allow_long,
             'short' : allow_short
         }
+
+    @staticmethod
+    def allow_entry_final(
+        lo_row,
+        algo_param : Dict
+    ) -> Dict[str, Union[bool, float, None]]:
+        open : float = lo_row['open']
+
+        entry_price_long, entry_price_short = open, open
+        allow_long, allow_short = True, True
+        reference_price = None
+        
+        pnl_potential_bps = algo_param['tp_max_percent']*100
+
+        target_price_long = entry_price_long * (1 + pnl_potential_bps/10000)
+        target_price_short = entry_price_short * (1 - pnl_potential_bps/10000)
+
+        return {
+                'long' : allow_long,
+                'short' : allow_short,
+
+                # In additional to allow or not, allow_entry_final also calculate a few things which you may need to mark the entry trades.
+                'entry_price_long' : entry_price_long,
+                'entry_price_short' : entry_price_short,
+                'target_price_long' : target_price_long,
+                'target_price_short' : target_price_short,
+                'reference_price' : reference_price
+            }
     
     @staticmethod
     def trailing_stop_threshold_eval(

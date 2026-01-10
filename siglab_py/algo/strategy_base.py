@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 from siglab_py.backtests.backtest_core import generic_tp_eval
 
@@ -31,13 +31,42 @@ class StrategyBase(ABC):
     }
 
     @staticmethod
-    def allow_entry(
+    def allow_entry_initial(
         *args: Any, **kwargs: Any
     )  -> Dict[str, bool]:
         return {
             'long' : False,
             'short' : False
         }
+
+    @staticmethod
+    def allow_entry_final(
+        lo_row,
+        algo_param : Dict,
+        *args: Any, **kwargs: Any
+    ) -> Dict[str, Union[bool, float, None]]:
+        open : float = lo_row['open']
+
+        entry_price_long, entry_price_short = open, open
+        allow_long, allow_short = False, False
+        reference_price = None
+        
+        pnl_potential_bps = algo_param['tp_max_percent']*100
+
+        target_price_long = entry_price_long * (1 + pnl_potential_bps/10000)
+        target_price_short = entry_price_short * (1 - pnl_potential_bps/10000)
+        
+        return {
+                'long' : allow_long,
+                'short' : allow_short,
+
+                # In additional to allow or not, allow_entry_final also calculate a few things which you may need to mark the entry trades.
+                'entry_price_long' : entry_price_long,
+                'entry_price_short' : entry_price_short,
+                'target_price_long' : target_price_long,
+                'target_price_short' : target_price_short,
+                'reference_price' : reference_price
+            }
 
     @staticmethod
     def sl_adj(

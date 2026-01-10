@@ -400,7 +400,8 @@ def fetch_economic_events(redis_client, topic) -> List[Dict]:
 
 async def main(
     order_notional_adj_func : Callable[..., Dict[str, float]],
-    allow_entry_func : Callable[..., Dict[str, bool]],
+    allow_entry_initial_func : Callable[..., Dict[str, bool]],
+    allow_entry_final_func : Callable[..., Dict[str, Union[bool, float, None]]],
     sl_adj_func : Callable[..., Dict[str, float]],
     trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]],
     tp_eval_func : Callable[..., bool]
@@ -502,8 +503,10 @@ async def main(
         # Lambdas preparation
         order_notional_adj_func_sig = inspect.signature(order_notional_adj_func)
         order_notional_adj_func_params = order_notional_adj_func_sig.parameters.keys()
-        allow_entry_func_sig = inspect.signature(allow_entry_func)
-        allow_entry_func_params = allow_entry_func_sig.parameters.keys()
+        allow_entry_initial_func_sig = inspect.signature(allow_entry_initial_func)
+        allow_entry_initial_func_params = allow_entry_initial_func_sig.parameters.keys()
+        allow_entry_final_func_sig = inspect.signature(allow_entry_final_func)
+        allow_entry_final_func_params = allow_entry_final_func_sig.parameters.keys()
         sl_adj_func_sig = inspect.signature(sl_adj_func)
         sl_adj_func_params = sl_adj_func_sig.parameters.keys()
         trailing_stop_threshold_eval_func_sig = inspect.signature(trailing_stop_threshold_eval_func)
@@ -919,10 +922,10 @@ async def main(
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
 
-                        kwargs = {k: v for k, v in locals().items() if k in allow_entry_func_params}
-                        allow_entry_func_result = allow_entry_func(**kwargs)
-                        allow_entry_long = allow_entry_func_result['long']
-                        allow_entry_short = allow_entry_func_result['short']
+                        kwargs = {k: v for k, v in locals().items() if k in allow_entry_initial_func_params}
+                        allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
+                        allow_entry_long = allow_entry_func_initial_result['long']
+                        allow_entry_short = allow_entry_func_initial_result['short']
 
                         allow_entry = allow_entry_long or allow_entry_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
@@ -1196,7 +1199,8 @@ async def main(
 asyncio.run(
     main(
         order_notional_adj_func=TargetStrategy.order_notional_adj,
-        allow_entry_func=TargetStrategy.allow_entry,
+        allow_entry_initial_func=TargetStrategy.allow_entry_initial,
+        allow_entry_final_func=TargetStrategy.allow_entry_final,
         sl_adj_func=TargetStrategy.sl_adj,
         trailing_stop_threshold_eval_func=TargetStrategy.trailing_stop_threshold_eval,
         tp_eval_func=TargetStrategy.tp_eval
