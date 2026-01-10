@@ -402,7 +402,8 @@ async def main(
     order_notional_adj_func : Callable[..., Dict[str, float]],
     allow_entry_func : Callable[..., Dict[str, bool]],
     sl_adj_func : Callable[..., Dict[str, float]],
-    trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]]
+    trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]],
+    tp_eval_func : Callable[..., bool]
 ):
     parse_args()
     redis_client : StrictRedis = init_redis_client()
@@ -506,7 +507,9 @@ async def main(
         sl_adj_func_sig = inspect.signature(sl_adj_func)
         sl_adj_func_params = sl_adj_func_sig.parameters.keys()
         trailing_stop_threshold_eval_func_sig = inspect.signature(trailing_stop_threshold_eval_func)
-        trailing_stop_threshold_eval_func_params = trailing_stop_threshold_eval_func_sig.parameters.keys()    
+        trailing_stop_threshold_eval_func_params = trailing_stop_threshold_eval_func_sig.parameters.keys() 
+        tp_eval_func_sig = inspect.signature(tp_eval_func)
+        tp_eval_func_params = tp_eval_func_sig.parameters.keys()   
 
         # Trigger candles providers
         def _trigger_producers(
@@ -547,6 +550,7 @@ async def main(
         max_unrealized_pnl_percent : float = 0
         loss_trailing : float = 0
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
+        this_ticker_open_trades : List[Dict] = []
         reversal : bool = False
         tp : bool = False
         sl : bool = False
@@ -705,7 +709,7 @@ async def main(
                         elif len(dt_parts) == 6:
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
-                
+
                 '''
                 'fetch_position' is for perpetual. 
                     If you long, you'd see side = 'long' 
@@ -1012,6 +1016,17 @@ async def main(
                             pos_entries.append(pos_created)
                             pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
 
+                            # This is for tp_eval_func
+                            this_ticker_open_trades.append(
+                                {
+                                    'ticker' : param['ticker'],
+                                    'side' : side,
+                                    'amount' : target_order_notional,
+                                    'tp_max_price' : tp_max_price,
+                                    'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
+                                }
+                            )
+
                             orderhist_cache_row = {
                                                     'datetime' : dt_now,
                                                     'exchange' : exchange_name,
@@ -1071,10 +1086,15 @@ async def main(
 
                         # STEP 2. Unwind position
                         if pos_unreal_live>0:
+                            kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
+                            tp = tp_eval_func(**kwargs)
+
+                            '''
                             if reversal and (pnl_live_bps/100) >= param['tp_min_percent']:
                                 tp = True
                             elif loss_trailing>=effective_tp_trailing_percent:
                                 tp = True
+                            '''
                         else:
                             if abs(pnl_live_bps/100)>=param['sl_percent']:
                                 sl = True
@@ -1140,6 +1160,9 @@ async def main(
                                     pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
                                     pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = None
 
+                                    # This is for tp_eval_func
+                                    this_ticker_open_trades.clear()
+
                                     orderhist_cache_row = {
                                                 'datetime' : dt_now,
                                                 'exchange' : exchange_name,
@@ -1175,6 +1198,7 @@ asyncio.run(
         order_notional_adj_func=TargetStrategy.order_notional_adj,
         allow_entry_func=TargetStrategy.allow_entry,
         sl_adj_func=TargetStrategy.sl_adj,
-        trailing_stop_threshold_eval_func=TargetStrategy.trailing_stop_threshold_eval
+        trailing_stop_threshold_eval_func=TargetStrategy.trailing_stop_threshold_eval,
+        tp_eval_func=TargetStrategy.tp_eval
     )
 )

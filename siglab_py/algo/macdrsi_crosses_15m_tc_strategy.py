@@ -62,6 +62,14 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         }
 
     @staticmethod
+    def tp_eval (
+            lo_row,
+            this_ticker_open_trades : List[Dict],
+            algo_param : Dict
+    ) -> bool:
+        return StrategyBase.tp_eval(lo_row, this_ticker_open_trades, algo_param)
+
+    @staticmethod
     def get_strategy_indicators() -> List[str]:
         return [ 
             'lo_row_tm1:macd_cross', 'lo_row_tm1:macd_bullish_cross_last_id', 'lo_row_tm1:macd_bearish_cross_last_id', 
