@@ -76,7 +76,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
 Debug from VSCode, launch.json:
     {
@@ -106,7 +106,7 @@ Debug from VSCode, launch.json:
                         "--tp_min_percent", "3",
                         "--tp_max_percent", "5",
                         "--sl_percent_trailing", "35",
-                        "--sl_percent", "2.5",
+                        "--sl_hard_percent", "2.5",
                         "--reversal_num_intervals", "3",
 
                         "--economic_calendar_source", "xxx",
@@ -267,7 +267,8 @@ def parse_args():
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
     parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
-    parser.add_argument("--sl_percent", help="Hard stop in percent.", default=2)
+    parser.add_argument("--sl_adj_percent", help="Increment used in SL adj in percent.", default=0)
+    parser.add_argument("--sl_hard_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
     parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>200bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 2% (200 bps)", default=2.0)
@@ -332,7 +333,8 @@ def parse_args():
     param['tp_max_percent'] = float(args.tp_max_percent)
     param['sl_percent_trailing'] = float(args.sl_percent_trailing)
     param['default_effective_tp_trailing_percent'] = float(args.default_effective_tp_trailing_percent)
-    param['sl_percent'] = float(args.sl_percent)
+    param['sl_adj_percent'] = float(args.sl_adj_percent)
+    param['sl_hard_percent'] = float(args.sl_hard_percent)
     param['sl_num_intervals_delay'] = int(args.sl_num_intervals_delay)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
     param['trailing_sl_min_percent_linear'] = float(args.trailing_sl_min_percent_linear)
@@ -650,7 +652,7 @@ async def main(
                         'max_pain' : 0,
                         'entry_target_price' : None,
                         'sl_trailing_min_threshold_crossed' : False,
-                        'running_sl_percent_hard' : param['sl_percent'],
+                        'running_sl_percent_hard' : param['sl_hard_percent'],
                         'sl_percent_trailing' : param['sl_percent_trailing'],
                         'tp_min_target' : None,
                     }
@@ -990,12 +992,12 @@ async def main(
                                 if side=='buy':
                                     tp_max_price = mid * (1 + pnl_potential_bps/10000)
                                     tp_min_price = mid * (1 + tp_min_percent/10000)
-                                    sl_price = mid * (1 - param['sl_percent']/100)
+                                    sl_price = mid * (1 - param['sl_hard_percent']/100)
 
                                 elif side=='sell':
                                     tp_max_price = mid * (1 - pnl_potential_bps/10000)
                                     tp_min_price = mid * (1 - tp_min_percent/10000)
-                                    sl_price = mid * (1 + param['sl_percent']/100)
+                                    sl_price = mid * (1 + param['sl_hard_percent']/100)
 
                                 executed_position['position'] = {
                                         'status' : 'open',
@@ -1025,7 +1027,7 @@ async def main(
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_pessimistic_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_pain'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'entry_target_price'] = tp_max_price
-                                pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_percent']
+                                pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                 pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = float('inf')
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
@@ -1175,7 +1177,7 @@ async def main(
                                     pd_position_cache.loc[position_cache_row.name, 'max_pain'] = None
                                     pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
                                     pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
-                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_percent']
+                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                     pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                     pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
                                     pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = None
