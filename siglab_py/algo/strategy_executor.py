@@ -176,7 +176,7 @@ param : Dict = {
             "orderbooks_provider_topic" : "mds_assign_ccc",
             "hi_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx-1h",
             "lo_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx-15m",
-            "orderbook_topic" : "orderbooks_SOL/USDT:USDT_okx_linear",
+            "orderbook_topic" : "orderbooks_SOL/USDT:USDT_okx",
             
             "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
         },
