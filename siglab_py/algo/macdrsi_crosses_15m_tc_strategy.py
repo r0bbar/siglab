@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from typing import List, Dict, Any, Union
 
-from algo.strategy_base import StrategyBase
+from siglab_py.algo.strategy_base import StrategyBase
 
 class MACDRSICrosses15mTCStrategy(StrategyBase):
     def __init__(self, *args: object) -> None:
