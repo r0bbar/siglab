@@ -845,6 +845,8 @@ async def main(
                         log(err_msg, LogLevel.WARNING)
                         
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
+
+                        # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                         for indicator in strategy_indicators:
                             indicator_source : str = indicator.split(":")[0]
                             indicator_name = indicator.split(":")[-1]
