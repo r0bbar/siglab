@@ -76,7 +76,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache Y --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
 Debug from VSCode, launch.json:
     {
@@ -115,8 +115,6 @@ Debug from VSCode, launch.json:
 
                         "--trading_window_start", "Mon_00:00",
                         "--trading_window_end", "Fri_17:00",
-
-                        "--load_entry_from_cache", "Y",
 
                         "--slack_info_url", "https://hooks.slack.com/services/xxx",
                         "--slack_critial_url", "https://hooks.slack.com/services/xxx",
@@ -261,8 +259,6 @@ def parse_args():
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
 
-    parser.add_argument("--load_entry_from_cache", help="Y (default) or N. This is for algo restart scenario where you don't want make entry again. In this case existing/running position loaded from cache.", default='Y')
-
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
@@ -320,14 +316,6 @@ def parse_args():
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
-
-    if args.load_entry_from_cache:
-        if args.load_entry_from_cache=='Y':
-            param['load_entry_from_cache'] = True
-        else:
-            param['load_entry_from_cache'] = False
-    else:
-        param['load_entry_from_cache'] = True
 
     param['tp_min_percent'] = float(args.tp_min_percent)
     param['tp_max_percent'] = float(args.tp_max_percent)
@@ -754,13 +742,6 @@ async def main(
                 position_from_exchange = await exchange.fetch_position(param['ticker']) 
 
                 if exchange.options['defaultType']!='spot': 
-                    if not position_from_exchange and param['load_entry_from_cache']:
-                            position_break = True
-
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: 0" 
-                            log(err_msg)
-                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-                        
                     if executed_position and position_from_exchange:
                         position_from_exchange_num_contracts = position_from_exchange['contracts']
                         if position_from_exchange and position_from_exchange['side']=='short':
