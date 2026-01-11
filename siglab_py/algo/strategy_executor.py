@@ -51,11 +51,11 @@ Usage:
     Step 1. Start candles_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
         python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 720 --redis_ttl_ms 3600000
-        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 10080 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 672 --redis_ttl_ms 3600000
 
         Note: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
             720 = 24 x 30 days  
-            10080 = 60 x 24 x 7 days
+            672 = 4 x 24 x 7 days (Each hour has four 15m candles. 672 candles means 672 15m candles)
 
     Step 2. Start candles_ta_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
