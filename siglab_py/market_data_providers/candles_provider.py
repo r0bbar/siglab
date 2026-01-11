@@ -21,7 +21,7 @@ from ccxt.okx import okx
 from ccxt.bybit import bybit
 from ccxt.base.exchange import Exchange
 
-from util.market_data_util import fetch_candles 
+from siglab_py.util.market_data_util import fetch_candles
 
 
 '''
