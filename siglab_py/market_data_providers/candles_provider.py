@@ -209,6 +209,7 @@ def process_universe(
                         last_fetch_ts = last_fetch.iloc[-1]['timestamp_ms']/1000 # type: ignore Otherwise, Error: Cannot access attribute "iloc" for class "None"
                 candle_size = param['candle_size']
                 interval = candle_size[-1]
+                num_intervals_per_candle = int(candle_size.replace(interval,""))
                 number_intervals = param['how_many_candles']
                 
                 start_date : datetime = datetime.now()
@@ -216,7 +217,7 @@ def process_universe(
                 if interval=="m":
                     end_date = datetime.now()
                     end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0)
-                    start_date = end_date + timedelta(minutes=-number_intervals) 
+                    start_date = end_date + timedelta(minutes=-num_intervals_per_candle*number_intervals) 
 
                     num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
                     fetch_again = True if num_sec_since_last_fetch >= 60 / 10 else False
@@ -224,7 +225,7 @@ def process_universe(
                 elif interval=="h":
                     end_date = datetime.now()
                     end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, 0, 0)
-                    start_date = end_date + timedelta(hours=-number_intervals) 
+                    start_date = end_date + timedelta(hours=-num_intervals_per_candle*number_intervals) 
 
                     num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
                     fetch_again = True if num_sec_since_last_fetch >= 60*60 / 10 else False
@@ -232,7 +233,7 @@ def process_universe(
                 elif interval=="d":
                     end_date = datetime.now()
                     end_date = datetime(end_date.year, end_date.month, end_date.day, 0, 0, 0)
-                    start_date = end_date + timedelta(days=-number_intervals) 
+                    start_date = end_date + timedelta(days=-num_intervals_per_candle*number_intervals) 
 
                     num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
                     fetch_again = True if num_sec_since_last_fetch >= 24*60*60 / 10 else False
@@ -284,7 +285,7 @@ def process_universe(
 
                         redis_set_elapsed_ms = int((time.time() - start) *1000)
 
-                        log(f"published candles {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
+                        log(f"published candles {candles[ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
 
             except Exception as loop_error:
                 log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
