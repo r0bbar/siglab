@@ -552,6 +552,8 @@ async def main(
         reversal : bool = False
         tp : bool = False
         sl : bool = False
+        tp_min_percent : float  = param['tp_min_percent'] # adjusted by trailing_stop_threshold_eval_func
+        tp_max_percent : float  = param['tp_max_percent']
         executed_position = None
         position_break : bool = False
         while (not tp and not sl and not position_break):
@@ -895,19 +897,20 @@ async def main(
                                 unrealized_pnl_live_pessimistic = pos_unreal_live
                                 if total_sec_since_pos_created > lo_interval_ms/1000:
                                     unrealized_pnl_live_pessimistic = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
-                        pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
-                        pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
-                        pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
+                            pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
+                            pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
 
-                        pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = pos_unreal_live
-                        pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
-                        pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = pnl_pessimistic_bps
+                            pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
-                        kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
-                        trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
-                        tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
-                        tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+                            pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = pos_unreal_live
+                            pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
+                            pd_position_cache.loc[position_cache_row.name, 'pnl_pessimistic_bps'] = pnl_pessimistic_bps
+
+                            kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                            trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                            tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                            tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
