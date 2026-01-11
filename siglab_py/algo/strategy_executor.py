@@ -35,7 +35,7 @@ from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, Posi
 For dry-runs/testing, swap back to StrategyBase, it will not fire an order.
 '''
 # from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
-from macdrsi_crosses_15m_tc_strategy import MACDRSICrosses15mTCStrategy as TargetStrategy
+from macd_crosses_targets_from_level_15m_tc_strategy import MACDCrossesTargetFromLevel15mTCStrategy as TargetStrategy
 
 current_filename = os.path.basename(__file__)
 
@@ -513,8 +513,10 @@ async def main(
             redis_client.publish(channel=candles_partition_assign_topic, message=json.dumps(exchange_tickers).encode('utf-8'))
         hi_candles_provider_topic = param['mds']['topics']['hi_candles_provider_topic']
         lo_candles_provider_topic = param['mds']['topics']['lo_candles_provider_topic']
-        _trigger_producers(redis_client, [ param['ticker'] ], hi_candles_provider_topic)
-        _trigger_producers(redis_client, [ param['ticker'] ], lo_candles_provider_topic)
+        orderbooks_provider_topic = param['mds']['topics']['orderbooks_provider_topic']
+        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], hi_candles_provider_topic)
+        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], lo_candles_provider_topic)
+        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], orderbooks_provider_topic)
 
         # Load cached positions from disk, if any
         if os.path.exists(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))>0:
