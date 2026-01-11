@@ -868,6 +868,8 @@ async def main(
                         last_candles=trailing_candles # alias
 
                         if pos_status!=PositionStatus.UNDEFINED.name:
+                            pos_usdt = mid * pos
+
                             if pos_side == OrderSide.BUY:
                                 pos_unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_live_pessimistic = pos_unreal_live
@@ -895,6 +897,8 @@ async def main(
                                     unrealized_pnl_live_pessimistic = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
                         pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                         pnl_pessimistic_bps = unrealized_pnl_live_pessimistic / abs(pos_usdt) * 10000 if pos_usdt else 0
+
+                        pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
                         pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = pos_unreal_live
                         pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
