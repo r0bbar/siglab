@@ -124,9 +124,9 @@ bybit_exchange = bybit({
 })
 
 exchanges = {
-    f"binance_{market_type}" : binance_exchange,
-    f"okx_{market_type}" : okx_exchange,
-    f"bybit_{market_type}" : bybit_exchange
+    f"binance" : binance_exchange,
+    f"okx" : okx_exchange,
+    f"bybit" : bybit_exchange
 }
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
