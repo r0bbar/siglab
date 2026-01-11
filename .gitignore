@@ -138,3 +138,10 @@ appsettings.json
 local.settings.json
 .python_packages
 redis/.DS_Store
+
+*.jpg
+*.session
+*.session-journal
+
+WatcherGuruChat*.json
+google_search*.json
