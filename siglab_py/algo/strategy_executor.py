@@ -50,8 +50,8 @@ if sys.platform == 'win32':
 Usage:
     Step 1. Start candles_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python candles_provider.py --provider_id mds_assign_aaa --candle_size 1h --how_many_candles 720 --redis_ttl_ms 3600000
-        python candles_provider.py --provider_id mds_assign_bbb --candle_size 15m --how_many_candles 10080 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 720 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 10080 --redis_ttl_ms 3600000
 
         Note: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
             720 = 24 x 30 days  
@@ -66,13 +66,13 @@ Usage:
 
     Step 3. Start orderbooks_provider
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python orderbooks_provider.py --provider_id mds_assign_ccc --instance_capacity 25 --ts_delta_observation_ms_threshold 150 --ts_delta_consecutive_ms_threshold 150 --redis_ttl_ms 3600000
+        python orderbooks_provider.py --provider_id ccc --instance_capacity 25 --ts_delta_observation_ms_threshold 150 --ts_delta_consecutive_ms_threshold 150 --redis_ttl_ms 3600000
 
     Step 4. To trigger candles_providers and orderbooks_provider
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python trigger_provider.py --provider_id mds_assign_aaa --tickers "okx_linear|SOL/USDT:USDT"
-        python trigger_provider.py --provider_id mds_assign_bbb --tickers "okx_linear|SOL/USDT:USDT"
-        python trigger_provider.py --provider_id mds_assign_ccc --tickers "okx_linear|SOL/USDT:USDT"
+        python trigger_provider.py --provider_id aaa --tickers "okx_linear|SOL/USDT:USDT"
+        python trigger_provider.py --provider_id bbb --tickers "okx_linear|SOL/USDT:USDT"
+        python trigger_provider.py --provider_id ccc --tickers "okx_linear|SOL/USDT:USDT"
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
@@ -412,12 +412,18 @@ async def main(
     lo_candles_w_ta_topic : str = param['mds']['topics']['lo_candles_w_ta_topic']
     orderbook_topic : str = param['mds']['topics']['orderbook_topic']
 
+    hi_candles_provider_topic : str = param['mds']['topics']['hi_candles_provider_topic']
+    lo_candles_provider_topic : str = param['mds']['topics']['lo_candles_provider_topic']
+    orderbooks_provider_topic : str = param['mds']['topics']['orderbooks_provider_topic']
+
     # economic_calendar_source
     full_economic_calendars_topic : str = param['mds']['topics']['full_economic_calendars_topic']
     full_economic_calendars_topic  = full_economic_calendars_topic.replace('$SOURCE$', param['economic_calendar_source']) if param['economic_calendar_source'] else None
 
     log(f"hi_candles_w_ta_topic: {hi_candles_w_ta_topic}")
     log(f"lo_candles_w_ta_topic: {lo_candles_w_ta_topic}")
+    log(f"hi_candles_provider_topic: {hi_candles_provider_topic}")
+    log(f"lo_candles_provider_topic: {lo_candles_provider_topic}")
     log(f"orderbook_topic: {orderbook_topic}")
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
@@ -511,9 +517,6 @@ async def main(
             candles_partition_assign_topic : str):
             # https://redis.io/commands/publish/
             redis_client.publish(channel=candles_partition_assign_topic, message=json.dumps(exchange_tickers).encode('utf-8'))
-        hi_candles_provider_topic = param['mds']['topics']['hi_candles_provider_topic']
-        lo_candles_provider_topic = param['mds']['topics']['lo_candles_provider_topic']
-        orderbooks_provider_topic = param['mds']['topics']['orderbooks_provider_topic']
         _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], hi_candles_provider_topic)
         _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], lo_candles_provider_topic)
         _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], orderbooks_provider_topic)
