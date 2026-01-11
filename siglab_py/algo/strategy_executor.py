@@ -1096,22 +1096,25 @@ async def main(
                         log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pnl_live_bps: {round(pnl_live_bps,4)}, unrealized_pnl_live_pessimistic: {unrealized_pnl_live_pessimistic}, pnl_pessimistic_bps: {pnl_pessimistic_bps}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
 
                         # STEP 2. Unwind position
-                        if pos_unreal_live>0:
-                            kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
-                            tp_final = tp_eval_func(**kwargs)
+                        if pos!=0:
+                            tp = False
+                            sl = False
+                            if pos_unreal_live>0:
+                                kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
+                                tp_final = tp_eval_func(**kwargs)
 
-                            if tp_final:
-                                tp = True
-                            elif loss_trailing>=effective_tp_trailing_percent:
-                                tp = True
+                                if tp_final:
+                                    tp = True
+                                elif loss_trailing>=effective_tp_trailing_percent:
+                                    tp = True
 
-                        else:
-                            kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
-                            sl_adj_func_result = sl_adj_func(**kwargs)
-                            running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
-                            
-                            if abs(pnl_live_bps/100)>=running_sl_percent_hard:
-                                sl = True
+                            else:
+                                kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
+                                sl_adj_func_result = sl_adj_func(**kwargs)
+                                running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
+                                
+                                if abs(pnl_live_bps/100)>=running_sl_percent_hard:
+                                    sl = True
 
                         if tp or sl:
                             exit_positions : List[DivisiblePosition] = [
