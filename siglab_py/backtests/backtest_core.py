@@ -594,10 +594,18 @@ def run_scenario(
             self.total_equity = self.cash
             self.total_commission = 0
 
+            self.num_sl = 0
+            self.num_trades = 0
+
     gloabl_state = GlobalState(initial_cash=initial_cash) # This cash position is shared across all tickers in universe
     current_position_usdt = 0
     
+    # This is for trade extract export, include entries, TP/SL.
     all_trades : List = []
+
+    # This is for performance enhancements, trade memory for speed. Reduce list comprehension. These are duplicated trade cache.
+    sl_by_ticker : Dict[str, List[Dict[str, Any]]] = {}
+    open_trades_by_ticker : Dict[str, List[Dict[str, Any]]] = {}
 
     compiled_candles_by_exchange_pairs : List[Dict[str, pd.DataFrame]]= {}
     hi_num_intervals, lo_num_intervals  = 99999999, 99999999
@@ -694,6 +702,12 @@ def run_scenario(
                 key = f"{exchange.name}-{ticker}"
                 if key not in reversal_camp_cache:
                     reversal_camp_cache[key] = REVERSAL_CAMP_ITEM.copy()
+
+                if ticker not in open_trades_by_ticker:
+                    open_trades_by_ticker[ticker] = []
+
+                if ticker not in sl_by_ticker:
+                    sl_by_ticker[ticker] = []
 
                 pd_reference_price_cache : pd.DataFrame = None
                 reference_price_cache_file : str = f"refpx_{ticker.replace('/','').replace(':','')}.csv"
@@ -1085,13 +1099,15 @@ def run_scenario(
 
                     # POSITION NOTIONAL MARKING lo_low, lo_high. pessimistic!
                     def _refresh_current_position(timestamp_ms):
-                        current_position_usdt_buy = sum([x['size'] * lo_close for x in all_trades if not x['closed'] and x['side']=='buy'])
-                        current_position_usdt_sell = sum([x['size'] * lo_close for x in all_trades if not x['closed'] and x['side']=='sell'])
+                        this_ticker_open_trades = open_trades_by_ticker[ticker]
+                        current_position_usdt_buy = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='buy'])
+                        current_position_usdt_sell = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='sell'])
                         current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
-                        this_ticker_historical_trades = [ trade for trade in all_trades if trade['symbol']==ticker ]
-                        this_ticker_open_trades = [ trade for trade in this_ticker_historical_trades if not trade['closed'] ]
+                        
                         this_ticker_current_position_usdt_buy = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='buy'])
                         this_ticker_current_position_usdt_sell = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='sell'])
+
+                        this_ticker_historical_stops = sl_by_ticker[ticker]
 
                         entries_since_sl : Union[int, None] = -1
 
@@ -1111,11 +1127,9 @@ def run_scenario(
                                     pos_side = 'sell'
 
                         max_sl_trade_age_ms = None
-                        this_ticker_sl_trades = [ trade for trade in this_ticker_historical_trades if trade['reason']=='SL' ]
-                        if this_ticker_sl_trades:
-                            last_sl_timestamp_ms = max([trade['timestamp_ms'] for trade in this_ticker_sl_trades ])
+                        if this_ticker_historical_stops:
+                            last_sl_timestamp_ms = this_ticker_historical_stops[-1]['timestamp_ms']
                             max_sl_trade_age_ms = timestamp_ms - last_sl_timestamp_ms
-                            entries_since_sl = len([trade for trade in this_ticker_historical_trades if trade['timestamp_ms']>last_sl_timestamp_ms and trade['reason']=='entry' and trade['closed']] )
 
                         # In single legged trading, we either long or short for a particular ticker at any given moment
                         assert(
@@ -1144,8 +1158,7 @@ def run_scenario(
                             'this_ticker_open_positions_side' : this_ticker_open_positions_side,
                             'this_ticker_current_position_usdt' : this_ticker_current_position_usdt,
                             'max_trade_age_ms' : max_trade_age_ms,
-                            'max_sl_trade_age_ms' : max_sl_trade_age_ms,
-                            'entries_since_sl' : entries_since_sl
+                            'max_sl_trade_age_ms' : max_sl_trade_age_ms
                         }
                     
                     current_positions_info = _refresh_current_position(lo_timestamp_ms)
@@ -1161,7 +1174,6 @@ def run_scenario(
                     this_ticker_current_position_usdt = current_positions_info['this_ticker_current_position_usdt']
                     max_trade_age_ms = current_positions_info['max_trade_age_ms']
                     max_sl_trade_age_ms = current_positions_info['max_sl_trade_age_ms']
-                    entries_since_sl = current_positions_info['entries_since_sl']
                     block_entry_since_last_sl = True if max_sl_trade_age_ms and max_sl_trade_age_ms<=min_sl_age_ms else False
 
                     def _close_open_positions(
@@ -1174,7 +1186,11 @@ def run_scenario(
                             row, 
                             reason, 
                             reason2,
-                            gloabl_state, all_trades, all_canvas,
+                            gloabl_state, 
+                            all_trades, 
+                            sl_by_ticker,
+                            open_trades_by_ticker, 
+                            all_canvas,
                             algo_param,
                             standard_pnl_percent_buckets=BUCKETS_m100_100
                         ):
@@ -1203,7 +1219,7 @@ def run_scenario(
                                 how_long_before_closed_sec_label = ">14days"
                             return how_long_before_closed_sec_label
                         
-                        this_ticker_open_trades = [ trade for trade in all_trades if not trade['closed'] and trade['symbol']==ticker]
+                        this_ticker_open_trades = open_trades_by_ticker[ticker]
 
                         entry_dt = min([ trade['trade_datetime'] for trade in this_ticker_open_trades ])
                         entry_dayofweek = entry_dt.dayofweek
@@ -1251,7 +1267,7 @@ def run_scenario(
                         cash_before = gloabl_state.cash
                         gloabl_state.cash = gloabl_state.total_equity
                         cash_after = gloabl_state.cash
-                        running_total_num_positions : int = len([ 1 for x in all_trades if x['reason']=='entry' and not x['closed']])
+                        running_total_num_positions : int = len(open_trades_by_ticker)
 
                         # Step 3. closing trade
                         # closing_price = low if this_ticker_open_positions_side=='buy' else high # pessimistic!
@@ -1299,6 +1315,9 @@ def run_scenario(
                         additional_fields = {field: _last_open_trade[field] if field in _last_open_trade else None for field in algo_param['additional_trade_fields']}
                         closing_trade.update(additional_fields)
                         all_trades.append(closing_trade)
+                        if reason=='SL':
+                            sl_by_ticker[ticker].append(closing_trade)
+                        open_trades_by_ticker[ticker].clear()
 
                         if plot_timeseries:
                             '''
@@ -1482,7 +1501,9 @@ def run_scenario(
                                     current_position_usdt, 
                                     unrealized_pnl, 
                                     effective_tp_trailing_percent,
-                                    lo_row, reason, reason2, gloabl_state, all_trades, all_canvas,
+                                    lo_row, reason, reason2, gloabl_state, 
+                                    all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                    all_canvas,
                                     algo_param
                                 )
                                 current_positions_info = _refresh_current_position(lo_timestamp_ms)
@@ -1519,7 +1540,9 @@ def run_scenario(
                                     current_position_usdt, 
                                     unrealized_pnl_tp, 
                                     effective_tp_trailing_percent,
-                                    lo_row, 'TP', '', gloabl_state, all_trades, all_canvas,
+                                    lo_row, 'TP', '', gloabl_state, 
+                                    all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                    all_canvas,
                                     algo_param
                                 )
                                 current_position_usdt -= this_ticker_current_position_usdt
@@ -1640,7 +1663,7 @@ def run_scenario(
                                 gloabl_state.cash = gloabl_state.cash - order_notional_adj_factor*order_notional - commission
                                 cash_after = gloabl_state.cash
 
-                                running_total_num_positions : int = len([ 1 for x in all_trades if x['reason']=='entry' and not x['closed']])
+                                running_total_num_positions : int = len(open_trades_by_ticker)
 
                                 entry_price = allow_entry_final_func_result['entry_price_long']
                                 reversal_camp_cache[key]['price'] = entry_price
@@ -1677,6 +1700,7 @@ def run_scenario(
                                                     'post_move_price_change_percent' : post_move_price_change_percent
                                                 }
                                 all_trades.append(new_trade_0)
+                                open_trades_by_ticker[ticker].append(new_trade_0)
                                 new_trade_0.update(_additional_trade_fields)
 
                                 # Resets!
@@ -1744,7 +1768,7 @@ def run_scenario(
                                 gloabl_state.cash = gloabl_state.cash - order_notional_adj_factor*order_notional - commission
                                 cash_after = gloabl_state.cash
 
-                                running_total_num_positions : int = len([ 1 for x in all_trades if x['reason']=='entry' and not x['closed']])
+                                running_total_num_positions : int = len(open_trades_by_ticker)
 
                                 entry_price = allow_entry_final_func_result['entry_price_short']
                                 reversal_camp_cache[key]['price'] = entry_price
@@ -1781,6 +1805,7 @@ def run_scenario(
                                                     'post_move_price_change_percent' : post_move_price_change_percent
                                                 }
                                 all_trades.append(new_trade_0)
+                                open_trades_by_ticker[ticker].append(new_trade_0)
                                 new_trade_0.update(_additional_trade_fields)
 
                                 # Resets!
@@ -1805,7 +1830,16 @@ def run_scenario(
                 if i==pd_lo_candles.shape[0]-1:
                     # HC
                     if this_ticker_current_position_usdt>0:
-                        _close_open_positions(key, ticker, this_ticker_current_position_usdt, this_ticker_open_positions_side, current_position_usdt, unrealized_pnl, None, lo_row, 'HC', '', gloabl_state, all_trades, all_canvas, algo_param)
+                        _close_open_positions(
+                                key, ticker, 
+                                this_ticker_current_position_usdt, this_ticker_open_positions_side, current_position_usdt, 
+                                unrealized_pnl, 
+                                None, lo_row, 'HC', '', 
+                                gloabl_state, 
+                                all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                all_canvas, 
+                                algo_param
+                            )
                     
             sorted_filtered_tickers.clear()
             sorted_filtered_tickers = None
