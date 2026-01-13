@@ -545,6 +545,8 @@ def fetch_candles(
 
     num_candles_limit : int = 100,
 
+    ticker_change_map : List[Dict[str, Union[str, int]]] = [],
+
     cache_dir : Union[str, None] = None,
 
     list_ts_field : Union[str, None] = None,
@@ -592,6 +594,7 @@ def fetch_candles(
             normalized_symbols=normalized_symbols,
             candle_size=candle_size,
             num_candles_limit=num_candles_limit,
+            ticker_change_map=ticker_change_map,
             logger=logger
         )
     if num_intervals!=1:
@@ -658,6 +661,7 @@ def _fetch_candles_ccxt(
     normalized_symbols : List[str],
     candle_size : str,
     num_candles_limit : int = 100,
+    ticker_change_map : List[Dict[str, Union[str, int]]] = [],
     logger = None
 ) -> Dict[str, Union[pd.DataFrame, None]]:
     rsp = {}
@@ -667,6 +671,9 @@ def _fetch_candles_ccxt(
     num_tickers = len(normalized_symbols)
     i = 0
     for ticker in normalized_symbols:
+        old_ticker = get_old_ticker(ticker, ticker_change_map)
+        ticker_change_mapping = get_ticker_map(ticker, ticker_change_map)
+
         @retry(num_attempts=3, pause_between_retries_ms=1000, logger=logger)
         def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
                 one_timeframe = f"1{timeframe[-1]}"
@@ -699,7 +706,12 @@ def _fetch_candles_ccxt(
         But if that ticker listing date is 1 Jan 2025, this while loop would waste a lot of time loop between 1 Jan 2021 thru 31 Dec 2024, slowly incrementing this_cutoff += _calc_increment(candle_size).
         A more efficient way is to find listing date. Start looping from there.
         '''
-        market = exchange.markets[ticker]
+        market = exchange.markets[ticker] if ticker in exchange.markets else None
+        if not market:
+            market = exchange.markets[old_ticker] if old_ticker else None
+            if not market:
+                raise ValueError(f"market {ticker} not support by exchange {exchange.name}!")
+
         this_ticker_start_ts = start_ts
         if market['created']:
             this_ticker_start_ts = max(this_ticker_start_ts, int(market['created']/1000))
@@ -708,7 +720,12 @@ def _fetch_candles_ccxt(
         params = {}
         this_cutoff = this_ticker_start_ts
         while this_cutoff<end_ts:
-            candles = _fetch_ohlcv(exchange=exchange, symbol=ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
+            _ticker = ticker
+            if ticker_change_mapping:
+                ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+                if this_cutoff<ticker_change_cutoff_sec:
+                    _ticker = old_ticker
+            candles = _fetch_ohlcv(exchange=exchange, symbol=_ticker, timeframe=candle_size, since=int(this_cutoff * 1000), limit=num_candles_limit, params=params)
             if candles and len(candles)>0:
                 all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
 
@@ -844,4 +861,27 @@ def build_pair_candles(
 
     return pd_candles
 
+def get_old_ticker(
+        ticker : str,
+        ticker_change_map : List[Dict[str, Union[str, int]]]
+    ) -> Union[str, None]:
+        if not ticker_change_map:
+            return None
+
+        mapping = get_ticker_map(ticker, ticker_change_map)
+        if mapping:
+            return str(mapping['old_ticker'])
+        
+        return None
+
+def get_ticker_map(
+    ticker : str,
+    ticker_change_map : List[Dict[str, Union[str, int]]]
+) -> Union[None, Dict[str, Union[str, int]]]:
+    if not ticker_change_map:
+        return None
+
+    for mapping in ticker_change_map:
+            return mapping
     
+    return None

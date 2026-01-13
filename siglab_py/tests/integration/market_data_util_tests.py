@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from typing import Union
+import json
 import logging
 from pathlib import Path
 
@@ -120,6 +121,42 @@ class MarketDataUtilTests(unittest.TestCase):
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
+
+    def test_fetch_candles_ccxt_with_ticker_change_map(self):
+        ticker_change_map : List[Dict[str, Union[str, int]]] = [
+            {
+                'new_ticker' : 'XAU/USDT:USDT',
+                'old_ticker' : 'XAUT/USDT:USDT',
+                'cutoff_ms' : 1768464300000
+            }
+        ]
+
+        start_date : datetime = datetime(2026,1,13,0,0,0)
+        end_date : datetime = datetime(2026,1,15,18,0,0)
+
+        param = {
+            'apiKey' : None,
+            'secret' : None,
+            'password' : None,
+            'subaccount' : None,
+            'rateLimit' : 100,    # In ms
+            'options' : {
+                'defaultType': 'swap'            }
+        }
+
+        exchange : Exchange = okx(param) # type: ignore
+        normalized_symbols = [ 'XAU/USDT:USDT' ]
+        pd_candles: Union[pd.DataFrame, None] = fetch_candles(
+            start_ts=start_date.timestamp(),
+            end_ts=end_date.timestamp(),
+            exchange=exchange,
+            normalized_symbols=normalized_symbols,
+            candle_size='1h',
+            ticker_change_map=ticker_change_map,
+            logger=logging.getLogger()
+        )[normalized_symbols[0]]
+
+        assert pd_candles is not None
 
     def test_aggregate_candles(self):
         end_date : datetime = datetime.today()

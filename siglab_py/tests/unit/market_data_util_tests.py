@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from typing import Union
+import json
 from pathlib import Path
 
 from util.market_data_util import *
@@ -50,3 +51,42 @@ class MarketDataUtilTests(unittest.TestCase):
             assert(expectation==actual)
             i+=1
         
+    def test_ticker_change_map_util(self):
+        '''
+        Example OKX managers decide to give work to customers https://www.okx.com/help/okx-will-rename-xautusdt-perpetual-to-xauusdt-perpetual
+            OKX to rename XAUTUSDT perpetual to XAUUSDT perpetual📣 
+
+                🗓 8:05 am on Jan 15, 2026 (UTC)    --> Timestamp in sec: 1768464300
+                1️⃣Trading of XAUTUSDT perpetual will be suspended from 8:05 am to 8:25 am on Jan 15, 2026 (UTC)
+                2️⃣Following aspects may also be affected:
+                • Margin requirements (if you are using PM mode to trade this perpetual)
+                • Index & funding fee
+                • Trading bots & strategy orders
+                • OpenAPI & WebSocket
+        '''
+        ticker_change_map_file : str = 'ticker_change_map.json'
+
+        ticker_change_map : List[Dict[str, Union[str, int]]] = [
+            {
+                'new_ticker' : 'XAU/USDT:USDT',
+                'old_ticker' : 'XAUT/USDT:USDT',
+                'cutoff_ms' : 1768464300000
+            }
+        ]
+
+        ticker : str = 'XAU/USDT:USDT'
+        old_ticker : Union[None, str] = get_old_ticker(ticker, ticker_change_map)
+        mapping : Union[None, Dict[str, Union[str, int]]] = get_ticker_map(ticker, ticker_change_map)
+        assert(old_ticker)
+        self.assertEqual(old_ticker, "XAUT/USDT:USDT")
+        assert(mapping)
+
+        '''
+        with open(ticker_change_map_file, 'w', encoding='utf-8') as f:
+            json.dump(ticker_change_map, f, indent=2)
+
+        with open(ticker_change_map_file, 'r', encoding='utf-8') as f:
+            ticker_change_map_from_disk : List[Dict[str, Union[str, int]]] = json.load(f)
+        '''
+
+            
