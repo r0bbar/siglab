@@ -81,6 +81,10 @@ class MarketDataUtilTests(unittest.TestCase):
         self.assertEqual(old_ticker, "XAUT/USDT:USDT")
         assert(mapping)
 
+        ticker : str = '???/USDT:USDT'
+        old_ticker = get_old_ticker(ticker, ticker_change_map)
+        self.assertIsNone(old_ticker)
+
         '''
         with open(ticker_change_map_file, 'w', encoding='utf-8') as f:
             json.dump(ticker_change_map, f, indent=2)

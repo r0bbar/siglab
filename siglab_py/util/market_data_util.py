@@ -882,6 +882,8 @@ def get_ticker_map(
         return None
 
     for mapping in ticker_change_map:
+        new_ticker = mapping['new_ticker']
+        if new_ticker==ticker:
             return mapping
     
     return None
