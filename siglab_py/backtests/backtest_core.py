@@ -1344,7 +1344,7 @@ def run_scenario(
                         running_sl_percent_hard = max([ trade['running_sl_percent_hard'] for trade in this_ticker_open_trades])
 
                         max_pnl_potential_percent = None
-                        if any([ trade for trade in this_ticker_open_trades if 'target_price' in trade ]):
+                        if any([ trade for trade in this_ticker_open_trades if 'target_price' in trade and trade['target_price'] ]):
                             max_pnl_potential_percent = max([ (trade['target_price']/trade['entry_price'] -1) *100 if trade['side']=='buy' else (trade['entry_price']/trade['target_price'] -1) *100 for trade in this_ticker_open_trades if 'target_price' in trade ])
 
                         kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
