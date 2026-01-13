@@ -43,7 +43,7 @@ TAs computed (This is an expanding list):
 
 [**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
 
-[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers (Yahoo Finance for example) - With sliding window implementation, as all exchanges restrict how many candles you can get in a single fetch. **Example on Usage?** [market_data_util_tests.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/integration/market_data_util_tests.py)
+[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers (Yahoo Finance for example) - With sliding window implementation, as all exchanges restrict how many candles you can get in a single fetch. It optionally support back dated ticker changes, for example XAUT/USDT:USDT to XAU/USDT:USDT from OKX on 15 Jan 2026. User need supply 'ticker_change_map'. **Example on Usage?** [market_data_util_tests.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/integration/market_data_util_tests.py)
 
 ```
 from siglab_py.util.market_data_util import fetch_candles
