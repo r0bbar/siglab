@@ -106,3 +106,17 @@ class StrategyBase(ABC):
     @staticmethod
     def get_strategy_indicators() -> List[str]:
         return []
+
+    @staticmethod
+    def get_strategy_algo_params() -> List[Dict[str, Any]]:
+        '''
+        [
+            {
+                'key' : 'rsi_lower',
+                'val' : 30
+            }
+        ]
+        '''
+        return [
+            
+        ]

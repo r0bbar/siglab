@@ -452,6 +452,9 @@ async def main(
 
     # aliases
     algo_param = param
+    strategic_specific_algo_param = TargetStrategy.get_strategy_algo_params()
+    for entry in strategic_specific_algo_param:
+        algo_param[entry['key']] = entry['val']
 
     hi_candle_size : str = hi_candles_w_ta_topic.split('-')[-1]
     lo_candle_size : str = lo_candles_w_ta_topic.split('-')[-1]
