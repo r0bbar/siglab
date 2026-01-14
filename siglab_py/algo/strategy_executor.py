@@ -226,7 +226,8 @@ POSITION_CACHE_COLUMNS = [
 			
             'running_sl_percent_hard',
             'sl_trailing_min_threshold_crossed',
-            'sl_percent_trailing'
+            'sl_percent_trailing',
+            'loss_trailing'
         ]
 
 ORDERHIST_CACHE_FILE_NAME = f"{TargetStrategy.__name__}_orderhist_cache_$GATEWAY_ID$.csv"
@@ -561,15 +562,9 @@ async def main(
         block_entries : bool = False
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
-        pos_unreal_live : float = 0
-        unrealized_pnl_open : float = 0 # Evaluated using latest candle's open
-        max_unrealized_pnl : float = 0
-        pnl_live_bps : float = 0
-        pnl_open_bps : float = 0
-        max_unrealized_pnl_percent : float = 0
-        loss_trailing : float = 0
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
         this_ticker_open_trades : List[Dict] = []
+
         reversal : bool = False
         tp : bool = False
         sl : bool = False
@@ -672,7 +667,8 @@ async def main(
 						
                         'running_sl_percent_hard' : param['sl_hard_percent'],
                         'sl_trailing_min_threshold_crossed' : False,
-                        'sl_percent_trailing' : param['sl_percent_trailing']
+                        'sl_percent_trailing' : param['sl_percent_trailing'],
+                        'loss_trailing' : 0
                     }
                     position_cache_row.update({ind: None for ind in strategy_indicators})
                     pd_position_cache = pd.concat([pd_position_cache, pd.DataFrame([position_cache_row])], axis=0, ignore_index=True)
@@ -718,11 +714,32 @@ async def main(
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
 
+                unreal_live = position_cache_row['unreal_live']
+                max_unreal_live = position_cache_row['max_unreal_live']
+                max_pain = position_cache_row['max_pain']
+                max_recovered_pnl = position_cache_row['max_recovered_pnl']
+                pnl_live_bps = position_cache_row['pnl_live_bps']
+                pnl_open_bps = position_cache_row['pnl_open_bps']
+                max_unreal_live_bps = position_cache_row['max_unreal_live_bps']
+                max_unreal_open_bps = position_cache_row['max_unreal_open_bps']
+
+                tp_max_target = position_cache_row['tp_max_target']
+                tp_min_target = position_cache_row['tp_min_target']
+
+                running_sl_percent_hard = position_cache_row['running_sl_percent_hard']
+                sl_trailing_min_threshold_crossed = position_cache_row['sl_trailing_min_threshold_crossed']
+                sl_percent_trailing = position_cache_row['sl_percent_trailing']
+                loss_trailing = position_cache_row['loss_trailing']
+
                 max_unreal_live = position_cache_row['max_unreal_live'] if not position_cache_row['max_unreal_live'] and not pd.isna(position_cache_row['max_unreal_live']) else 0
                 max_unreal_live_bps = position_cache_row['max_unreal_live_bps'] if not position_cache_row['max_unreal_live_bps'] and not pd.isna(position_cache_row['max_unreal_live_bps']) else 0
                 max_unreal_open_bps = position_cache_row['max_unreal_open_bps'] if not position_cache_row['max_unreal_open_bps'] and not pd.isna(position_cache_row['max_unreal_open_bps']) else 0
                 max_pain = position_cache_row['max_pain'] if not position_cache_row['max_pain'] and not pd.isna(position_cache_row['max_pain']) else 0
                 max_recovered_pnl = position_cache_row['max_recovered_pnl'] if not position_cache_row['max_recovered_pnl'] and not pd.isna(position_cache_row['max_recovered_pnl']) else 0
+
+                pnl_percent_notional = pnl_open_bps/100
+                max_pain_percent_notional = max_pain / pos_usdt * 100 if pos_usdt!=0 else 0
+                max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
 
                 '''
                 'fetch_position' is for perpetual. 
@@ -895,10 +912,10 @@ async def main(
                             pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
                             if pos_side == OrderSide.BUY:
-                                pos_unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
+                                unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_optimistic = (trailing_candles[-1][2] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][2]: high
                                 unrealized_pnl_pessimistic = (trailing_candles[-1][3] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][3]: low
-                                unrealized_pnl_open = pos_unreal_live
+                                unrealized_pnl_open = unreal_live
                                 if total_sec_since_pos_created > (lo_interval_ms/1000):
                                     '''
                                     "unrealized_pnl_open": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
@@ -910,17 +927,17 @@ async def main(
                                         open            $99,000 (This is trailing_candles[-1][1], so it's big red candle)
                                         mid             $97,200 (Seconds after entry)
 
-                                        pos_unreal_live                 $200 per BTC
+                                        unreal_live                 $200 per BTC
                                         unrealized_pnl_open $2000 per BTC (This is very misleading! This would cause algo to TP prematurely!)
                                     Thus for new entries, 
-                                        unrealized_pnl_open = pos_unreal_live
+                                        unrealized_pnl_open = unreal_live
                                     '''
                                     unrealized_pnl_open = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
                             elif pos_side == OrderSide.SELL:
-                                pos_unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
+                                unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
                                 unrealized_pnl_optimistic = (trailing_candles[-1][3] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][3]: low
                                 unrealized_pnl_pessimistic = (trailing_candles[-1][2] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][2]: high
-                                unrealized_pnl_open = pos_unreal_live
+                                unrealized_pnl_open = unreal_live
                                 if total_sec_since_pos_created > lo_interval_ms/1000:
                                     unrealized_pnl_open = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
 
@@ -929,12 +946,12 @@ async def main(
                             tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
                             tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
-                            pnl_live_bps = pos_unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
+                            pnl_live_bps = unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                             pnl_open_bps = unrealized_pnl_open / abs(pos_usdt) * 10000 if pos_usdt else 0
                             pnl_percent_notional = pnl_open_bps/100
 
-                            if pos_unreal_live>max_unreal_live:
-                                max_unreal_live = pos_unreal_live
+                            if unreal_live>max_unreal_live:
+                                max_unreal_live = unreal_live
 
                             if pnl_live_bps>max_unreal_live_bps:
                                 max_unreal_live_bps = pnl_live_bps                                
@@ -953,7 +970,9 @@ async def main(
                             max_pain_percent_notional = max_pain / pos_usdt * 100
                             max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100
 
-                            pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = pos_unreal_live
+                            loss_trailing = (1 - pnl_live_bps/max_unreal_live_bps) * 100 if pnl_live_bps>0 else 0
+
+                            pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = unreal_live
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = max_unreal_live
                             pd_position_cache.loc[position_cache_row.name, 'max_pain'] = max_pain
                             pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = max_recovered_pnl
@@ -1046,7 +1065,6 @@ async def main(
 
                                 executed_position['position'] = {
                                         'status' : 'open',
-                                        'max_unrealized_pnl' : 0,
                                         'pos_entry_px' : pos_entry_px,
                                         'mid' : mid,
                                         'amount_base_ccy' : executed_position['filled_amount'],
@@ -1077,6 +1095,7 @@ async def main(
                                 pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                 pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = float('inf')
+                                pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
 
                                 pos_entries.append(pos_created)
                                 pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
@@ -1107,22 +1126,15 @@ async def main(
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                 dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-                        if (
-                            ((pnl_live_bps/100)>=tp_min_percent and pos_unreal_live<max_unrealized_pnl) # @todo: unrealized_pnl_percent: from live thus will include the spikes. Do we want to use close from tm1 interval instead?
-                            or loss_trailing>0 # once your trade pnl crosses tp_min_percent, trailing stops is (and will remain) active.
-                        ):
-                            loss_trailing = (1 - pos_unreal_live/max_unrealized_pnl) * 100
                         
                         '''
                         Have a look at this for a visual explaination how "Gradually tightened stops" works:
                             https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
                         '''
                         if (
-                            (pnl_percent_notional>0 and pnl_percent_notiona>=tp_min_percent)
+                            (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent) # pnl_percent_notional is evaluated using pnl_open_bps to avoid spikes
                             or (
-                                recover_max_pain_percent
-                                and pnl_percent_notional<0 
+                                pnl_percent_notional<0 
                                 and max_recovered_pnl_percent_notional>=param['recover_min_percent']
                                 and abs(max_pain_percent_notional)>=param['recover_max_pain_percent']
                             ) # Taking 'abs': Trailing stop can fire if trade moves in either direction - if your trade is losing trade.
@@ -1146,7 +1158,7 @@ async def main(
                                 tp_min_percent = tp_min_percent,
                                 tp_max_percent = tp_max_percent,
                                 sl_percent_trailing = tp_max_percent,
-                                pnl_percent_notional = max_unrealized_pnl_percent, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
+                                pnl_percent_notional = max_unreal_open_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
                                 linear=True if tp_max_percent >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
                                 pow=param['non_linear_pow']
@@ -1155,13 +1167,14 @@ async def main(
                             # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
-                        log(f"pos_unreal_live: {round(pos_unreal_live,4)}, pnl_live_bps: {round(pnl_live_bps,4)}, unrealized_pnl_open: {unrealized_pnl_open}, pnl_open_bps: {pnl_open_bps}, max_unrealized_pnl_percent: {round(max_unrealized_pnl_percent,4)}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, reversal: {reversal}")
+                            pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
+
 
                         # STEP 2. Unwind position
                         if pos!=0:
                             tp = False
                             sl = False
-                            if pos_unreal_live>0:
+                            if unreal_live>0:
                                 kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                                 tp_final = tp_eval_func(**kwargs)
 
@@ -1213,7 +1226,7 @@ async def main(
 
                                     executed_position_close['position'] = {
                                         'status' : 'TP' if tp else 'SL',
-                                        'max_unrealized_pnl' : max_unrealized_pnl,
+                                        'pnl_live_bps' : pnl_live_bps,
                                         'pos_entry_px' : pos_entry_px,
                                         'mid' : mid,
                                         'amount_base_ccy' : executed_position_close['filled_amount'],
@@ -1241,6 +1254,7 @@ async def main(
                                     pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                     pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                     pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
+                                    pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
                                     
 
                                     # This is for tp_eval_func
@@ -1254,7 +1268,7 @@ async def main(
                                                 'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
                                                 'avg_price' : mid, # mid is actually not avg_price!
                                                 'amount': abs(new_pos_usdt_from_exchange),
-                                                'pos_unreal_live' : pos_unreal_live,
+                                                'unreal_live' : unreal_live,
                                                 'pnl_live_bps' : pnl_live_bps,
                                                 'max_pain' : max_pain
                                             }
@@ -1272,7 +1286,10 @@ async def main(
                         orderhist_cache.to_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
                         
             except Exception as loop_err:
-                log(f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", log_level=LogLevel.ERROR)
+                err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+                log(err_msg, log_level=LogLevel.ERROR)
+                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                
             finally:
                 time.sleep(int(param['loop_freq_ms']/1000))
 
