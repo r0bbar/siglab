@@ -822,8 +822,13 @@ async def main(
                         candles_age = dt_now.timestamp() *1000 - lo_row['timestamp_ms']
                         if candles_age < lo_interval_ms:
                             lo_candles_valid = True
-                            trailing_candles = pd_lo_candles_w_ta[['datetime', 'open', 'high', 'low', 'close']].tail(param['reversal_num_intervals']).values.tolist()
 
+                            trailing_candles = pd_lo_candles_w_ta \
+                                    .tail(param['reversal_num_intervals']) \
+                                    .values.tolist()
+                                    
+                            trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in trailing_candles]
+                            
                         else:
                             lo_candles_valid = False
                             err_msg = {
