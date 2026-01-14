@@ -235,13 +235,13 @@ ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side',
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
-        logger.info(f"{datetime.now()} {message}")
+        logger.info(message)
 
     elif log_level.value==LogLevel.WARNING.value:
-        logger.warning(f"{datetime.now()} {message}")
+        logger.warning(message)
 
     elif log_level.value==LogLevel.ERROR.value:
-        logger.error(f"{datetime.now()} {message}")
+        logger.error(message)
 
 def parse_args():
     parser = argparse.ArgumentParser() 
@@ -1279,7 +1279,7 @@ async def main(
                                 else:
                                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                        log(f"[{gateway_id}", log_level=LogLevel.INFO)
+                        log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
                         pd_position_cache.to_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
