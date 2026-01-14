@@ -410,9 +410,16 @@ async def main(
     tp_eval_func : Callable[..., bool]
 ):
     parse_args()
+    
     redis_client : StrictRedis = init_redis_client()
 
     gateway_id : str = param['gateway_id']
+
+    fh = logging.FileHandler(f"strategy_executor_{param['gateway_id']}_{TargetStrategy.__name__}.log")
+    fh.setLevel(log_level)
+    fh.setFormatter(formatter)     
+    logger.addHandler(fh)
+
     exchange_name : str = gateway_id.split('_')[0]
     ticker : str = param['ticker']
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
