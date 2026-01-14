@@ -508,6 +508,7 @@ async def main(
 
         balances = await exchange.fetch_balance() 
         log(f"Balances: {json.dumps(balances, indent=4)}") 
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} strategy {TargetStrategy.__name__} starting", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
         # Lambdas preparation
         order_notional_adj_func_sig = inspect.signature(order_notional_adj_func)
