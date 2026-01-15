@@ -936,8 +936,8 @@ async def main():
 
                             if pos_side == OrderSide.BUY:
                                 unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_optimistic = (trailing_candles[-1][2] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][2]: high
-                                unrealized_pnl_pessimistic = (trailing_candles[-1][3] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][3]: low
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_open = unreal_live
                                 if total_sec_since_pos_created > (lo_interval_ms/1000):
                                     '''
@@ -958,8 +958,8 @@ async def main():
                                     unrealized_pnl_open = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
                             elif pos_side == OrderSide.SELL:
                                 unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
-                                unrealized_pnl_optimistic = (trailing_candles[-1][3] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][3]: low
-                                unrealized_pnl_pessimistic = (trailing_candles[-1][2] - pos_entry_px) * param['amount_base_ccy'] # trailing_candles[-1][2]: high
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_open = unreal_live
                                 if total_sec_since_pos_created > lo_interval_ms/1000:
                                     unrealized_pnl_open = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
@@ -1105,12 +1105,12 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
                                 pd_position_cache.loc[position_cache_row.name, 'close_px'] = None
-                                pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                                pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_pain'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = 0
-                                pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = None
-                                pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = None
+                                pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
@@ -1262,12 +1262,12 @@ async def main():
                                     pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
                                     pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
                                     pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
-                                    pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_pain'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = None
-                                    pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = None
+                                    pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = 0
+                                    pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
                                     
