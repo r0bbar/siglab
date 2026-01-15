@@ -1021,6 +1021,8 @@ async def main():
                             allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                             allow_entry_final_long = allow_entry_func_final_result['long']
                             allow_entry_final_short = allow_entry_func_final_result['short']
+                            allow_entry_final_long = allow_entry_short and allow_entry_final_long
+                            allow_entry_final_short = allow_entry_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
                             
@@ -1077,14 +1079,14 @@ async def main():
                                 fees = executed_position['fees']
 
                                 if side=='buy':
-                                    tp_max_price = mid * (1 + pnl_potential_bps/10000)
-                                    tp_min_price = mid * (1 + tp_min_percent/10000)
-                                    sl_price = mid * (1 - param['sl_hard_percent']/100)
+                                    tp_max_price = pos_entry_px * (1 + pnl_potential_bps/10000)
+                                    tp_min_price = pos_entry_px * (1 + tp_min_percent/10000)
+                                    sl_price = pos_entry_px * (1 - param['sl_hard_percent']/100)
 
                                 elif side=='sell':
-                                    tp_max_price = mid * (1 - pnl_potential_bps/10000)
-                                    tp_min_price = mid * (1 - tp_min_percent/10000)
-                                    sl_price = mid * (1 + param['sl_hard_percent']/100)
+                                    tp_max_price = pos_entry_px * (1 - pnl_potential_bps/10000)
+                                    tp_min_price = pos_entry_px * (1 - tp_min_percent/10000)
+                                    sl_price = pos_entry_px * (1 + param['sl_hard_percent']/100)
 
                                 executed_position['position'] = {
                                         'status' : 'open',
