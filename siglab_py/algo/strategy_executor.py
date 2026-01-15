@@ -205,7 +205,13 @@ POSITION_CACHE_COLUMNS = [
             'status', 
             'pos', 'pos_usdt', 'multiplier', 'created', 'closed', 
             'pos_entries',
-            'spread_bps', 'entry_px', 'close_px',
+            'spread_bps', 
+            'entry_px', 
+            'tp_max_target',
+			'tp_min_target',
+            'max_pnl_potential_bps',
+            'close_px',
+
             'ob_mid', 'ob_best_bid', 'ob_best_ask',
             'unreal_live',
             'max_unreal_live',
@@ -215,9 +221,6 @@ POSITION_CACHE_COLUMNS = [
             'pnl_open_bps',
             'max_unreal_live_bps',
             'max_unreal_open_bps',
-			
-            'tp_max_target',
-			'tp_min_target',
 			
             'running_sl_percent_hard',
             'sl_trailing_min_threshold_crossed',
@@ -591,8 +594,8 @@ async def main():
         reversal : bool = False
         tp : bool = False
         sl : bool = False
-        tp_min_percent : float  = param['tp_min_percent'] # adjusted by trailing_stop_threshold_eval_func
         tp_max_percent : float  = param['tp_max_percent']
+        tp_min_percent : float  = param['tp_min_percent']
         executed_position = None
         position_break : bool = False
         while (not tp and not sl and not position_break):
@@ -669,8 +672,10 @@ async def main():
 
                         'spread_bps' : None,
                         'entry_px' : None,
+                        'tp_max_target' : None,
+						'tp_min_target' : None,
+                        'max_pnl_potential_bps' : None,
                         'close_px' : None,
-                        'last_interval_px' : None,
 
                         'ob_mid' : None,
                         'ob_best_bid' : None,
@@ -684,10 +689,7 @@ async def main():
                         'pnl_open_bps' : 0,
 						'max_unreal_live_bps' : 0,
                         'max_unreal_open_bps' : 0,
-						
-                        'tp_max_target' : None,
-						'tp_min_target' : None,
-						
+                        
                         'running_sl_percent_hard' : param['sl_hard_percent'],
                         'sl_trailing_min_threshold_crossed' : False,
                         'sl_percent_trailing' : param['sl_percent_trailing'],
@@ -737,6 +739,12 @@ async def main():
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
 
+                entry_px = position_cache_row['entry_px']
+                tp_max_target = position_cache_row['tp_max_target']
+                tp_min_target = position_cache_row['tp_min_target']
+                max_pnl_potential_bps = position_cache_row['max_pnl_potential_bps']
+                close_px = position_cache_row['close_px']
+
                 unreal_live = position_cache_row['unreal_live']
                 max_unreal_live = position_cache_row['max_unreal_live']
                 max_pain = position_cache_row['max_pain']
@@ -745,9 +753,6 @@ async def main():
                 pnl_open_bps = position_cache_row['pnl_open_bps']
                 max_unreal_live_bps = position_cache_row['max_unreal_live_bps']
                 max_unreal_open_bps = position_cache_row['max_unreal_open_bps']
-
-                tp_max_target = position_cache_row['tp_max_target']
-                tp_min_target = position_cache_row['tp_min_target']
 
                 running_sl_percent_hard = position_cache_row['running_sl_percent_hard']
                 sl_trailing_min_threshold_crossed = position_cache_row['sl_trailing_min_threshold_crossed']
@@ -969,6 +974,15 @@ async def main():
                             tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
                             tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
+                            '''
+                            tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
+                            Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
+                            '''
+                            if max_pnl_potential_bps and (max_pnl_potential_bps/100)<tp_max_percent:
+                                tp_minmax_ratio = tp_min_percent/tp_max_percent
+                                tp_max_percent = max_pnl_potential_bps
+                                tp_min_percent = tp_minmax_ratio * tp_max_percent
+
                             pnl_live_bps = unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
                             pnl_open_bps = unrealized_pnl_open / abs(pos_usdt) * 10000 if pos_usdt else 0
                             pnl_percent_notional = pnl_open_bps/100
@@ -1014,7 +1028,7 @@ async def main():
                         allow_entry_initial_long = allow_entry_func_initial_result['long']
                         allow_entry_initial_short = allow_entry_func_initial_result['short']
 
-                        allow_entry = allow_entry_long or allow_entry_short
+                        allow_entry = allow_entry_initial_long or allow_entry_initial_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
                         if allow_entry and not block_entries:
                             kwargs = {k: v for k, v in locals().items() if k in allow_entry_final_func_params}
@@ -1026,22 +1040,28 @@ async def main():
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
                             
+                            pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
-                                if allow_entry_final_long:
+                                if allow_entry_final_long and target_price_long:
                                     side = 'buy'
                                     pnl_potential_bps = (target_price_long/mid - 1) *10000 if target_price_long else None
-                                elif allow_entry_final_short:
+                                elif allow_entry_final_short and target_price_short:
                                     side = 'sell'
                                     pnl_potential_bps = (mid/target_price_short - 1) *10000 if target_price_short else None
                                 else:
                                     raise ValueError("Either allow_long or allow_short!")
 
-                                # tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
-                                if pnl_potential_bps<tp_max_percent:
+                                '''
+                                tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
+                                Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
+                                '''
+                                tp_max_percent : float  = param['tp_max_percent']
+                                tp_min_percent : float  = param['tp_min_percent'] # adjusted by trailing_stop_threshold_eval_func
+                                if pnl_potential_bps and pnl_potential_bps<tp_max_percent:
                                     tp_minmax_ratio = tp_min_percent/tp_max_percent
                                     tp_max_percent = pnl_potential_bps
                                     tp_min_percent = tp_minmax_ratio * tp_max_percent
-
+                                
                                 kwargs = {k: v for k, v in locals().items() if k in order_notional_adj_func_params}
                                 order_notional_adj_func_result = order_notional_adj_func(**kwargs)
                                 target_order_notional = order_notional_adj_func_result['target_order_notional']
@@ -1079,12 +1099,12 @@ async def main():
                                 fees = executed_position['fees']
 
                                 if side=='buy':
-                                    tp_max_price = pos_entry_px * (1 + pnl_potential_bps/10000)
+                                    tp_max_price = pos_entry_px * (1 + tp_max_percent/10000)
                                     tp_min_price = pos_entry_px * (1 + tp_min_percent/10000)
                                     sl_price = pos_entry_px * (1 - param['sl_hard_percent']/100)
 
                                 elif side=='sell':
-                                    tp_max_price = pos_entry_px * (1 - pnl_potential_bps/10000)
+                                    tp_max_price = pos_entry_px * (1 - tp_max_percent/10000)
                                     tp_min_price = pos_entry_px * (1 - tp_min_percent/10000)
                                     sl_price = pos_entry_px * (1 + param['sl_hard_percent']/100)
 
@@ -1106,6 +1126,9 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
+                                pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
+                                pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
+                                pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = pnl_potential_bps
                                 pd_position_cache.loc[position_cache_row.name, 'close_px'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
@@ -1115,8 +1138,6 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
-                                pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
-                                pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
                                 pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                 pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = float('inf')
@@ -1274,13 +1295,13 @@ async def main():
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
                                     
                                     pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
-                                    pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = None
-                                    pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = None
                                     pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                     pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                     pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
                                     pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
                                     
+                                    tp_max_percent  = param['tp_max_percent']
+                                    tp_min_percent  = param['tp_min_percent']
 
                                     # This is for tp_eval_func
                                     this_ticker_open_trades.clear()
