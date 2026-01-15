@@ -1018,6 +1018,17 @@ async def main():
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = max_unreal_live_bps
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = max_unreal_open_bps
 
+                            # This is for tp_eval_func
+                            this_ticker_open_trades.append(
+                                {
+                                    'ticker' : param['ticker'],
+                                    'side' : side,
+                                    'amount' : pos_usdt,
+                                    'entry_price' : entry_px,
+                                    'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
+                                }
+                            )
+
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
@@ -1145,17 +1156,6 @@ async def main():
 
                                 pos_entries.append(pos_created)
                                 pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
-
-                                # This is for tp_eval_func
-                                this_ticker_open_trades.append(
-                                    {
-                                        'ticker' : param['ticker'],
-                                        'side' : side,
-                                        'amount' : target_order_notional,
-                                        'entry_price' : pos_entry_px,
-                                        'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
-                                    }
-                                )
 
                                 orderhist_cache_row = {
                                                         'datetime' : dt_now,
