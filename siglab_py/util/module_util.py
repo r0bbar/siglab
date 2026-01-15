@@ -1,16 +1,23 @@
 import os
 import glob
 import importlib.util
+import inspect
 
 def load_module_class(strategy_name: str):
     if not strategy_name:
         return None
 
-    folder = os.path.dirname(os.path.abspath(__file__))
+    caller_frame = inspect.stack()[1] # [0] = here, [1] = direct caller
+    caller_file = caller_frame.filename
+    folder = os.path.dirname(caller_file)
+    print(f"folder searched: {folder}")
+
     pattern = os.path.join(folder, "*.py")
 
     for filepath in glob.glob(pattern):
         filename = os.path.basename(filepath)
+        print(f"filename: {filename}")
+        
         if filename.startswith('_') or filename == 'strategy_executor.py':
             continue
 
