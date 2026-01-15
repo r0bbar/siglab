@@ -1129,7 +1129,7 @@ async def main():
                                         'ticker' : param['ticker'],
                                         'side' : side,
                                         'amount' : target_order_notional,
-                                        'tp_max_price' : tp_max_price,
+                                        'entry_price' : pos_entry_px,
                                         'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
                                     }
                                 )
