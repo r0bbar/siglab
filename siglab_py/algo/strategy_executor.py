@@ -1291,7 +1291,7 @@ async def main(
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
-                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 
             finally:
                 time.sleep(int(param['loop_freq_ms']/1000))
