@@ -27,15 +27,9 @@ from siglab_py.util.market_data_util import async_instantiate_exchange, interval
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
 from siglab_py.util.aws_util import AwsKmsUtil
+from siglab_py.util.module_util import load_module_class
 
 from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, PositionStatus, OrderSide 
-
-
-'''
-For dry-runs/testing, swap back to StrategyBase, it will not fire an order.
-'''
-# from strategy_base import StrategyBase as TargetStrategy # Import whatever strategy subclassed from StrategyBase here!
-from macd_crosses_targets_from_level_15m_tc_strategy import MACDCrossesTargetFromLevel15mTCStrategy as TargetStrategy
 
 current_filename = os.path.basename(__file__)
 
@@ -76,7 +70,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
     Step 6. Start order gateway
         Top of the script for instructions
@@ -93,6 +87,8 @@ Debug from VSCode, launch.json:
                 "program": "${file}",
                 "console": "integratedTerminal",
                 "args" : [
+                        "--target_strategy_name", "YourStrategyClassName",
+
                         "--gateway_id", "hyperliquid_01",
                         "--default_type", "linear",
                         "--rate_limit_ms", "100",
@@ -204,7 +200,6 @@ sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
-POSITION_CACHE_FILE_NAME = f"{TargetStrategy.__name__}_position_cache_$GATEWAY_ID$.csv"
 POSITION_CACHE_COLUMNS = [ 
             'exchange', 'ticker',
             'status', 
@@ -230,7 +225,7 @@ POSITION_CACHE_COLUMNS = [
             'loss_trailing'
         ]
 
-ORDERHIST_CACHE_FILE_NAME = f"{TargetStrategy.__name__}_orderhist_cache_$GATEWAY_ID$.csv"
+
 ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
@@ -245,6 +240,13 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
 
 def parse_args():
     parser = argparse.ArgumentParser() 
+
+    parser.add_argument(
+        '--target_strategy_name',
+        type=str,
+        default=None,
+        help='Name of strategy class to be imported as TargetStrategy. If not specified, StrategyBase (dummy strategy which wont fire any order) will be loaded.'
+    )
 
     parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
 
@@ -293,6 +295,8 @@ def parse_args():
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
 
     args = parser.parse_args()
+
+    param['target_strategy_name'] = args.target_strategy_name
 
     param['gateway_id'] = args.gateway_id
     param['default_type'] = args.default_type
@@ -402,15 +406,28 @@ def fetch_economic_events(redis_client, topic) -> List[Dict]:
             economic_calendar['datetime'] = economic_calendar['datetime'].replace(tzinfo=None) 
     return restored
 
-async def main(
-    order_notional_adj_func : Callable[..., Dict[str, float]],
-    allow_entry_initial_func : Callable[..., Dict[str, bool]],
-    allow_entry_final_func : Callable[..., Dict[str, Union[bool, float, None]]],
-    sl_adj_func : Callable[..., Dict[str, float]],
-    trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]],
-    tp_eval_func : Callable[..., bool]
-):
+async def main():
     parse_args()
+
+    print(f"target_strategy_name: {param['target_strategy_name']}")
+    strategy_cls = load_module_class(param["target_strategy_name"])
+    if strategy_cls is None:
+        from siglab_py.algo.strategy_base import StrategyBase
+        TargetStrategy = StrategyBase
+    else:
+        TargetStrategy = strategy_cls
+
+    orderhist_cache_file_name = f"$STRATEGY_CLASS_NAME$_orderhist_cache_$GATEWAY_ID$.csv"
+    orderhist_cache_file_name = orderhist_cache_file_name.replace("$STRATEGY_CLASS_NAME$", TargetStrategy.__name__)
+    position_cache_file_name = f"$STRATEGY_CLASS_NAME$_position_cache_$GATEWAY_ID$.csv"
+    position_cache_file_name = position_cache_file_name.replace("$STRATEGY_CLASS_NAME$", TargetStrategy.__name__)
+
+    order_notional_adj_func : Callable[..., Dict[str, float]] = TargetStrategy.order_notional_adj
+    allow_entry_initial_func : Callable[..., Dict[str, bool]] = TargetStrategy.allow_entry_initial
+    allow_entry_final_func : Callable[..., Dict[str, Union[bool, float, None]]] = TargetStrategy.allow_entry_final
+    sl_adj_func : Callable[..., Dict[str, float]] = TargetStrategy.sl_adj
+    trailing_stop_threshold_eval_func : Callable[..., Dict[str, float]] = TargetStrategy.trailing_stop_threshold_eval
+    tp_eval_func : Callable[..., bool] = TargetStrategy.tp_eval
     
     redis_client : StrictRedis = init_redis_client()
 
@@ -421,6 +438,9 @@ async def main(
     fh.setFormatter(formatter)     
     logger.addHandler(fh)
 
+    log(f"orderhist_cache_file_name: {orderhist_cache_file_name}")
+    log(f"position_cache_file_name: {position_cache_file_name}")
+    
     exchange_name : str = gateway_id.split('_')[0]
     ticker : str = param['ticker']
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
@@ -547,15 +567,15 @@ async def main(
         _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], orderbooks_provider_topic)
 
         # Load cached positions from disk, if any
-        if os.path.exists(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))>0:
-            pd_position_cache = pd.read_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+        if os.path.exists(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))>0:
+            pd_position_cache = pd.read_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
             pd_position_cache.drop(pd_position_cache.columns[pd_position_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
             pd_position_cache.replace([np.nan], [None], inplace=True)
 
             pd_position_cache = pd_position_cache[POSITION_CACHE_COLUMNS]
 
-        if os.path.exists(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))>0:
-            orderhist_cache = pd.read_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+        if os.path.exists(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))>0:
+            orderhist_cache = pd.read_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
             orderhist_cache.drop(orderhist_cache.columns[orderhist_cache.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
             orderhist_cache.replace([np.nan], [None], inplace=True)
 
@@ -1285,8 +1305,8 @@ async def main(
                         log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
-                        pd_position_cache.to_csv(POSITION_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
-                        orderhist_cache.to_csv(ORDERHIST_CACHE_FILE_NAME.replace("$GATEWAY_ID$", gateway_id))
+                        pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
+                        orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
                         
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
@@ -1297,12 +1317,5 @@ async def main(
                 time.sleep(int(param['loop_freq_ms']/1000))
 
 asyncio.run(
-    main(
-        order_notional_adj_func=TargetStrategy.order_notional_adj,
-        allow_entry_initial_func=TargetStrategy.allow_entry_initial,
-        allow_entry_final_func=TargetStrategy.allow_entry_final,
-        sl_adj_func=TargetStrategy.sl_adj,
-        trailing_stop_threshold_eval_func=TargetStrategy.trailing_stop_threshold_eval,
-        tp_eval_func=TargetStrategy.tp_eval
-    )
+    main()
 )
