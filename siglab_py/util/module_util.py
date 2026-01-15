@@ -1,7 +1,8 @@
+import os
 import glob
 import importlib.util
 
-def load_strategy_class(strategy_name: str):
+def load_module_class(strategy_name: str):
     if not strategy_name:
         return None
 
