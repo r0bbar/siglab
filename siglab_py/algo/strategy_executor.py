@@ -962,14 +962,18 @@ async def main():
                             tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
                             tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
+                            log(f"trailing_stop_threshold_eval tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}")
+
                             '''
                             tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
                             Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
                             '''
                             if max_pnl_potential_bps and (max_pnl_potential_bps/100)<tp_max_percent:
                                 tp_minmax_ratio = tp_min_percent/tp_max_percent
-                                tp_max_percent = max_pnl_potential_bps
+                                tp_max_percent = max_pnl_potential_bps/100
                                 tp_min_percent = tp_minmax_ratio * tp_max_percent
+
+                            log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, max_pnl_potential_bps: {max_pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
 
                             kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                             sl_adj_func_result = sl_adj_func(**kwargs)
@@ -1086,10 +1090,11 @@ async def main():
                                 '''
                                 tp_max_percent : float  = param['tp_max_percent']
                                 tp_min_percent : float  = param['tp_min_percent'] # adjusted by trailing_stop_threshold_eval_func
+                                tp_minmax_ratio = tp_min_percent/tp_max_percent
                                 if pnl_potential_bps and pnl_potential_bps<tp_max_percent:
-                                    tp_minmax_ratio = tp_min_percent/tp_max_percent
-                                    tp_max_percent = pnl_potential_bps
+                                    tp_max_percent = pnl_potential_bps/100
                                     tp_min_percent = tp_minmax_ratio * tp_max_percent
+                                log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, pnl_potential_bps: {pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
                                 
                                 kwargs = {k: v for k, v in locals().items() if k in order_notional_adj_func_params}
                                 order_notional_adj_func_result = order_notional_adj_func(**kwargs)
