@@ -1069,7 +1069,7 @@ async def main():
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
-                            
+                                                        
                             pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
                                 if allow_entry_final_long and target_price_long:
@@ -1129,13 +1129,13 @@ async def main():
                                 fees = executed_position['fees']
 
                                 if side=='buy':
-                                    tp_max_price = pos_entry_px * (1 + tp_max_percent/10000)
-                                    tp_min_price = pos_entry_px * (1 + tp_min_percent/10000)
+                                    tp_max_price = pos_entry_px * (1 + tp_max_percent/100)
+                                    tp_min_price = pos_entry_px * (1 + tp_min_percent/100)
                                     sl_price = pos_entry_px * (1 - running_sl_percent_hard/100)
 
                                 elif side=='sell':
-                                    tp_max_price = pos_entry_px * (1 - tp_max_percent/10000)
-                                    tp_min_price = pos_entry_px * (1 - tp_min_percent/10000)
+                                    tp_max_price = pos_entry_px * (1 - tp_max_percent/100)
+                                    tp_min_price = pos_entry_px * (1 - tp_min_percent/100)
                                     sl_price = pos_entry_px * (1 + running_sl_percent_hard/100)
 
                                 executed_position['position'] = {
