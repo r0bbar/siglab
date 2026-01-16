@@ -972,8 +972,7 @@ async def main():
                                 tp_minmax_ratio = tp_min_percent/tp_max_percent
                                 tp_max_percent = max_pnl_potential_bps/100
                                 tp_min_percent = tp_minmax_ratio * tp_max_percent
-
-                            log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, max_pnl_potential_bps: {max_pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
+                            # log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, max_pnl_potential_bps: {max_pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
 
                             kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                             sl_adj_func_result = sl_adj_func(**kwargs)
@@ -1094,7 +1093,7 @@ async def main():
                                 if pnl_potential_bps and pnl_potential_bps<tp_max_percent:
                                     tp_max_percent = pnl_potential_bps/100
                                     tp_min_percent = tp_minmax_ratio * tp_max_percent
-                                log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, pnl_potential_bps: {pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
+                                # log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, pnl_potential_bps: {pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
                                 
                                 kwargs = {k: v for k, v in locals().items() if k in order_notional_adj_func_params}
                                 order_notional_adj_func_result = order_notional_adj_func(**kwargs)
