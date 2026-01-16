@@ -209,6 +209,7 @@ POSITION_CACHE_COLUMNS = [
             'entry_px', 
             'tp_max_target',
 			'tp_min_target',
+            'sl_price',
             'max_pnl_potential_bps',
             'close_px',
 
@@ -674,6 +675,7 @@ async def main():
                         'entry_px' : None,
                         'tp_max_target' : None,
 						'tp_min_target' : None,
+                        'sl_price' : None,
                         'max_pnl_potential_bps' : None,
                         'close_px' : None,
 
@@ -742,6 +744,7 @@ async def main():
                 entry_px = position_cache_row['entry_px']
                 tp_max_target = position_cache_row['tp_max_target']
                 tp_min_target = position_cache_row['tp_min_target']
+                sl_price = position_cache_row['sl_price']
                 max_pnl_potential_bps = position_cache_row['max_pnl_potential_bps']
                 close_px = position_cache_row['close_px']
 
@@ -1112,12 +1115,12 @@ async def main():
                                 if side=='buy':
                                     tp_max_price = pos_entry_px * (1 + tp_max_percent/10000)
                                     tp_min_price = pos_entry_px * (1 + tp_min_percent/10000)
-                                    sl_price = pos_entry_px * (1 - param['sl_hard_percent']/100)
+                                    sl_price = pos_entry_px * (1 - running_sl_percent_hard/100)
 
                                 elif side=='sell':
                                     tp_max_price = pos_entry_px * (1 - tp_max_percent/10000)
                                     tp_min_price = pos_entry_px * (1 - tp_min_percent/10000)
-                                    sl_price = pos_entry_px * (1 + param['sl_hard_percent']/100)
+                                    sl_price = pos_entry_px * (1 + running_sl_percent_hard/100)
 
                                 executed_position['position'] = {
                                         'status' : 'open',
@@ -1139,6 +1142,7 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
                                 pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
+                                pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
                                 pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = pnl_potential_bps
                                 pd_position_cache.loc[position_cache_row.name, 'close_px'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
