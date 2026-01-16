@@ -914,6 +914,116 @@ async def main():
                         ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10) 
                         err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
+
+                    if pos_status!=PositionStatus.UNDEFINED.name:
+                        pos_usdt = mid * pos
+                        pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
+
+                        if pos_side == OrderSide.BUY:
+                            unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
+                            if lo_candles_valid:
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
+                            unrealized_pnl_open = unreal_live
+                            if total_sec_since_pos_created > (lo_interval_ms/1000):
+                                '''
+                                "unrealized_pnl_open": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
+                                But we need be careful with tall candles immediately upon entries.
+                                    trailing_candles[-1] is latest candle
+                                    trailing_candles[-1][1] is 'open' from latest candle
+                                Example long BTC, a mean reversion trade
+                                    pos_entry_px    $97,000
+                                    open            $99,000 (This is trailing_candles[-1][1], so it's big red candle)
+                                    mid             $97,200 (Seconds after entry)
+
+                                    unreal_live                 $200 per BTC
+                                    unrealized_pnl_open $2000 per BTC (This is very misleading! This would cause algo to TP prematurely!)
+                                Thus for new entries, 
+                                    unrealized_pnl_open = unreal_live
+                                '''
+                                unrealized_pnl_open = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
+                        elif pos_side == OrderSide.SELL:
+                            unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
+                            if lo_candles_valid:
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
+                            unrealized_pnl_open = unreal_live
+                            if total_sec_since_pos_created > lo_interval_ms/1000:
+                                unrealized_pnl_open = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
+
+                        if lo_candles_valid:
+                            # lamda's may reference candles
+                            kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                            trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                            tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                            tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+
+                            '''
+                            tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
+                            Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
+                            '''
+                            if max_pnl_potential_bps and (max_pnl_potential_bps/100)<tp_max_percent:
+                                tp_minmax_ratio = tp_min_percent/tp_max_percent
+                                tp_max_percent = max_pnl_potential_bps
+                                tp_min_percent = tp_minmax_ratio * tp_max_percent
+
+                            kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
+                            sl_adj_func_result = sl_adj_func(**kwargs)
+                            running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
+
+                        else:
+                            # Fallback
+                            # For 'running_sl_percent_hard', simply skip updating until you have candles again.
+
+                            # sl_adj_func may use candles, so fall back mechanism is simply not further update 'running_sl_percent_hard'
+                            # Given sl_adj_func generally only tighten stops as your trade goes greener greener, cap it by param['sl_hard_percent'] just in case.
+                            running_sl_percent_hard = min(running_sl_percent_hard, param['sl_hard_percent']) 
+
+                        pnl_live_bps = unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
+                        pnl_open_bps = unrealized_pnl_open / abs(pos_usdt) * 10000 if pos_usdt else 0
+                        pnl_percent_notional = pnl_open_bps/100
+
+                        if unreal_live>max_unreal_live:
+                            max_unreal_live = unreal_live
+
+                        if pnl_live_bps>max_unreal_live_bps:
+                            max_unreal_live_bps = pnl_live_bps                                
+
+                        if pnl_open_bps>max_unreal_open_bps:
+                            max_unreal_open_bps = pnl_open_bps
+
+                        if unrealized_pnl_pessimistic < max_pain:
+                            max_pain = unrealized_pnl_pessimistic
+
+                        if unrealized_pnl_optimistic < 0 and unrealized_pnl_optimistic>max_pain:
+                            recovered_pnl = unrealized_pnl_optimistic - max_pain
+                            if recovered_pnl > max_recovered_pnl:
+                                max_recovered_pnl = recovered_pnl
+
+                        max_pain_percent_notional = max_pain / pos_usdt * 100
+                        max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100
+
+                        loss_trailing = (1 - pnl_live_bps/max_unreal_live_bps) * 100 if pnl_live_bps>0 else 0
+
+                        pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = unreal_live
+                        pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = max_unreal_live
+                        pd_position_cache.loc[position_cache_row.name, 'max_pain'] = max_pain
+                        pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = max_recovered_pnl
+                        pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
+                        pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = pnl_open_bps
+                        pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = max_unreal_live_bps
+                        pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = max_unreal_open_bps
+
+                        # This is for tp_eval_func
+                        this_ticker_open_trades.append(
+                            {
+                                'ticker' : param['ticker'],
+                                'side' : side,
+                                'amount' : pos_usdt,
+                                'entry_price' : entry_px,
+                                'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
+                            }
+                        )
                         
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
 
@@ -937,100 +1047,6 @@ async def main():
                         spread_bps = (best_ask/best_bid - 1) * 10000
 
                         last_candles=trailing_candles # alias
-
-                        if pos_status!=PositionStatus.UNDEFINED.name:
-                            pos_usdt = mid * pos
-                            pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
-
-                            if pos_side == OrderSide.BUY:
-                                unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_open = unreal_live
-                                if total_sec_since_pos_created > (lo_interval_ms/1000):
-                                    '''
-                                    "unrealized_pnl_open": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
-                                    But we need be careful with tall candles immediately upon entries.
-                                       trailing_candles[-1] is latest candle
-                                       trailing_candles[-1][1] is 'open' from latest candle
-                                    Example long BTC, a mean reversion trade
-                                        pos_entry_px    $97,000
-                                        open            $99,000 (This is trailing_candles[-1][1], so it's big red candle)
-                                        mid             $97,200 (Seconds after entry)
-
-                                        unreal_live                 $200 per BTC
-                                        unrealized_pnl_open $2000 per BTC (This is very misleading! This would cause algo to TP prematurely!)
-                                    Thus for new entries, 
-                                        unrealized_pnl_open = unreal_live
-                                    '''
-                                    unrealized_pnl_open = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
-                            elif pos_side == OrderSide.SELL:
-                                unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_open = unreal_live
-                                if total_sec_since_pos_created > lo_interval_ms/1000:
-                                    unrealized_pnl_open = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
-
-                            kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
-                            trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
-                            tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
-                            tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
-
-                            '''
-                            tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
-                            Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
-                            '''
-                            if max_pnl_potential_bps and (max_pnl_potential_bps/100)<tp_max_percent:
-                                tp_minmax_ratio = tp_min_percent/tp_max_percent
-                                tp_max_percent = max_pnl_potential_bps
-                                tp_min_percent = tp_minmax_ratio * tp_max_percent
-
-                            pnl_live_bps = unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
-                            pnl_open_bps = unrealized_pnl_open / abs(pos_usdt) * 10000 if pos_usdt else 0
-                            pnl_percent_notional = pnl_open_bps/100
-
-                            if unreal_live>max_unreal_live:
-                                max_unreal_live = unreal_live
-
-                            if pnl_live_bps>max_unreal_live_bps:
-                                max_unreal_live_bps = pnl_live_bps                                
-
-                            if pnl_open_bps>max_unreal_open_bps:
-                                max_unreal_open_bps = pnl_open_bps
-
-                            if unrealized_pnl_pessimistic < max_pain:
-                                max_pain = unrealized_pnl_pessimistic
-
-                            if unrealized_pnl_optimistic < 0 and unrealized_pnl_optimistic>max_pain:
-                                recovered_pnl = unrealized_pnl_optimistic - max_pain
-                                if recovered_pnl > max_recovered_pnl:
-                                    max_recovered_pnl = recovered_pnl
-
-                            max_pain_percent_notional = max_pain / pos_usdt * 100
-                            max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100
-
-                            loss_trailing = (1 - pnl_live_bps/max_unreal_live_bps) * 100 if pnl_live_bps>0 else 0
-
-                            pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = unreal_live
-                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = max_unreal_live
-                            pd_position_cache.loc[position_cache_row.name, 'max_pain'] = max_pain
-                            pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = max_recovered_pnl
-                            pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = pnl_live_bps
-                            pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = pnl_open_bps
-                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = max_unreal_live_bps
-                            pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = max_unreal_open_bps
-
-                            # This is for tp_eval_func
-                            this_ticker_open_trades.append(
-                                {
-                                    'ticker' : param['ticker'],
-                                    'side' : side,
-                                    'amount' : pos_usdt,
-                                    'entry_price' : entry_px,
-                                    'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
-                                }
-                            )
 
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
@@ -1220,120 +1236,124 @@ async def main():
                             pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
 
 
-                        # STEP 2. Unwind position
-                        if pos!=0:
-                            tp = False
-                            sl = False
-                            if unreal_live>0:
+                    # STEP 2. Unwind position
+                    if pos!=0:
+                        tp = False
+                        sl = False
+                        if unreal_live>0:
+                            if lo_candles_valid:
                                 kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                                 tp_final = tp_eval_func(**kwargs)
 
-                                if tp_final:
-                                    tp = True
-                                elif loss_trailing>=effective_tp_trailing_percent:
-                                    tp = True
+                            else:
+                                # tp_eval_func may use candles, so below a fall back mechanism
+                                if pos_side==OrderSide.BUY:
+                                    tp_final = True if mid>=tp_max_target else False
+                                elif pos_side==OrderSide.SELL:
+                                    tp_final = True if mid<=tp_max_target else False
+
+                            if tp_final:
+                                tp = True
+                            elif loss_trailing>=effective_tp_trailing_percent:
+                                tp = True
+
+                        else:
+                            if abs(pnl_live_bps/100)>=running_sl_percent_hard:
+                                sl = True
+
+                    if tp or sl:
+                        exit_positions : List[DivisiblePosition] = [
+                            DivisiblePosition(
+                                ticker = param['ticker'],
+                                side = 'sell' if pos_side==OrderSide.BUY else 'buy',
+                                amount = param['amount_base_ccy'],
+                                leg_room_bps = param['leg_room_bps'],
+                                order_type = param['order_type'],
+                                slices = param['slices'],
+                                wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
+
+                                reduce_only=True
+                            )
+                        ]
+                        log(f"Closing position. {ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
+                        executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
+                                                                                                                        redis_client=redis_client,
+                                                                                                                        positions=exit_positions,
+                                                                                                                        ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
+                                                                                                                        ordergateway_executions_topic=ordergateway_executions_topic
+                                                                                                                    )
+                        if executed_positions:
+                            executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
+                            if executed_position_close['done']:
+                                if pos_side==OrderSide.BUY:
+                                    closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
+                                else:
+                                    closed_pnl = (pos_entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                
+                                new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
+                                new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
+                                fees = executed_position_close['fees']
+
+                                executed_position_close['position'] = {
+                                    'status' : 'TP' if tp else 'SL',
+                                    'pnl_live_bps' : pnl_live_bps,
+                                    'pos_entry_px' : pos_entry_px,
+                                    'mid' : mid,
+                                    'amount_base_ccy' : executed_position_close['filled_amount'],
+                                    'closed_pnl' : closed_pnl,
+                                }
+
+                                new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
+                                pd_position_cache.loc[position_cache_row.name, 'pos'] = new_pos_from_exchange
+                                pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
+                                pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
+                                pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
+                                pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
+                                pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'max_pain'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
+                                pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
+                                
+                                pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
+                                pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
+                                pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
+                                pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
+                                pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
+                                
+                                tp_max_percent  = param['tp_max_percent']
+                                tp_min_percent  = param['tp_min_percent']
+
+                                # This is for tp_eval_func
+                                this_ticker_open_trades.clear()
+
+                                orderhist_cache_row = {
+                                            'datetime' : dt_now,
+                                            'exchange' : exchange_name,
+                                            'ticker' : ticker,
+                                            'reason' : new_status,
+                                            'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
+                                            'avg_price' : mid, # mid is actually not avg_price!
+                                            'amount': abs(new_pos_usdt_from_exchange),
+                                            'unreal_live' : unreal_live,
+                                            'pnl_live_bps' : pnl_live_bps,
+                                            'max_pain' : max_pain
+                                        }
+                                orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
+
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             else:
-                                kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
-                                sl_adj_func_result = sl_adj_func(**kwargs)
-                                running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
-                                
-                                if abs(pnl_live_bps/100)>=running_sl_percent_hard:
-                                    sl = True
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                        if tp or sl:
-                            exit_positions : List[DivisiblePosition] = [
-                                DivisiblePosition(
-                                    ticker = param['ticker'],
-                                    side = 'sell' if pos_side==OrderSide.BUY else 'buy',
-                                    amount = param['amount_base_ccy'],
-                                    leg_room_bps = param['leg_room_bps'],
-                                    order_type = param['order_type'],
-                                    slices = param['slices'],
-                                    wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
+                    log(f"[{gateway_id}]", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
-                                    reduce_only=True
-                                )
-                            ]
-                            log(f"Closing position. {ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
-                            executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
-                                                                                                                            redis_client=redis_client,
-                                                                                                                            positions=exit_positions,
-                                                                                                                            ordergateway_pending_orders_topic=ordergateway_pending_orders_topic,
-                                                                                                                            ordergateway_executions_topic=ordergateway_executions_topic
-                                                                                                                        )
-                            if executed_positions:
-                                executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
-                                if executed_position_close['done']:
-                                    if pos_side==OrderSide.BUY:
-                                        closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
-                                    else:
-                                        closed_pnl = (pos_entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
-                                    
-                                    new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
-                                    new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
-                                    fees = executed_position_close['fees']
-
-                                    executed_position_close['position'] = {
-                                        'status' : 'TP' if tp else 'SL',
-                                        'pnl_live_bps' : pnl_live_bps,
-                                        'pos_entry_px' : pos_entry_px,
-                                        'mid' : mid,
-                                        'amount_base_ccy' : executed_position_close['filled_amount'],
-                                        'closed_pnl' : closed_pnl,
-                                    }
-
-                                    new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
-                                    pd_position_cache.loc[position_cache_row.name, 'pos'] = new_pos_from_exchange
-                                    pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
-                                    pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
-                                    pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
-                                    pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
-                                    pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'max_pain'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'max_recovered_pnl'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'pnl_live_bps'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
-                                    
-                                    pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
-                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
-                                    pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
-                                    pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
-                                    pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
-                                    
-                                    tp_max_percent  = param['tp_max_percent']
-                                    tp_min_percent  = param['tp_min_percent']
-
-                                    # This is for tp_eval_func
-                                    this_ticker_open_trades.clear()
-
-                                    orderhist_cache_row = {
-                                                'datetime' : dt_now,
-                                                'exchange' : exchange_name,
-                                                'ticker' : ticker,
-                                                'reason' : new_status,
-                                                'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
-                                                'avg_price' : mid, # mid is actually not avg_price!
-                                                'amount': abs(new_pos_usdt_from_exchange),
-                                                'unreal_live' : unreal_live,
-                                                'pnl_live_bps' : pnl_live_bps,
-                                                'max_pain' : max_pain
-                                            }
-                                    orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
-
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-                                else:
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-                        log(f"[{gateway_id}]", log_level=LogLevel.INFO)
-                        log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-
-                        pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
-                        orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
+                    pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
+                    orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
                         
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
