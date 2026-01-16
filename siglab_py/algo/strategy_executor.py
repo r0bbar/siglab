@@ -205,7 +205,7 @@ POSITION_CACHE_COLUMNS = [
             'status', 
             'pos', 'pos_usdt', 'multiplier', 'created', 'closed', 
             'pos_entries',
-            'spread_bps', 
+             
             'entry_px', 
             'tp_max_target',
 			'tp_min_target',
@@ -213,7 +213,7 @@ POSITION_CACHE_COLUMNS = [
             'max_pnl_potential_bps',
             'close_px',
 
-            'ob_mid', 'ob_best_bid', 'ob_best_ask',
+            'ob_mid', 'spread_bps', 'ob_best_bid', 'ob_best_ask',
             'unreal_live',
             'max_unreal_live',
             'max_pain',
@@ -670,8 +670,7 @@ async def main():
                         'closed' : None,
 
                         'pos_entries' : [],
-
-                        'spread_bps' : None,
+                        
                         'entry_px' : None,
                         'tp_max_target' : None,
 						'tp_min_target' : None,
@@ -680,6 +679,7 @@ async def main():
                         'close_px' : None,
 
                         'ob_mid' : None,
+                        'spread_bps' : None,
                         'ob_best_bid' : None,
                         'ob_best_ask' : None,
                         
@@ -1052,8 +1052,8 @@ async def main():
 
                         last_candles=trailing_candles # alias
 
-                        pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
+                        pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
 
@@ -1359,7 +1359,7 @@ async def main():
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'spread_bps':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'ob_best_ask'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
