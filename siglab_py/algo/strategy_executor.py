@@ -915,24 +915,28 @@ async def main():
                         err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
 
+                    best_ask = min([x[0] for x in ob['asks']])
+                    best_bid = max([x[0] for x in ob['bids']])
+                    mid = (best_ask+best_bid)/2
+                    spread_bps = (best_ask/best_bid - 1) * 10000
+
                     if pos_status!=PositionStatus.UNDEFINED.name:
                         pos_usdt = mid * pos
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
                         if pos_side == OrderSide.BUY:
-                            unreal_live = (mid - pos_entry_px) * param['amount_base_ccy']
+                            unreal_live = (mid - entry_px) * param['amount_base_ccy']
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > (lo_interval_ms/1000):
                                 '''
                                 "unrealized_pnl_open": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
                                 But we need be careful with tall candles immediately upon entries.
                                     trailing_candles[-1] is latest candle
-                                    trailing_candles[-1][1] is 'open' from latest candle
                                 Example long BTC, a mean reversion trade
-                                    pos_entry_px    $97,000
+                                    entry_px        $97,000
                                     open            $99,000 (This is trailing_candles[-1][1], so it's big red candle)
                                     mid             $97,200 (Seconds after entry)
 
@@ -941,15 +945,15 @@ async def main():
                                 Thus for new entries, 
                                     unrealized_pnl_open = unreal_live
                                 '''
-                                unrealized_pnl_open = (trailing_candles[-1][1] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
-                            unreal_live = (pos_entry_px - mid) * param['amount_base_ccy']
+                            unreal_live = (entry_px - mid) * param['amount_base_ccy']
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - pos_entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - pos_entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > lo_interval_ms/1000:
-                                unrealized_pnl_open = (pos_entry_px - trailing_candles[-1][1]) * param['amount_base_ccy']
+                                unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * param['amount_base_ccy']
 
                         if lo_candles_valid:
                             # lamda's may reference candles
@@ -1018,10 +1022,10 @@ async def main():
                         this_ticker_open_trades.append(
                             {
                                 'ticker' : param['ticker'],
-                                'side' : side,
+                                'side' : pos_side.name,
                                 'amount' : pos_usdt,
                                 'entry_price' : entry_px,
-                                'target_price' : tp_max_price # This is the only field needed by backtest_core generic_tp_eval
+                                'target_price' : tp_max_target # This is the only field needed by backtest_core generic_tp_eval
                             }
                         )
                         
@@ -1040,11 +1044,6 @@ async def main():
                             elif indicator_source=="hi_row_tm1":
                                 indicator_value = hi_row_tm1[indicator_name]
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
-
-                        best_ask = min([x[0] for x in ob['asks']])
-                        best_bid = max([x[0] for x in ob['bids']])
-                        mid = (best_ask+best_bid)/2
-                        spread_bps = (best_ask/best_bid - 1) * 10000
 
                         last_candles=trailing_candles # alias
 
@@ -1069,7 +1068,7 @@ async def main():
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
-                                                        
+
                             pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
                                 if allow_entry_final_long and target_price_long:
@@ -1124,23 +1123,23 @@ async def main():
 
                                 new_pos_from_exchange =executed_position['filled_amount']
                                 amount_filled_usdt = mid * new_pos_from_exchange
-                                pos_entry_px = executed_position['average_cost']
+                                entry_px = executed_position['average_cost']
                                 new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                                 fees = executed_position['fees']
 
                                 if side=='buy':
-                                    tp_max_price = pos_entry_px * (1 + tp_max_percent/100)
-                                    tp_min_price = pos_entry_px * (1 + tp_min_percent/100)
-                                    sl_price = pos_entry_px * (1 - running_sl_percent_hard/100)
+                                    tp_max_price = entry_px * (1 + tp_max_percent/100)
+                                    tp_min_price = entry_px * (1 + tp_min_percent/100)
+                                    sl_price = entry_px * (1 - running_sl_percent_hard/100)
 
                                 elif side=='sell':
-                                    tp_max_price = pos_entry_px * (1 - tp_max_percent/100)
-                                    tp_min_price = pos_entry_px * (1 - tp_min_percent/100)
-                                    sl_price = pos_entry_px * (1 + running_sl_percent_hard/100)
+                                    tp_max_price = entry_px * (1 - tp_max_percent/100)
+                                    tp_min_price = entry_px * (1 - tp_min_percent/100)
+                                    sl_price = entry_px * (1 + running_sl_percent_hard/100)
 
                                 executed_position['position'] = {
                                         'status' : 'open',
-                                        'pos_entry_px' : pos_entry_px,
+                                        'entry_px' : entry_px,
                                         'mid' : mid,
                                         'amount_base_ccy' : executed_position['filled_amount'],
                                         'tp_min_price' : tp_min_price,
@@ -1155,7 +1154,7 @@ async def main():
                                 pos_created = datetime.fromtimestamp(time.time())
                                 pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
-                                pd_position_cache.loc[position_cache_row.name, 'entry_px'] = pos_entry_px
+                                pd_position_cache.loc[position_cache_row.name, 'entry_px'] = entry_px
                                 pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
                                 pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
@@ -1191,7 +1190,7 @@ async def main():
                                                     }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
-                                dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {pos_entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
                         '''
                         Have a look at this for a visual explaination how "Gradually tightened stops" works:
@@ -1212,7 +1211,7 @@ async def main():
                                 msg = {
                                     'side' : pos_side.name,
                                     'mid' : mid,
-                                    'pos_entry_px' : pos_entry_px,
+                                    'entry_px' : entry_px,
                                     'pnl_open_bps' : pnl_open_bps,
                                     'tp_min_percent' : tp_min_percent
                                 }
@@ -1286,9 +1285,9 @@ async def main():
                             executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
                             if executed_position_close['done']:
                                 if pos_side==OrderSide.BUY:
-                                    closed_pnl = (executed_position_close['average_cost'] - pos_entry_px) * param['amount_base_ccy']
+                                    closed_pnl = (executed_position_close['average_cost'] - entry_px) * param['amount_base_ccy']
                                 else:
-                                    closed_pnl = (pos_entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                    closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
                                 
                                 new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
                                 new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
@@ -1297,7 +1296,7 @@ async def main():
                                 executed_position_close['position'] = {
                                     'status' : 'TP' if tp else 'SL',
                                     'pnl_live_bps' : pnl_live_bps,
-                                    'pos_entry_px' : pos_entry_px,
+                                    'entry_px' : entry_px,
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'closed_pnl' : closed_pnl,
