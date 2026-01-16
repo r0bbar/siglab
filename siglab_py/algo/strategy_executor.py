@@ -1059,6 +1059,8 @@ async def main():
                         allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
                         allow_entry_initial_long = allow_entry_func_initial_result['long']
                         allow_entry_initial_short = allow_entry_func_initial_result['short']
+
+                        allow_entry_initial_short = True # @hack
                         
                         allow_entry = allow_entry_initial_long or allow_entry_initial_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
@@ -1071,6 +1073,10 @@ async def main():
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
+
+                            # @hack
+                            allow_entry_final_short = True
+                            target_price_short = mid * (1 - param['tp_max_percent']/100)
 
                             pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
@@ -1264,7 +1270,7 @@ async def main():
 
                             if tp_final:
                                 reason = f"tp_max_target {tp_max_target} reached."
-                            elif:
+                            elif tp_trailing_stop:
                                 reason = f"Trailing stop fired. tp_min_target: {tp_min_target}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}"
 
                         else:
