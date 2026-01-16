@@ -1359,7 +1359,8 @@ async def main():
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'ob_best_ask'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
