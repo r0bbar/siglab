@@ -1356,7 +1356,10 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache, headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
                     pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
                     orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
