@@ -1017,6 +1017,8 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = max_unreal_live_bps
                         pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = max_unreal_open_bps
 
+                        pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = loss_trailing
+
                         # This is for tp_eval_func
                         this_ticker_open_trades.append(
                             {
