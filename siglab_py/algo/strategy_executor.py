@@ -1243,9 +1243,10 @@ async def main():
 
 
                     # STEP 2. Unwind position
+                    tp = False
+                    sl = False
                     if pos!=0:
-                        tp = False
-                        sl = False
+                        reason : str = None
                         if unreal_live>0:
                             if lo_candles_valid:
                                 kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
@@ -1258,14 +1259,18 @@ async def main():
                                 elif pos_side==OrderSide.SELL:
                                     tp_final = True if mid<=tp_max_target else False
 
+                            tp_trailing_stop = True if loss_trailing>=effective_tp_trailing_percent else False
+                            tp = tp_final or tp_trailing_stop
+
                             if tp_final:
-                                tp = True
-                            elif loss_trailing>=effective_tp_trailing_percent:
-                                tp = True
+                                reason = f"tp_max_target {tp_max_target} reached."
+                            elif:
+                                reason = f"Trailing stop fired. tp_min_target: {tp_min_target}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}"
 
                         else:
                             if abs(pnl_live_bps/100)>=running_sl_percent_hard:
                                 sl = True
+                                reason = "Hard stop"
 
                     if tp or sl:
                         exit_positions : List[DivisiblePosition] = [
@@ -1307,6 +1312,10 @@ async def main():
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'closed_pnl' : closed_pnl,
+                                    'running_sl_percent_hard' : running_sl_percent_hard,
+                                    'loss_trailing' : loss_trailing,
+                                    'effective_tp_trailing_percent' : effective_tp_trailing_percent,
+                                    'reason' : reason
                                 }
 
                                 new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
