@@ -762,12 +762,6 @@ async def main():
                 sl_percent_trailing = position_cache_row['sl_percent_trailing']
                 loss_trailing = position_cache_row['loss_trailing']
 
-                max_unreal_live = position_cache_row['max_unreal_live'] if not position_cache_row['max_unreal_live'] and not pd.isna(position_cache_row['max_unreal_live']) else 0
-                max_unreal_live_bps = position_cache_row['max_unreal_live_bps'] if not position_cache_row['max_unreal_live_bps'] and not pd.isna(position_cache_row['max_unreal_live_bps']) else 0
-                max_unreal_open_bps = position_cache_row['max_unreal_open_bps'] if not position_cache_row['max_unreal_open_bps'] and not pd.isna(position_cache_row['max_unreal_open_bps']) else 0
-                max_pain = position_cache_row['max_pain'] if not position_cache_row['max_pain'] and not pd.isna(position_cache_row['max_pain']) else 0
-                max_recovered_pnl = position_cache_row['max_recovered_pnl'] if not position_cache_row['max_recovered_pnl'] and not pd.isna(position_cache_row['max_recovered_pnl']) else 0
-
                 pnl_percent_notional = pnl_open_bps/100
                 max_pain_percent_notional = max_pain / pos_usdt * 100 if pos_usdt!=0 else 0
                 max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
