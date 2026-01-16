@@ -930,7 +930,7 @@ async def main():
                                 unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
                             unrealized_pnl_open = unreal_live
-                            if total_sec_since_pos_created > (lo_interval_ms/1000):
+                            if total_sec_since_pos_created > (lo_interval_ms/1000) and lo_candles_valid:
                                 '''
                                 "unrealized_pnl_open": To align with backtests, motivation is to avoid spikes and trigger trailing stops too early.
                                 But we need be careful with tall candles immediately upon entries.
@@ -952,7 +952,7 @@ async def main():
                                 unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
                                 unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
                             unrealized_pnl_open = unreal_live
-                            if total_sec_since_pos_created > lo_interval_ms/1000:
+                            if total_sec_since_pos_created > lo_interval_ms/1000 and lo_candles_valid:
                                 unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * param['amount_base_ccy']
 
                         if lo_candles_valid:
