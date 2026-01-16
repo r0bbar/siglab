@@ -1022,7 +1022,7 @@ async def main():
                         this_ticker_open_trades.append(
                             {
                                 'ticker' : param['ticker'],
-                                'side' : pos_side.name,
+                                'side' : pos_side.name.lower(), # backtests uses lower case
                                 'amount' : pos_usdt,
                                 'entry_price' : entry_px,
                                 'target_price' : tp_max_target # This is the only field needed by backtest_core generic_tp_eval
