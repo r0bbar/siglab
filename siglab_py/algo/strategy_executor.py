@@ -1047,6 +1047,8 @@ async def main():
                             elif indicator_source=="hi_row_tm1":
                                 indicator_value = hi_row_tm1[indicator_name]
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
+                        pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
+                        pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
 
                         last_candles=trailing_candles # alias
 
