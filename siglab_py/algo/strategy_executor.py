@@ -918,6 +918,8 @@ async def main():
                         pos_usdt = mid * pos
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
+                        unrealized_pnl_optimistic, unrealized_pnl_pessimistic = mid, mid
+
                         if pos_side == OrderSide.BUY:
                             unreal_live = (mid - entry_px) * param['amount_base_ccy']
                             if lo_candles_valid:
@@ -1055,7 +1057,7 @@ async def main():
                         allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
                         allow_entry_initial_long = allow_entry_func_initial_result['long']
                         allow_entry_initial_short = allow_entry_func_initial_result['short']
-
+                        
                         allow_entry = allow_entry_initial_long or allow_entry_initial_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
                         if allow_entry and not block_entries:
