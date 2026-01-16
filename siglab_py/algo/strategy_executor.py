@@ -1358,7 +1358,8 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'spread_bps':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'ob_best_ask'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
