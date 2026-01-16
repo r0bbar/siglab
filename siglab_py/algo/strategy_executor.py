@@ -1046,7 +1046,7 @@ async def main():
                             allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                             allow_entry_final_long = allow_entry_func_final_result['long']
                             allow_entry_final_short = allow_entry_func_final_result['short']
-                            allow_entry_final_long = allow_entry_func_initial_result and allow_entry_final_long
+                            allow_entry_final_long = allow_entry_final_long and allow_entry_final_long
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
