@@ -1,4 +1,3 @@
-from ctypes import ArgumentError
 import sys
 import logging
 import argparse
@@ -186,7 +185,7 @@ def instantiate_exchange(
     elif exchange_name=='deribit':
         return deribit(exchange_params)
     else:
-        raise ArgumentError(f"Unsupported exchange {exchange_name}. Please import top of script and add to instantiate_exchange.")
+        raise ValueError(f"Unsupported exchange {exchange_name}. Please import top of script and add to instantiate_exchange.")
     
 async def main():
     parse_args()
@@ -199,7 +198,7 @@ async def main():
     exchange = instantiate_exchange(param['exchange_name'], param['exchange_params'])
     markets = exchange.load_markets()
     if param['symbol'] not in markets:
-        raise ArgumentError(f"{param['symbol']} not support by {param['exchange_name']}")
+        raise ValueError(f"{param['symbol']} not support by {param['exchange_name']}")
     
     pd_candles: Union[pd.DataFrame, None] = fetch_candles(
             start_ts=int(param['start_date'].timestamp()),

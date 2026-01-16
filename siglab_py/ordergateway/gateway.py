@@ -433,7 +433,7 @@ async def execute_one_position(
     try:
         market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None
         if not market:
-            raise ArgumentError(f"Market not found for {position.ticker} under {exchange.name}")
+            raise ValueError(f"Market not found for {position.ticker} under {exchange.name}")
 
         min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
