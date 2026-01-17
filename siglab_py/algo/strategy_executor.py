@@ -610,7 +610,7 @@ async def main():
         tp_min_percent : float  = param['tp_min_percent']
         executed_position = None
         position_break : bool = False
-        while (not tp and not sl and not position_break):
+        while (not position_break):
             try:
                 dt_now = datetime.now()
                 block_entries = False
