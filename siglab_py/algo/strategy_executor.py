@@ -1037,8 +1037,8 @@ async def main():
 
                         pd_position_cache.loc[position_cache_row.name, "lo_row:datetime"] = lo_row['datetime']
                         pd_position_cache.loc[position_cache_row.name, "hi_row:datetime"] = hi_row['datetime']
-                        pd_position_cache.loc[position_cache_row.name, "lo_row:timestamp_ms"] = lo_row['timestamp_ms']
-                        pd_position_cache.loc[position_cache_row.name, "hi_row:timestamp_ms"] = hi_row['timestamp_ms']
+                        pd_position_cache.loc[position_cache_row.name, "lo_row:timestamp_ms"] = str(lo_row['timestamp_ms']) # For display purpose, cast to str so won't print scientific notation
+                        pd_position_cache.loc[position_cache_row.name, "hi_row:timestamp_ms"] = str(hi_row['timestamp_ms'])
                         pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
                         pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
                         
