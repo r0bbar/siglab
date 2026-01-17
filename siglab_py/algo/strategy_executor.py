@@ -1092,6 +1092,8 @@ async def main():
                         allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
                         allow_entry_initial_long = allow_entry_func_initial_result['long']
                         allow_entry_initial_short = allow_entry_func_initial_result['short']
+
+                        assert(not(allow_entry_initial_long and allow_entry_initial_short))
                         
                         allow_entry = allow_entry_initial_long or allow_entry_initial_short
                         allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
@@ -1100,10 +1102,13 @@ async def main():
                             allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                             allow_entry_final_long = allow_entry_func_final_result['long']
                             allow_entry_final_short = allow_entry_func_final_result['short']
-                            allow_entry_final_long = allow_entry_final_long and allow_entry_final_long
-                            allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
-                            target_price_short = allow_entry_func_final_result['target_price_short']	
+                            target_price_short = allow_entry_func_final_result['target_price_short']
+
+                            allow_entry_final_long = allow_entry_initial_long and allow_entry_final_long
+                            allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
+
+                            assert(not(allow_entry_final_long and allow_entry_final_short))
 
                             pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
