@@ -1261,7 +1261,7 @@ async def main():
                             _effective_tp_trailing_percent = calc_eff_trailing_sl(
                                 tp_min_percent = tp_min_percent,
                                 tp_max_percent = tp_max_percent,
-                                sl_percent_trailing = tp_max_percent,
+                                sl_percent_trailing = param['sl_percent_trailing'],
                                 pnl_percent_notional = max_unreal_open_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
                                 linear=True if tp_max_percent >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
@@ -1272,6 +1272,8 @@ async def main():
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
 
                             pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
+
+                            log(f"tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}")
 
 
                     # STEP 2. Unwind position
