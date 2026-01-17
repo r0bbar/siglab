@@ -1033,6 +1033,22 @@ async def main():
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
 
                         # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
+                        _all_indicators = {}
+
+                        pd_position_cache.loc[position_cache_row.name, "lo_row:datetime"] = lo_row['datetime']
+                        pd_position_cache.loc[position_cache_row.name, "hi_row:datetime"] = hi_row['datetime']
+                        pd_position_cache.loc[position_cache_row.name, "lo_row:timestamp_ms"] = lo_row['timestamp_ms']
+                        pd_position_cache.loc[position_cache_row.name, "hi_row:timestamp_ms"] = hi_row['timestamp_ms']
+                        pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
+                        pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
+                        
+                        _all_indicators["lo_row:datetime"] = lo_row['datetime'].strftime("%Y-%m-%d %H:%M")
+                        _all_indicators["hi_row:datetime"] = hi_row['datetime'].strftime("%Y-%m-%d %H:%M")
+                        _all_indicators["lo_row:timestamp_ms"] = int(lo_row['timestamp_ms'])
+                        _all_indicators["hi_row:timestamp_ms"] = int(hi_row['timestamp_ms'])
+                        _all_indicators["lo_row_tm1:id"] = lo_row_tm1.name
+                        _all_indicators["hi_row_tm1:id"] = hi_row_tm1.name
+
                         for indicator in strategy_indicators:
                             indicator_source : str = indicator.split(":")[0]
                             indicator_name = indicator.split(":")[-1]
@@ -1045,9 +1061,8 @@ async def main():
                             elif indicator_source=="hi_row_tm1":
                                 indicator_value = hi_row_tm1[indicator_name]
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
-                        pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
-                        pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
-
+                            _all_indicators[indicator] = indicator_value
+                        
                         last_candles=trailing_candles # alias
 
                         pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
@@ -1070,7 +1085,7 @@ async def main():
                             allow_entry_final_long = allow_entry_final_long and allow_entry_final_long
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
                             target_price_long = allow_entry_func_final_result['target_price_long']
-                            target_price_short = allow_entry_func_final_result['target_price_short']
+                            target_price_short = allow_entry_func_final_result['target_price_short']	
 
                             pnl_potential_bps : Union[float, None] = None
                             if allow_entry_final_long or allow_entry_final_short:
@@ -1152,8 +1167,11 @@ async def main():
                                         'tp_max_percent' : tp_max_percent,
                                         'tp_min_percent' : tp_min_percent,
                                         'running_sl_percent_hard' : running_sl_percent_hard,
-                                        'multiplier' : multiplier
+                                        'multiplier' : multiplier,
+                                        'indicators' : {}
                                     }
+                                for indicator in _all_indicators.keys():
+                                    executed_position['position']['indicators'][indicator] = _all_indicators[indicator]
 
                                 pd_position_cache.loc[position_cache_row.name, 'pos'] = pos + new_pos_from_exchange
                                 pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt + new_pos_usdt_from_exchange
@@ -1197,6 +1215,7 @@ async def main():
                                                     }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
+                                log(executed_position)
                                 dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
                         '''
@@ -1358,7 +1377,7 @@ async def main():
                                             'max_pain' : max_pain
                                         }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
-                                
+
                                 log(executed_position_close)
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
@@ -1371,6 +1390,7 @@ async def main():
                     log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'ob_best_ask'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
                     pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
