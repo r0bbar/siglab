@@ -226,6 +226,7 @@ POSITION_CACHE_COLUMNS = [
             'running_sl_percent_hard',
             'sl_trailing_min_threshold_crossed',
             'sl_percent_trailing',
+            'effective_tp_trailing_percent',
             'loss_trailing'
         ]
 
@@ -705,6 +706,7 @@ async def main():
                         'running_sl_percent_hard' : param['sl_hard_percent'],
                         'sl_trailing_min_threshold_crossed' : False,
                         'sl_percent_trailing' : param['sl_percent_trailing'],
+                        'effective_tp_trailing_percent' : param['default_effective_tp_trailing_percent'],
                         'loss_trailing' : 0
                     }
                     position_cache_row.update({ind: None for ind in strategy_indicators})
@@ -769,7 +771,8 @@ async def main():
 
                 running_sl_percent_hard = position_cache_row['running_sl_percent_hard']
                 sl_trailing_min_threshold_crossed = position_cache_row['sl_trailing_min_threshold_crossed']
-                sl_percent_trailing = position_cache_row['sl_percent_trailing']
+                # No need read 'sl_percent_trailing' off position_cache_row, it's a static param.
+                effective_tp_trailing_percent = position_cache_row['effective_tp_trailing_percent']
                 loss_trailing = position_cache_row['loss_trailing']
 
                 pnl_percent_notional = pnl_open_bps/100
@@ -1039,6 +1042,8 @@ async def main():
                                 'target_price' : tp_max_target # This is the only field needed by backtest_core generic_tp_eval
                             }
                         )
+
+                        log(f"pnl eval block tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}")
                         
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
                         if param['dump_candles']:
@@ -1208,7 +1213,7 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
-                                pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = float('inf')
+                                pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = param['default_effective_tp_trailing_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
 
                                 pos_entries.append(pos_created)
@@ -1273,7 +1278,7 @@ async def main():
 
                             pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
 
-                            log(f"tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}")
+                            log(f"calc_eff_trailing_sl tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}")
 
 
                     # STEP 2. Unwind position
@@ -1370,7 +1375,8 @@ async def main():
                                 pd_position_cache.at[position_cache_row.name, 'pos_entries'] = []
                                 pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
-                                pd_position_cache.loc[position_cache_row.name, 'sl_percent_trailing'] = param['sl_percent_trailing']
+                                pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = param['default_effective_tp_trailing_percent']
+                                
                                 pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
                                 
                                 tp_max_percent  = param['tp_max_percent']
