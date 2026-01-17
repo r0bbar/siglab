@@ -298,6 +298,8 @@ def parse_args():
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
 
+    parser.add_argument("--dump_candles", help="This is for trouble shooting only. Y or N (default).", default='N')
+
     args = parser.parse_args()
 
     param['target_strategy_name'] = args.target_strategy_name
@@ -367,6 +369,14 @@ def parse_args():
     param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
+
+    if args.dump_candles:
+        if args.dump_candles=='Y':
+            param['dump_candles'] = True
+        else:
+            param['dump_candles'] = False
+    else:
+        param['dump_candles'] = False
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -1031,7 +1041,10 @@ async def main():
                         )
                         
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
-
+                        if param['dump_candles']:
+                            pd_hi_candles_w_ta.to_csv(f"hi_candles_{ticker.replace(':','').replace('/','')}.csv")
+                            pd_lo_candles_w_ta.to_csv(f"lo_candles_{ticker.replace(':','').replace('/','')}.csv")
+                            
                         # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                         _all_indicators = {}
 
