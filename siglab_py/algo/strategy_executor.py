@@ -664,8 +664,6 @@ async def main():
                     if param['block_entry_impacting_events'] and impacting_economic_calendars:
                         block_entries = True
                 
-                log(f"block_entries: {block_entries}")
-
                 position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
                 if position_cache_row.shape[0]==0:
                     position_cache_row = {
@@ -1093,6 +1091,8 @@ async def main():
                         allow_entry_initial_long = allow_entry_func_initial_result['long']
                         allow_entry_initial_short = allow_entry_func_initial_result['short']
 
+                        log(f"block_entries: {block_entries}, allow_entry_initial_long: {allow_entry_initial_long}, allow_entry_initial_short: {allow_entry_initial_short}")
+
                         assert(not(allow_entry_initial_long and allow_entry_initial_short))
                         
                         allow_entry = allow_entry_initial_long or allow_entry_initial_short
@@ -1105,9 +1105,11 @@ async def main():
                             target_price_long = allow_entry_func_final_result['target_price_long']
                             target_price_short = allow_entry_func_final_result['target_price_short']
 
+                            log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
+
                             allow_entry_final_long = allow_entry_initial_long and allow_entry_final_long
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
-
+                            
                             assert(not(allow_entry_final_long and allow_entry_final_short))
 
                             pnl_potential_bps : Union[float, None] = None
