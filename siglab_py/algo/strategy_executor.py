@@ -480,8 +480,22 @@ async def main():
     log(f"position_cache_file_name: {position_cache_file_name}")
     
     exchange_name : str = gateway_id.split('_')[0]
+
+    ticker_change_map = None
+    with open(param['ticker_change_map'], 'r', encoding='utf-8') as f:
+        ticker_change_map : List[Dict[str, Union[str, int]]] = json.load(f)
+        log(f"ticker_change_map loaded from {param['ticker_change_map']}")
+        log(json.dumps(ticker_change_map))
+
     ticker : str = param['ticker']
     _ticker = ticker # In case ticker changes ...
+    if ticker_change_map:
+        old_ticker= get_old_ticker(_ticker, ticker_change_map)
+        if old_ticker:
+            ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
+            ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+            if datetime.now().timestamp()<ticker_change_cutoff_sec:
+                _ticker = old_ticker
 
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
     ordergateway_pending_orders_topic : str = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
@@ -509,12 +523,6 @@ async def main():
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
-
-    ticker_change_map = None
-    with open(param['ticker_change_map'], 'r', encoding='utf-8') as f:
-        ticker_change_map : List[Dict[str, Union[str, int]]] = json.load(f)
-        log(f"ticker_change_map loaded from {param['ticker_change_map']}")
-        log(json.dumps(ticker_change_map))
 
     # aliases
     algo_param = param
