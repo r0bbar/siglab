@@ -461,6 +461,16 @@ async def main():
     fh.setFormatter(formatter)     
     logger.addHandler(fh)
 
+    '''
+    DO NOT LOG 'param' after secrets (apikey, secret, passphrase) decrypted!!!
+    Just to be safe, we do this more explicitly below.
+    '''
+    _param = param.copy()
+    del _param['secret']
+    del _param['passphrase']
+    log(f"Strategy startup parameters: {json.dumps(_param, indent=4)}")
+    del _param
+
     log(f"orderhist_cache_file_name: {orderhist_cache_file_name}")
     log(f"position_cache_file_name: {position_cache_file_name}")
     
