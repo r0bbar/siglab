@@ -23,6 +23,7 @@ from tabulate import tabulate
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 from siglab_py.util.datetime_util import parse_trading_window
+from siglab_py.util.simple_math import compute_adjacent_levels
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
@@ -213,7 +214,8 @@ POSITION_CACHE_COLUMNS = [
             'max_pnl_potential_bps',
             'close_px',
 
-            'ob_mid', 'spread_bps', 'ob_best_bid', 'ob_best_ask',
+            'ob_mid', 'spread_bps', 'ob_best_bid', 'ob_best_ask', 'level_granularity', 'level_below', 'level_above',
+
             'unreal_live',
             'max_unreal_live',
             'max_pain',
@@ -938,6 +940,11 @@ async def main():
                     mid = (best_ask+best_bid)/2
                     spread_bps = (best_ask/best_bid - 1) * 10000
 
+                    level_granularity = param['level_granularity']
+                    adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, num_levels_per_side=2)
+                    level_below = adjacent_levels[1]
+                    level_above = adjacent_levels[3]
+
                     if pos_status!=PositionStatus.UNDEFINED.name:
                         pos_usdt = mid * pos
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
@@ -1070,7 +1077,7 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, "hi_row:timestamp_ms"] = str(hi_row['timestamp_ms'])
                         pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
                         pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
-                        
+
                         _all_indicators["lo_row:datetime"] = lo_row['datetime'].strftime("%Y-%m-%d %H:%M")
                         _all_indicators["hi_row:datetime"] = hi_row['datetime'].strftime("%Y-%m-%d %H:%M")
                         _all_indicators["lo_row:timestamp_ms"] = int(lo_row['timestamp_ms'])
@@ -1098,6 +1105,9 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
                         pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
+                        pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
+                        pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
+                        pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
 
                         kwargs = {k: v for k, v in locals().items() if k in allow_entry_initial_func_params}
                         allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
@@ -1437,7 +1447,7 @@ async def main():
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'ob_best_ask'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
