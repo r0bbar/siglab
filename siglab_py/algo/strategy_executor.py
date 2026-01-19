@@ -1444,7 +1444,7 @@ async def main():
                     if lo_candles_updated:
                         log(f"candles_provider updated lo_candles! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                        log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
                     pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
                     orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
