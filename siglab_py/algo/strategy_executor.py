@@ -271,6 +271,7 @@ def parse_args():
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
+    parser.add_argument("--max_pos_amount_base_ccy", help="Allows for sliced entries. Default is set to 'amount_base_ccy'", default=None)
     parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED.", default=100)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
@@ -335,6 +336,11 @@ def parse_args():
     param['ticker'] = args.ticker
     param['order_type'] = args.order_type
     param['amount_base_ccy'] = float(args.amount_base_ccy)
+    if args.max_pos_amount_base_ccy:
+        param['max_pos_amount_base_ccy'] = max(
+            float(args.max_pos_amount_base_ccy), 
+            param['amount_base_ccy']
+        )
     param['residual_pos_usdt_threshold'] = float(args.residual_pos_usdt_threshold)
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
@@ -1114,8 +1120,14 @@ async def main():
 
                             log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
 
-                            allow_entry_final_long = allow_entry_initial_long and allow_entry_final_long
-                            allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short
+                            allow_entry_final_long = allow_entry_initial_long and allow_entry_final_long and (
+                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name ])
+                                or (pos>0 and pos + param["amount_base_ccy"] <= param['max_pos_amount_base_ccy'])
+                            )
+                            allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short and (
+                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name ])
+                                or (pos<0 and abs(pos) + param["amount_base_ccy"] <= param['max_pos_amount_base_ccy'])
+                            )
                             
                             assert(not(allow_entry_final_long and allow_entry_final_short))
 
@@ -1172,7 +1184,7 @@ async def main():
                                         raise ValueError(err_msg)
                                 executed_position = executed_positions[0] # We sent only one DivisiblePosition.
 
-                                new_pos_from_exchange =executed_position['filled_amount']
+                                new_pos_from_exchange = executed_position['filled_amount']
                                 amount_filled_usdt = mid * new_pos_from_exchange
                                 entry_px = executed_position['average_cost']
                                 new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
@@ -1199,6 +1211,9 @@ async def main():
                                         'tp_max_percent' : tp_max_percent,
                                         'tp_min_percent' : tp_min_percent,
                                         'running_sl_percent_hard' : running_sl_percent_hard,
+                                        'filled_amount' : new_pos_from_exchange,
+                                        'pos' : pos + new_pos_from_exchange,
+                                        'pos_usdt' : pos_usdt + new_pos_usdt_from_exchange,
                                         'multiplier' : multiplier,
                                         'indicators' : {}
                                     }
