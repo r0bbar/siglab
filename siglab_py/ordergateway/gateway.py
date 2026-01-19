@@ -431,6 +431,8 @@ async def execute_one_position(
     notification_params : Dict[str, Any]
 ):
     try:
+        await exchange.load_markets() # in case ticker change after gateway startup
+
         market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None
         if not market:
             raise ValueError(f"Market not found for {position.ticker} under {exchange.name}")

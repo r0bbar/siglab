@@ -48,6 +48,13 @@ Usage:
         python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 720 --redis_ttl_ms 3600000
         python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 672 --redis_ttl_ms 3600000
 
+        Note,
+        a. 'ticker_change_map.json' is for ticker change handling.
+        b. retart on ticker change?
+            candles_provider NO
+            gateway.py NO (If will load_market before process each request)
+            orderbooks_provider YES (resubscribe on new ticker)
+
         Note: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
             720 = 24 x 30 days  
             672 = 4 x 24 x 7 days (Each hour has four 15m candles. 672 candles means 672 15m candles)

@@ -21,7 +21,7 @@ from ccxt.okx import okx
 from ccxt.bybit import bybit
 from ccxt.base.exchange import Exchange
 
-from siglab_py.util.market_data_util import fetch_candles
+from siglab_py.util.market_data_util import fetch_candles, get_old_ticker, get_ticker_map
 
 
 '''
@@ -77,6 +77,9 @@ param : Dict = {
     
     # Provider ID is part of mds publish topic. 
     'provider_id' : 'b0f1b878-c281-43d7-870a-0347f90e6ece',
+
+    # Ticker change
+    'ticker_change_map' : '.\\siglab_py\\ticker_change_map.json',
 
     # Publish to message bus
     'mds' : {
@@ -179,6 +182,7 @@ def init_redis_channel_subscription(redis_client : StrictRedis, partition_assign
 
 def process_universe(
     universe : pd.DataFrame, 
+    ticker_change_map,
     task,
     redis_client : StrictRedis
     ):
@@ -187,7 +191,6 @@ def process_universe(
 
     while task.keep_running:
         start = time.time()
-        
         num_fetches_this_wave = 0
 
         i = 1
@@ -195,17 +198,28 @@ def process_universe(
             exchange_name : str = row['exchange']
             ticker : str = row['ticker']
             
-            this_row_header = f'({i} of {universe.shape[0]}) exchange_name: {exchange_name}, ticker: {ticker}'
-            
             try:
+                _ticker : str = ticker # In case ticker change
+                if ticker_change_map:
+                    old_ticker= get_old_ticker(_ticker, ticker_change_map)
+                    if old_ticker:
+                        ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
+                        ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+                        if datetime.now().timestamp()<ticker_change_cutoff_sec:
+                            _ticker = old_ticker
+                
+                this_row_header = f'({i} of {universe.shape[0]}) exchange_name: {exchange_name}, ticker: {_ticker}'
+                
                 exchange = exchanges[exchange_name]
+
+                exchange.load_markets() # in case ticker change after gateway startup
 
                 fetch_again = False
                 last_fetch = None
                 last_fetch_ts = None
-                if subscribed[(exchange_name, ticker)]:
-                    last_fetch = subscribed[(exchange_name, ticker)]['candles']
-                    if subscribed[(exchange_name, ticker)]['num_candles']>0:
+                if subscribed[(exchange_name, _ticker)]:
+                    last_fetch = subscribed[(exchange_name, _ticker)]['candles']
+                    if subscribed[(exchange_name, _ticker)]['num_candles']>0:
                         last_fetch_ts = last_fetch.iloc[-1]['timestamp_ms']/1000 # type: ignore Otherwise, Error: Cannot access attribute "iloc" for class "None"
                 candle_size = param['candle_size']
                 interval = candle_size[-1]
@@ -247,25 +261,25 @@ def process_universe(
                     candles = fetch_candles(
                                                 start_ts=cutoff_ts, 
                                                 end_ts=int(end_date.timestamp()), 
-                                                exchange=exchange, normalized_symbols=[ticker], 
+                                                exchange=exchange, normalized_symbols=[_ticker], 
                                                 candle_size = candle_size, 
                                                 num_candles_limit = 100,
                                                 logger = None
                                             )
-                    subscribed[(exchange_name, ticker)] = {
-                        'candles' : candles[ ticker ],
-                        'num_candles' : candles[ ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
+                    subscribed[(exchange_name, _ticker)] = {
+                        'candles' : candles[ _ticker ],
+                        'num_candles' : candles[ _ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
                     }
                     num_fetches_this_wave += 1
 
-                    denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==ticker]))['id']
+                    denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
 
                     publish_key = param['mds']['topics']['candles_publish_topic']
                     publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
                     publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                     publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
 
-                    data = candles[ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                    data = candles[_ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                     
                     start = time.time()
                     if redis_client:
@@ -285,7 +299,7 @@ def process_universe(
 
                         redis_set_elapsed_ms = int((time.time() - start) *1000)
 
-                        log(f"published candles {candles[ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
+                        log(f"published candles {candles[_ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
 
             except Exception as loop_error:
                 log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
@@ -307,6 +321,12 @@ async def main():
     parse_args()
     
     param['job_name'] = f'candles_provider_{param["provider_id"]}'
+
+    ticker_change_map = None
+    with open(param['ticker_change_map'], 'r', encoding='utf-8') as f:
+        ticker_change_map : List[Dict[str, Union[str, int]]] = json.load(f)
+        log(f"ticker_change_map loaded from {param['ticker_change_map']}")
+        log(json.dumps(ticker_change_map))
 
     redis_client : StrictRedis = init_redis_client()
     partition_assign_topic : str = param['mds']['topics']['partition_assign_topic']
@@ -333,7 +353,7 @@ async def main():
             logger.info(f"{partition_assign_topic} {message}")
 
             task = ThreadTask(universe_reload_id=universe_reload_id)
-            t = Thread(target=process_universe, args = (universe, task, redis_client))
+            t = Thread(target=process_universe, args = (universe, ticker_change_map, task, redis_client))
             t.start()
 
             universe_reload_id += 1
