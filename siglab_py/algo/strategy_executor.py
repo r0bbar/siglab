@@ -24,7 +24,7 @@ from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 from siglab_py.util.datetime_util import parse_trading_window
 from siglab_py.util.simple_math import compute_adjacent_levels
-from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms
+from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
 from siglab_py.util.aws_util import AwsKmsUtil
@@ -156,6 +156,9 @@ param : Dict = {
     ],
     'max_current_economic_calendar_age_sec' : 10,
     'num_intervals_current_ecoevents' : 4* 24, # x4 because lo_interval "15m" per 'lo_candles_w_ta_topic': If you want to convert to 24 hrs ...
+
+    # Ticker change
+    'ticker_change_map' : 'ticker_change_map.json',
 
     "loop_freq_ms" : 5000, # reduce this if you need trade faster
 
@@ -478,6 +481,8 @@ async def main():
     
     exchange_name : str = gateway_id.split('_')[0]
     ticker : str = param['ticker']
+    _ticker = ticker # In case ticker changes ...
+
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
     ordergateway_pending_orders_topic : str = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
     
@@ -504,6 +509,12 @@ async def main():
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
+
+    ticker_change_map = None
+    with open(param['ticker_change_map'], 'r', encoding='utf-8') as f:
+        ticker_change_map : List[Dict[str, Union[str, int]]] = json.load(f)
+        log(f"ticker_change_map loaded from {param['ticker_change_map']}")
+        log(json.dumps(ticker_change_map))
 
     # aliases
     algo_param = param
@@ -569,7 +580,7 @@ async def main():
     )
     if exchange:
         markets = await exchange.load_markets() 
-        market = markets[ticker]
+        market = markets[_ticker]
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
 
         balances = await exchange.fetch_balance() 
@@ -597,9 +608,9 @@ async def main():
             candles_partition_assign_topic : str):
             # https://redis.io/commands/publish/
             redis_client.publish(channel=candles_partition_assign_topic, message=json.dumps(exchange_tickers).encode('utf-8'))
-        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], hi_candles_provider_topic)
-        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], lo_candles_provider_topic)
-        _trigger_producers(redis_client, [ f"{exchange_name}|{param['ticker']}" ], orderbooks_provider_topic)
+        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], hi_candles_provider_topic)
+        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], lo_candles_provider_topic)
+        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], orderbooks_provider_topic)
 
         # Load cached positions from disk, if any
         if os.path.exists(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))>0:
@@ -686,11 +697,24 @@ async def main():
                     if param['block_entry_impacting_events'] and impacting_economic_calendars:
                         block_entries = True
                 
-                position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
+                if ticker_change_map:
+                    old_ticker= get_old_ticker(_ticker, ticker_change_map)
+                    if old_ticker:
+                        ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
+                        ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+                        if datetime.now().timestamp()<ticker_change_cutoff_sec:
+                            _ticker = old_ticker
+
+                # Ticker changes, delisting handling
+                markets = await exchange.load_markets() 
+                market = markets[_ticker]
+                multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+
+                position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==_ticker)]
                 if position_cache_row.shape[0]==0:
                     position_cache_row = {
                         'exchange': exchange_name,
-                        'ticker' : ticker,
+                        'ticker' : _ticker,
 
                         'status' : PositionStatus.UNDEFINED.name,
                         
@@ -731,7 +755,7 @@ async def main():
                     }
                     position_cache_row.update({ind: None for ind in strategy_indicators})
                     pd_position_cache = pd.concat([pd_position_cache, pd.DataFrame([position_cache_row])], axis=0, ignore_index=True)
-                    position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==ticker)]
+                    position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==_ticker)]
             
                 position_cache_row = position_cache_row.iloc[0]
 
@@ -837,7 +861,7 @@ async def main():
                 For spots/margin trading, you should use 'fetch_balance' instsead. If you short you'd see:
                     BTC: { free: -5.2, total: -5.2 })
                 '''
-                position_from_exchange = await exchange.fetch_position(param['ticker']) 
+                position_from_exchange = await exchange.fetch_position(_ticker) 
 
                 if exchange.options['defaultType']!='spot': 
                     if executed_position and position_from_exchange:
@@ -850,9 +874,9 @@ async def main():
                         if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']: 
                             position_break = True
 
-                            err_msg = f"{param['ticker']}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" 
+                            err_msg = f"{_ticker}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" 
                             log(err_msg)
-                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 
                 if position_break:
                     log(f"Position break! Exiting execution. Did you manually close the trade?")
@@ -943,7 +967,7 @@ async def main():
                         orderbook_valid = False
                         
                     if not orderbook_valid:
-                        ob = await exchange.fetch_order_book(symbol=param['ticker'], limit=10) 
+                        ob = await exchange.fetch_order_book(symbol=_ticker, limit=10) 
                         err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
 
@@ -1065,7 +1089,7 @@ async def main():
                         # This is for tp_eval_func
                         this_ticker_open_trades.append(
                             {
-                                'ticker' : param['ticker'],
+                                'ticker' : _ticker,
                                 'side' : pos_side.name.lower(), # backtests uses lower case
                                 'amount' : pos_usdt,
                                 'entry_price' : entry_px,
@@ -1077,8 +1101,8 @@ async def main():
                         
                     if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
                         if param['dump_candles']:
-                            pd_hi_candles_w_ta.to_csv(f"hi_candles_{ticker.replace(':','').replace('/','')}.csv")
-                            pd_lo_candles_w_ta.to_csv(f"lo_candles_{ticker.replace(':','').replace('/','')}.csv")
+                            pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
+                            pd_lo_candles_w_ta.to_csv(f"lo_candles_{_ticker.replace(':','').replace('/','')}.csv")
                             
                         # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                         _all_indicators = {}
@@ -1182,7 +1206,7 @@ async def main():
                                 
                                 entry_positions : List[DivisiblePosition] = [
                                     DivisiblePosition(
-                                        ticker = param['ticker'],
+                                        ticker = _ticker,
                                         side = side,
                                         amount = target_order_notional,
                                         leg_room_bps = param['leg_room_bps'],
@@ -1273,7 +1297,7 @@ async def main():
                                 orderhist_cache_row = {
                                                         'datetime' : dt_now,
                                                         'exchange' : exchange_name,
-                                                        'ticker' : ticker,
+                                                        'ticker' : _ticker,
                                                         'reason' : 'entry',
                                                         'side' : side,
                                                         'avg_price' : new_pos_usdt_from_exchange/new_pos_from_exchange,
@@ -1285,7 +1309,7 @@ async def main():
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                 log(executed_position)
-                                dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {param['ticker']} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                         
                         '''
                         Have a look at this for a visual explaination how "Gradually tightened stops" works:
@@ -1365,7 +1389,7 @@ async def main():
                     if tp or sl:
                         exit_positions : List[DivisiblePosition] = [
                             DivisiblePosition(
-                                ticker = param['ticker'],
+                                ticker = _ticker,
                                 side = 'sell' if pos_side==OrderSide.BUY else 'buy',
                                 amount = param['amount_base_ccy'],
                                 leg_room_bps = param['leg_room_bps'],
@@ -1376,7 +1400,7 @@ async def main():
                                 reduce_only=True
                             )
                         ]
-                        log(f"Closing position. {ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
+                        log(f"Closing position. {_ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
                         executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                         redis_client=redis_client,
                                                                                                                         positions=exit_positions,
@@ -1439,7 +1463,7 @@ async def main():
                                 orderhist_cache_row = {
                                             'datetime' : dt_now,
                                             'exchange' : exchange_name,
-                                            'ticker' : ticker,
+                                            'ticker' : _ticker,
                                             'reason' : new_status,
                                             'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
                                             'avg_price' : mid, # mid is actually not avg_price!
@@ -1454,7 +1478,7 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             else:
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {param['ticker']}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
@@ -1474,7 +1498,7 @@ async def main():
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
-                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {param['ticker']}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
             finally:
                 time.sleep(int(param['loop_freq_ms']/1000))
