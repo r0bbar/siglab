@@ -202,6 +202,8 @@ def work(
                                 candles = json.loads(message)
                                 pd_candles = pd.read_json(StringIO(candles), convert_dates=False)
 
+                                log(f"sliding window size ma_long_intervals: {ma_long_intervals}, ma_short_intervals: {ma_short_intervals}")
+
                                 start = time.time()
                                 compute_candles_stats(
                                             pd_candles=pd_candles, 
