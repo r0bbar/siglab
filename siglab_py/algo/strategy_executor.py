@@ -55,9 +55,11 @@ Usage:
     Step 2. Start candles_ta_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
         python candles_ta_provider.py --candle_size 1h --ma_long_intervals 48 --ma_short_intervals 12 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
-        python candles_ta_provider.py --candle_size 15m --ma_long_intervals 150 --ma_short_intervals 5 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
+        python candles_ta_provider.py --candle_size 15m --ma_long_intervals 150 --ma_short_intervals 75 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
 
-        Note, for 15m bars, a sliding window of size 150 means 150 x 15m = 2250 minutes
+        Note, 
+        a. for 15m bars, a sliding window of size 150 means 150 x 15m = 2250 minutes
+        b. sliding window sizes are defined by 'candles_ta_provider', not 'candles_provider'!!!
 
     Step 3. Start orderbooks_provider
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
