@@ -139,7 +139,7 @@ Debug from VSCode, launch.json:
     }
 '''
 param : Dict = {
-    'trailing_sl_min_percent_linear': 1.0, # This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>100bps), there's more uncertainty if target can be reached: Go with linear.
+    'trailing_stop_mode': "linear", # linear or parabolic
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
 
     'rolldate_tz' : 'Asia/Hong_Kong', # Roll date based on what timezone?
@@ -302,7 +302,7 @@ def parse_args():
     parser.add_argument("--sl_hard_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
-    parser.add_argument("--trailing_sl_min_percent_linear", help="This is threshold used for tp_algo to decide if use linear stops tightening, or non-linear. If tp_max_percent far (>200bps for example), there's more uncertainty if target can be reached: Go with linear. Default: 2% (200 bps)", default=2.0)
+    parser.add_argument("--trailing_stop_mode", help="This is for trailing stops tightening 'calc_eff_trailing_sl': linear or parabolic. Default: linear", default='linear')
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     parser.add_argument("--recover_min_percent", help="This is minimum unreal pnl recovery when your trade is red before trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
     parser.add_argument("--recover_max_pain_percent", help="This is minimum max_pain endured when your trade is red. For trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop mechanism will remain inactive.", default=float('inf'))
@@ -372,7 +372,7 @@ def parse_args():
     param['sl_hard_percent'] = float(args.sl_hard_percent)
     param['sl_num_intervals_delay'] = int(args.sl_num_intervals_delay)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
-    param['trailing_sl_min_percent_linear'] = float(args.trailing_sl_min_percent_linear)
+    param['trailing_stop_mode'] = args.trailing_stop_mode
     param['non_linear_pow'] = float(args.non_linear_pow)
     param['recover_min_percent'] = float(args.recover_min_percent)
     param['recover_max_pain_percent'] = float(args.recover_max_pain_percent)
@@ -1368,7 +1368,7 @@ async def main():
                                 sl_percent_trailing = param['sl_percent_trailing'],
                                 pnl_percent_notional = max_unreal_open_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
-                                linear=True if tp_max_percent >= param['trailing_sl_min_percent_linear'] else False, # If tp_max_percent far (>100bps for example), there's more uncertainty if target can be reached: Go with linear.
+                                linear=param['trailing_stop_mode'],
                                 pow=param['non_linear_pow']
                             )
 
