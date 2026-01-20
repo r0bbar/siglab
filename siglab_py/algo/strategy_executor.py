@@ -1000,7 +1000,7 @@ async def main():
                     level_below = adjacent_levels[1]
                     level_above = adjacent_levels[3]
 
-                    if pos_status!=PositionStatus.UNDEFINED.name:
+                    if pos!=0:
                         pos_usdt = mid * pos
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
