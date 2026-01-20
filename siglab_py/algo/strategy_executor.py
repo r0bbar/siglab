@@ -80,7 +80,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
     Step 6. Start order gateway
         Top of the script for instructions
@@ -111,6 +111,7 @@ Debug from VSCode, launch.json:
                         "--order_type", "limit",
                         "--amount_base_ccy", "3",
                         "--slices", "3",
+                        "--fees_ccy", "USDT",
                         "--wait_fill_threshold_ms", "15000",
                         "--leg_room_bps", "5",
                         "--tp_min_percent", "3",
@@ -290,8 +291,9 @@ def parse_args():
     parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED.", default=100)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
+    parser.add_argument("--fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
-
+    
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
@@ -359,6 +361,7 @@ def parse_args():
     param['residual_pos_usdt_threshold'] = float(args.residual_pos_usdt_threshold)
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
+    param['fees_ccy'] = args.fees_ccy
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
 
     param['tp_min_percent'] = float(args.tp_min_percent)
@@ -887,7 +890,7 @@ async def main():
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                        if position_from_exchange_base_ccy!=executed_position['position']['amount_base_ccy']: 
+                        if position_from_exchange_base_ccy!=pos: 
                             position_break = True
 
                             err_msg = f"{_ticker}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" 
@@ -1230,7 +1233,8 @@ async def main():
                                         leg_room_bps = param['leg_room_bps'],
                                         order_type = param['order_type'],
                                         slices = param['slices'],
-                                        wait_fill_threshold_ms = param['wait_fill_threshold_ms']
+                                        wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
+                                        fees_ccy=param['fees_ccy']
                                     )
                                 ]
                                 log(f"dispatching {side} orders to {gateway_id}")
@@ -1278,6 +1282,7 @@ async def main():
                                         'filled_amount' : new_pos_from_exchange,
                                         'pos' : pos + new_pos_from_exchange,
                                         'pos_usdt' : pos_usdt + new_pos_usdt_from_exchange,
+                                        'fees' : fees,
                                         'multiplier' : multiplier,
                                         'indicators' : {}
                                     }
@@ -1414,6 +1419,7 @@ async def main():
                                 order_type = param['order_type'],
                                 slices = param['slices'],
                                 wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
+                                fees_ccy=param['fees_ccy'],
 
                                 reduce_only=True
                             )
@@ -1444,6 +1450,7 @@ async def main():
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'closed_pnl' : closed_pnl,
+                                    'fees' : fees,
                                     'running_sl_percent_hard' : running_sl_percent_hard,
                                     'loss_trailing' : loss_trailing,
                                     'effective_tp_trailing_percent' : effective_tp_trailing_percent,
