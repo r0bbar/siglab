@@ -216,7 +216,8 @@ logger.addHandler(sh)
 POSITION_CACHE_COLUMNS = [ 
             'exchange', 'ticker',
             'status', 
-            'pos', 'pos_usdt', 'multiplier', 'created', 'closed', 
+            'pos', 'pos_usdt', # pos and pos_usdt: For longs, it's positive number. For shorts, it's a negative number. 
+            'multiplier', 'created', 'closed', 
             'pos_entries',
              
             'entry_px', 
@@ -1430,7 +1431,7 @@ async def main():
                                 else:
                                     closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
                                 
-                                new_pos_from_exchange = abs(pos) + executed_position_close['filled_amount']
+                                new_pos_from_exchange = pos + executed_position_close['filled_amount']
                                 new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
                                 fees = executed_position_close['fees']
 
