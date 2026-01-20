@@ -1136,6 +1136,8 @@ async def main():
                         _all_indicators["hi_row:timestamp_ms"] = int(hi_row['timestamp_ms'])
                         _all_indicators["lo_row_tm1:id"] = lo_row_tm1.name
                         _all_indicators["hi_row_tm1:id"] = hi_row_tm1.name
+                        _all_indicators['level_below'] = level_below
+                        _all_indicators['level_above'] = level_above
 
                         for indicator in strategy_indicators:
                             indicator_source : str = indicator.split(":")[0]
