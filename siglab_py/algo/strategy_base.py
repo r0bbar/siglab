@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
 from typing import List, Dict, Any, Union
-
-from siglab_py.backtests.backtest_core import generic_tp_eval
+from siglab_py.constants import OrderSide 
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
@@ -92,15 +91,16 @@ class StrategyBase(ABC):
 
     @staticmethod
     def tp_eval (
-            lo_row,
-            this_ticker_open_trades : List[Dict],
-            algo_param : Dict
+        mid : float,
+        tp_max_target : float,
+        pos_side : OrderSide
     ) -> bool:
-        '''
-        Be very careful, backtest_core 'generic_pnl_eval' may use a) some indicator (tp_indicator_name), or b) target_price to evaluate 'unrealized_pnl_tp'.
-        'tp_eval' only return True or False but it needs be congruent with backtest_core 'generic_pnl_eval', otherwise incorrect rosy pnl may be reported.
-        '''
-        return generic_tp_eval(lo_row, this_ticker_open_trades)
+        tp : bool = False
+        if pos_side==OrderSide.BUY:
+            tp = True if mid>=tp_max_target else False
+        elif pos_side==OrderSide.SELL:
+            tp = True if mid<=tp_max_target else False
+        return tp
 
     # List of TA/indicators you wish to include in POSITION_CACHE_COLUMNS from strategy_executor (Display concern only)
     @staticmethod

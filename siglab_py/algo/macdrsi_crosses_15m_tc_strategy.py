@@ -93,11 +93,11 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
 
     @staticmethod
     def tp_eval (
-            lo_row,
-            this_ticker_open_trades : List[Dict],
-            algo_param : Dict
+        mid : float,
+        tp_max_target : float,
+        pos_side : OrderSide
     ) -> bool:
-        return StrategyBase.tp_eval(lo_row, this_ticker_open_trades, algo_param)
+        return StrategyBase.tp_eval(mid, tp_max_target, pos_side)
 
     @staticmethod
     def get_strategy_indicators() -> List[str]:
