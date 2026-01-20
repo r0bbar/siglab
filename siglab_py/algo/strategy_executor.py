@@ -247,7 +247,7 @@ POSITION_CACHE_COLUMNS = [
         ]
 
 
-ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain' ]
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1327,7 +1327,8 @@ async def main():
                                                         'amount': abs(new_pos_usdt_from_exchange),
                                                         'pnl' : 0,
                                                         'pnl_bps' : 0,
-                                                        'max_pain' : 0
+                                                        'max_pain' : 0,
+                                                        'fees' : fees
                                                     }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
@@ -1495,7 +1496,8 @@ async def main():
                                             'amount': abs(new_pos_usdt_from_exchange),
                                             'unreal_live' : unreal_live,
                                             'pnl_live_bps' : pnl_live_bps,
-                                            'max_pain' : max_pain
+                                            'max_pain' : max_pain,
+                                            'fees' : fees
                                         }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
