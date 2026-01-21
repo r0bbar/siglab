@@ -1118,7 +1118,12 @@ async def main():
 
                         log(f"pnl eval block tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}")
                         
-                    if hi_candles_valid and lo_candles_valid: # On turn of interval, candles_provider may need a little time to publish latest candles
+                    '''
+                    On turn of interval, candles_provider may need a little time to publish latest candles.
+                    It's by design strategy_executor will make entries only if you have valid candles.
+                    However, TP/SL may be triggered regardless - mid price is coming from orderbook, not historical candles.
+                    '''
+                    if hi_candles_valid and lo_candles_valid:
                         if param['dump_candles']:
                             pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
                             pd_lo_candles_w_ta.to_csv(f"lo_candles_{_ticker.replace(':','').replace('/','')}.csv")
