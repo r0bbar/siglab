@@ -924,8 +924,8 @@ async def main():
                             err_msg = {
                                 'current_ts_ms' : dt_now.timestamp(),
                                 'hi_row_timestamp_ms' : hi_row['timestamp_ms'],
-                                'candles_age' : candles_age,
-                                'hi_interval_ms' : hi_interval_ms
+                                'candles_age' : int(candles_age),
+                                'hi_interval_ms' : int(hi_interval_ms)
                             }
                             log(err_msg, LogLevel.CRITICAL)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid hi_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
@@ -964,8 +964,8 @@ async def main():
                             err_msg = {
                                 'current_ts_ms' : dt_now.timestamp(),
                                 'lo_row_timestamp_ms' : lo_row['timestamp_ms'],
-                                'candles_age' : candles_age,
-                                'lo_interval_ms' : lo_interval_ms
+                                'candles_age' : int(candles_age),
+                                'lo_interval_ms' : int(lo_interval_ms)
                             }
                             log(err_msg, LogLevel.CRITICAL)
                             dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid lo_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
@@ -973,7 +973,7 @@ async def main():
                         lo_candles_valid = False
                         err_msg = f"lo candles missing, topic: {lo_candles_w_ta_topic}"
                         log(err_msg, LogLevel.CRITICAL)
-                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid hi_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid lo_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     if orderbook_topic in keys:
                         message = redis_client.get(orderbook_topic)
