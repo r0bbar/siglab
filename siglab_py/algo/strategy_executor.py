@@ -1007,10 +1007,10 @@ async def main():
                         unrealized_pnl_optimistic, unrealized_pnl_pessimistic = mid, mid
 
                         if pos_side == OrderSide.BUY:
-                            unreal_live = (mid - entry_px) * param['amount_base_ccy']
+                            unreal_live = round((mid - entry_px) * param['amount_base_ccy'], 3)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_optimistic = round((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], 3)
+                                unrealized_pnl_pessimistic = round((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], 3)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > (lo_interval_ms/1000) and lo_candles_valid:
                                 '''
@@ -1029,10 +1029,10 @@ async def main():
                                 '''
                                 unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
-                            unreal_live = (entry_px - mid) * param['amount_base_ccy']
+                            unreal_live = round((entry_px - mid) * param['amount_base_ccy'], 3)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = (trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy']
-                                unrealized_pnl_pessimistic = (trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_optimistic = round((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], 3)
+                                unrealized_pnl_pessimistic = round((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], 3)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > lo_interval_ms/1000 and lo_candles_valid:
                                 unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * param['amount_base_ccy']
@@ -1068,8 +1068,8 @@ async def main():
                             # Given sl_adj_func generally only tighten stops as your trade goes greener greener, cap it by param['sl_hard_percent'] just in case.
                             running_sl_percent_hard = min(running_sl_percent_hard, param['sl_hard_percent']) 
 
-                        pnl_live_bps = unreal_live / abs(pos_usdt) * 10000 if pos_usdt else 0
-                        pnl_open_bps = unrealized_pnl_open / abs(pos_usdt) * 10000 if pos_usdt else 0
+                        pnl_live_bps = round(unreal_live / abs(pos_usdt), 2) * 10000 if pos_usdt else 0
+                        pnl_open_bps = round(unrealized_pnl_open / abs(pos_usdt), 2) * 10000 if pos_usdt else 0
                         pnl_percent_notional = pnl_open_bps/100
 
                         if unreal_live>max_unreal_live:
@@ -1089,10 +1089,10 @@ async def main():
                             if recovered_pnl > max_recovered_pnl:
                                 max_recovered_pnl = recovered_pnl
 
-                        max_pain_percent_notional = max_pain / pos_usdt * 100
-                        max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100
+                        max_pain_percent_notional = round(max_pain / pos_usdt * 100, 2)
+                        max_recovered_pnl_percent_notional = round(max_recovered_pnl / pos_usdt * 100, 2)
 
-                        loss_trailing = (1 - pnl_live_bps/max_unreal_live_bps) * 100 if pnl_live_bps>0 else 0
+                        loss_trailing = round((1 - pnl_live_bps/max_unreal_live_bps) * 100, 2) if pnl_live_bps>0 else 0
 
                         pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = unreal_live
                         pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = max_unreal_live
@@ -1373,7 +1373,7 @@ async def main():
                             )
 
                             # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
-                            effective_tp_trailing_percent = min(effective_tp_trailing_percent, _effective_tp_trailing_percent)
+                            effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
 
                             pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
 
