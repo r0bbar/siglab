@@ -549,8 +549,13 @@ async def main():
     lo_interval = lo_candle_size[-1]
     lo_num_intervals : int = int(lo_candle_size.replace(lo_interval,''))
     lo_interval_ms : int = interval_to_ms(lo_interval) * lo_num_intervals
-    
+
+    min_sl_age_ms : int = lo_interval_ms * param['sl_num_intervals_delay']
     num_intervals_current_ecoevents_ms : int = lo_interval_ms * param['num_intervals_current_ecoevents']
+
+    log(f"hi_candle_size: {hi_candle_size}, hi_interval_ms: {hi_interval_ms:,}")
+    log(f"lo_candle_size: {lo_candle_size}, lo_interval_ms: {lo_interval_ms:,}")
+    log(f"num_intervals_current_ecoevents: {param['num_intervals_current_ecoevents']}, num_intervals_current_ecoevents_ms: {num_intervals_current_ecoevents_ms:,} (~{num_intervals_current_ecoevents_ms/1000/60/60} hrs)")
     
     strategy_indicators = TargetStrategy.get_strategy_indicators()
     position_cache_columns = POSITION_CACHE_COLUMNS + strategy_indicators
@@ -684,6 +689,7 @@ async def main():
                     parsed_trading_window = parse_trading_window(dt_targettz, trading_window)
                     if not parsed_trading_window['in_window']:
                         block_entries = True
+                        log(f"Block entries: Outside trading window")
 
                     log(f"trading_window start: {param['trading_window_start']}, end: {param['trading_window_end']}, in_window: {parsed_trading_window['in_window']}")
                 else:
@@ -711,10 +717,11 @@ async def main():
                             s_impacting_economic_calendars = " ".join([ x['event_code'] if x['event_code']!='manual_event' else x['event'] for x in impacting_economic_calendars ])
 
                     log(f"full_economic_calendars #rows: {len(full_economic_calendars) if full_economic_calendars else 0}")
-                    log(f"impacting_economic_calendars #rows: {len(impacting_economic_calendars) if impacting_economic_calendars else 0} {s_impacting_economic_calendars}. block_entries: {block_entries}")
+                    log(f"impacting_economic_calendars #rows: {len(impacting_economic_calendars) if impacting_economic_calendars else 0} {s_impacting_economic_calendars}.")
                     
                     if param['block_entry_impacting_events'] and impacting_economic_calendars:
                         block_entries = True
+                        log(f"Block entries: Incoming events")
                 
                 if ticker_change_map:
                     old_ticker= get_old_ticker(_ticker, ticker_change_map)
@@ -802,6 +809,13 @@ async def main():
                 pos_side = OrderSide.UNDEFINED
                 if pos_status!=PositionStatus.UNDEFINED.name:
                     pos_side = OrderSide.BUY if pos and pos>0 else OrderSide.SELL
+
+                if pos_status==PositionStatus.SL.name:
+                    total_ms_elapsed_since_sl = int((datetime.now() - pos_closed).total_seconds() *1000)
+                    log(f"sl_num_intervals_delay: {param['sl_num_intervals_delay']}, min_sl_age_ms: {min_sl_age_ms:,}, total_ms_elapsed_since_sl: {total_ms_elapsed_since_sl:,} (~{int(total_ms_elapsed_since_sl/1000/60):,} min)")
+                    if total_ms_elapsed_since_sl < min_sl_age_ms:
+                        block_entries = True
+                        log(f"Block entries: recent SL")
 
                 pos_entries = position_cache_row['pos_entries']
                 if isinstance(pos_entries, str):
