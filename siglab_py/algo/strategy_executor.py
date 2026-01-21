@@ -928,7 +928,7 @@ async def main():
                                 'hi_interval_ms' : int(hi_interval_ms)
                             }
                             log(err_msg, LogLevel.CRITICAL)
-                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid hi_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                            # dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid hi_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                     else:
                         hi_candles_valid = False
                         err_msg = f"hi candles missing, topic: {hi_candles_w_ta_topic}"
@@ -968,7 +968,7 @@ async def main():
                                 'lo_interval_ms' : int(lo_interval_ms)
                             }
                             log(err_msg, LogLevel.CRITICAL)
-                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid lo_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                            # dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid lo_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                     else:
                         lo_candles_valid = False
                         err_msg = f"lo candles missing, topic: {lo_candles_w_ta_topic}"
