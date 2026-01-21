@@ -1445,14 +1445,16 @@ async def main():
                                 else:
                                     closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
                                 
+                                exit_px = executed_position_close['average_cost']
                                 new_pos_from_exchange = pos + executed_position_close['filled_amount']
-                                new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position_close['average_cost']
+                                new_pos_usdt_from_exchange = new_pos_from_exchange * exit_px
                                 fees = executed_position_close['fees']
 
                                 executed_position_close['position'] = {
                                     'status' : 'TP' if tp else 'SL',
                                     'pnl_live_bps' : pnl_live_bps,
                                     'entry_px' : entry_px,
+                                    'exit_px' : exit_px,
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'closed_pnl' : closed_pnl,
@@ -1468,7 +1470,7 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
                                 pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
-                                pd_position_cache.loc[position_cache_row.name, 'close_px'] = mid # mid is approx of actual fill price!
+                                pd_position_cache.loc[position_cache_row.name, 'close_px'] = exit_px
                                 pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'max_pain'] = 0
@@ -1497,7 +1499,7 @@ async def main():
                                             'ticker' : _ticker,
                                             'reason' : new_status,
                                             'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
-                                            'avg_price' : mid, # mid is actually not avg_price!
+                                            'avg_price' : exit_px,
                                             'amount': abs(new_pos_usdt_from_exchange),
                                             'unreal_live' : unreal_live,
                                             'pnl_live_bps' : pnl_live_bps,
