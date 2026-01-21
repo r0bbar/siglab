@@ -981,14 +981,16 @@ async def main():
                             message = message.decode('utf-8')
                         ob = json.loads(message) if message else None
                         orderbook_valid = ob['is_valid']
+                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, fetch from REST instead"
+                        log(err_msg, LogLevel.WARNING)
 
                     else:
                         orderbook_valid = False
+                        err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
+                        log(err_msg, LogLevel.WARNING)
                         
                     if not orderbook_valid:
                         ob = await exchange.fetch_order_book(symbol=_ticker, limit=10) 
-                        err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
-                        log(err_msg, LogLevel.WARNING)
 
                     best_ask = min([x[0] for x in ob['asks']])
                     best_bid = max([x[0] for x in ob['bids']])
