@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-
+import logging
 from typing import List, Dict, Any, Union
 
 from siglab_py.algo.strategy_base import StrategyBase
+
+logger = logging.getLogger()
 
 class MACDRSICrosses15mTCStrategy(StrategyBase):
     def __init__(self, *args: object) -> None:
@@ -20,6 +22,11 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         hi_row_tm1,
         last_candles
     )  -> Dict[str, bool]:
+        logger.info(f"********allow_entry_initial ********")
+        logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}, hi_row_tm1['datetime']: {hi_row_tm1['datetime']}")
+        logger.info(f"macd_cross: {lo_row_tm1['macd_cross']}, lo_row_tm1['rsi_trend']: {lo_row_tm1['rsi_trend']}")
+        logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
+
         allow_long : bool = (
                 lo_row_tm1['macd_cross'] == 'bullish' 
                 # use 'macd_cross_last' instead in combinations with 'macd_bullish_cross_last_id' if you want to make more entries
