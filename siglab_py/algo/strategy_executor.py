@@ -922,8 +922,8 @@ async def main():
                         else:
                             hi_candles_valid = False
                             err_msg = {
-                                'current_ts_ms' : dt_now.timestamp(),
-                                'hi_row_timestamp_ms' : hi_row['timestamp_ms'],
+                                'current_ts_ms' : int(dt_now.timestamp() *1000),
+                                'hi_row_timestamp_ms' : int(hi_row['timestamp_ms']),
                                 'candles_age' : int(candles_age),
                                 'hi_interval_ms' : int(hi_interval_ms)
                             }
@@ -962,8 +962,8 @@ async def main():
                         else:
                             lo_candles_valid = False
                             err_msg = {
-                                'current_ts_ms' : dt_now.timestamp(),
-                                'lo_row_timestamp_ms' : lo_row['timestamp_ms'],
+                                'current_ts_ms' : int(dt_now.timestamp() *1000),
+                                'lo_row_timestamp_ms' : int(lo_row['timestamp_ms']),
                                 'candles_age' : int(candles_age),
                                 'lo_interval_ms' : int(lo_interval_ms)
                             }
