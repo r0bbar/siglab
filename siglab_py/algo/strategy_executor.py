@@ -1084,8 +1084,8 @@ async def main():
                             # Given sl_adj_func generally only tighten stops as your trade goes greener greener, cap it by param['sl_hard_percent'] just in case.
                             running_sl_percent_hard = min(running_sl_percent_hard, param['sl_hard_percent']) 
 
-                        pnl_live_bps = round(unreal_live / abs(pos_usdt), 2) * 10000 if pos_usdt else 0
-                        pnl_open_bps = round(unrealized_pnl_open / abs(pos_usdt), 2) * 10000 if pos_usdt else 0
+                        pnl_live_bps = round(unreal_live / abs(pos_usdt) * 10000, 2) if pos_usdt else 0
+                        pnl_open_bps = round(unrealized_pnl_open / abs(pos_usdt)  * 10000, 2) if pos_usdt else 0
                         pnl_percent_notional = pnl_open_bps/100
 
                         if unreal_live>max_unreal_live:
