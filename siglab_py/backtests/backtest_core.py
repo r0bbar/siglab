@@ -1101,12 +1101,12 @@ def run_scenario(
                     # POSITION NOTIONAL MARKING lo_low, lo_high. pessimistic!
                     def _refresh_current_position(timestamp_ms):
                         this_ticker_open_trades = open_trades_by_ticker[ticker]
-                        current_position_usdt_buy = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='buy'])
-                        current_position_usdt_sell = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='sell'])
+                        current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
+                        current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
                         current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
                         
-                        this_ticker_current_position_usdt_buy = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='buy'])
-                        this_ticker_current_position_usdt_sell = sum([x['size'] * lo_close for x in this_ticker_open_trades if x['side']=='sell'])
+                        this_ticker_current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
+                        this_ticker_current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
 
                         this_ticker_historical_stops = sl_by_ticker[ticker]
 
