@@ -692,6 +692,7 @@ def run_scenario(
     lo_boillenger_upper_breached_cache = {}
     ath, atl = None, None
     target_order_notional = 0
+    unrealized_pnl_live, running_sl_percent_hard, loss_hard = None, None, None
     for i in range(algo_param['how_many_last_candles'], lo_num_intervals):
         for exchange in exchanges:
             
@@ -1821,7 +1822,7 @@ def run_scenario(
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].axvline(x=lo_datetime, color='gray', linewidth=1, linestyle='-')
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].scatter([lo_datetime, lo_datetime], [lo_low, lo_high], color='gray')
                     
-                    iter_info = f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}"
+                    iter_info = f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}, unrealized_pnl_live: {round(unrealized_pnl_live, 2) if unrealized_pnl_live else '---'}, loss_hard: {loss_hard if loss_hard else '---'}, running_sl_percent_hard: {running_sl_percent_hard if running_sl_percent_hard else '---'}"
                     if i%100==0 and i%1000!=0:
                         print(iter_info)
                     elif i%1000==0:
