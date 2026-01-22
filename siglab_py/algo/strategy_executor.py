@@ -1517,8 +1517,8 @@ async def main():
                                             'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
                                             'avg_price' : exit_px,
                                             'amount': abs(new_pos_usdt_from_exchange),
-                                            'unreal_live' : unreal_live,
-                                            'pnl_live_bps' : pnl_live_bps,
+                                            'pnl' : closed_pnl,
+                                            'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
                                             'max_pain' : max_pain,
                                             'fees' : fees
                                         }
