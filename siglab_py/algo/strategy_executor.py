@@ -1468,13 +1468,14 @@ async def main():
 
                                 executed_position_close['position'] = {
                                     'status' : 'TP' if tp else 'SL',
-                                    'pnl_live_bps' : pnl_live_bps,
                                     'entry_px' : entry_px,
                                     'exit_px' : exit_px,
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
-                                    'closed_pnl' : closed_pnl,
+                                    'pnl' : closed_pnl,
+                                    'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
                                     'fees' : fees,
+                                    'max_pain' : max_pain,
                                     'running_sl_percent_hard' : running_sl_percent_hard,
                                     'loss_trailing' : loss_trailing,
                                     'effective_tp_trailing_percent' : effective_tp_trailing_percent,
