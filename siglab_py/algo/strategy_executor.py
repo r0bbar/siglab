@@ -1460,6 +1460,7 @@ async def main():
                                     closed_pnl = (executed_position_close['average_cost'] - entry_px) * param['amount_base_ccy']
                                 else:
                                     closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                closed_pnl = round(closed_pnl, 3)
                                 
                                 exit_px = executed_position_close['average_cost']
                                 new_pos_from_exchange = pos + executed_position_close['filled_amount']
@@ -1526,10 +1527,10 @@ async def main():
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                 log(executed_position_close)
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             else:
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"[{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
