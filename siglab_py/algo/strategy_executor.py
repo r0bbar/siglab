@@ -666,7 +666,7 @@ async def main():
         executed_position = None
         position_break : bool = False
         lo_row_timestamp_ms : int = 0
-        lo_candles_updated : bool = True
+        lo_candles_interval_rolled : bool = True
         while (not position_break):
             try:
                 dt_now = datetime.now()
@@ -962,10 +962,10 @@ async def main():
                         if candles_age < lo_interval_ms:
                             lo_candles_valid = True
 
-                            lo_candles_updated = False
+                            lo_candles_interval_rolled = False
                             if lo_row['timestamp_ms']!=lo_row_timestamp_ms:
                                 lo_row_timestamp_ms = lo_row['timestamp_ms']
-                                lo_candles_updated = True
+                                lo_candles_interval_rolled = True
 
                             trailing_candles = pd_lo_candles_w_ta \
                                     .tail(param['reversal_num_intervals']) \
@@ -1538,8 +1538,8 @@ async def main():
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
-                    if lo_candles_updated:
-                        log(f"candles_provider updated lo_candles! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
+                    if lo_candles_interval_rolled:
+                        log(f"candles_provider lo_candles interval rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
