@@ -1209,11 +1209,11 @@ async def main():
                             log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
 
                             allow_entry_final_long = allow_entry_initial_long and allow_entry_final_long and (
-                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name ])
+                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name, PositionStatus.SL.name ])
                                 or (pos>0 and pos + param["amount_base_ccy"] <= param['max_pos_amount_base_ccy'])
                             )
                             allow_entry_final_short = allow_entry_initial_short and allow_entry_final_short and (
-                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name ])
+                                (pos==0 and pos_status in [ PositionStatus.UNDEFINED.name, PositionStatus.CLOSED.name, PositionStatus.SL.name ])
                                 or (pos<0 and abs(pos) + param["amount_base_ccy"] <= param['max_pos_amount_base_ccy'])
                             )
                             
