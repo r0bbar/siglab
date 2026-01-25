@@ -247,7 +247,7 @@ POSITION_CACHE_COLUMNS = [
         ]
 
 
-ORDERHIST_CACHE_COLUMNS = [  'datetime', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees' ]
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'remarks' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1340,6 +1340,7 @@ async def main():
 
                                 orderhist_cache_row = {
                                                         'datetime' : dt_now,
+                                                        'timestamp_ms' : int(dt_now.timestamp() * 1000),
                                                         'exchange' : exchange_name,
                                                         'ticker' : _ticker,
                                                         'reason' : 'entry',
@@ -1349,7 +1350,8 @@ async def main():
                                                         'pnl' : 0,
                                                         'pnl_bps' : 0,
                                                         'max_pain' : 0,
-                                                        'fees' : fees
+                                                        'fees' : fees,
+                                                        'remarks' : None
                                                     }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
@@ -1513,6 +1515,7 @@ async def main():
 
                                 orderhist_cache_row = {
                                             'datetime' : dt_now,
+                                            'timestamp_ms' : int(dt_now.timestamp() * 1000),
                                             'exchange' : exchange_name,
                                             'ticker' : _ticker,
                                             'reason' : new_status,
@@ -1522,7 +1525,8 @@ async def main():
                                             'pnl' : closed_pnl,
                                             'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
                                             'max_pain' : max_pain,
-                                            'fees' : fees
+                                            'fees' : fees,
+                                            'remarks' : None
                                         }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
