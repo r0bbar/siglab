@@ -23,6 +23,13 @@ import ccxt.pro as ccxtpro
 from siglab_py.util.market_data_util import async_instantiate_exchange
 
 '''
+Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
+Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+'''
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
+'''
 To start from command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab
     python orderbooks_provider.py --provider_id aaa --instance_capacity 25 --ts_delta_observation_ms_threshold 150 --ts_delta_consecutive_ms_threshold 150 --redis_ttl_ms 3600000
