@@ -1544,8 +1544,23 @@ async def main():
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
-                    pd_position_cache.to_csv(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
-                    orderhist_cache.to_csv(orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id))
+                    def _safe_update_cache(
+                        file_name : str,
+                        df
+                    ):
+                        bak_file_name : str = file_name + ".bak" 
+                        if os.path.exists(bak_file_name):
+                            os.remove(bak_file_name)
+                        os.rename(file_name, bak_file_name)
+                        df.to_csv(file_name)
+                    _safe_update_cache(
+                        file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
+                        df = pd_position_cache
+                    )
+                    _safe_update_cache(
+                        file_name  = orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
+                        df = orderhist_cache
+                    )
                         
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
