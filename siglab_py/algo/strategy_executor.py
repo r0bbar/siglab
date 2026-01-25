@@ -617,13 +617,6 @@ async def main():
         log(f"Balances: {json.dumps(balances, indent=4)}") 
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} strategy {TargetStrategy.__name__} starting", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-        if param['start_timestamp_ms']:
-            while datetime.now().timestamp() < int(param['start_timestamp_ms']/1000):
-                log(f"Waiting to start at {datetime.fromtimestamp(int(param['start_timestamp_ms']/1000))}")
-                time.sleep(10)
-        else:
-            log(f"Strategy starting immediately.")
-
         # Lambdas preparation
         order_notional_adj_func_sig = inspect.signature(order_notional_adj_func)
         order_notional_adj_func_params = order_notional_adj_func_sig.parameters.keys()
@@ -648,6 +641,13 @@ async def main():
         _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], hi_candles_provider_topic)
         _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], lo_candles_provider_topic)
         _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], orderbooks_provider_topic)
+
+        if param['start_timestamp_ms']:
+            while datetime.now().timestamp() < int(param['start_timestamp_ms']/1000):
+                log(f"Waiting to start at {datetime.fromtimestamp(int(param['start_timestamp_ms']/1000))}")
+                time.sleep(10)
+        else:
+            log(f"Strategy starting immediately.")
 
         # Load cached positions from disk, if any
         if os.path.exists(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))>0:
