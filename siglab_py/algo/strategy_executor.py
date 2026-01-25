@@ -1576,7 +1576,8 @@ async def main():
                         bak_file_name : str = file_name + ".bak" 
                         if os.path.exists(bak_file_name):
                             os.remove(bak_file_name)
-                        os.rename(file_name, bak_file_name)
+                        if os.path.exists(file_name):
+                            os.rename(file_name, bak_file_name)
                         df.to_csv(file_name)
                     _safe_update_cache(
                         file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
