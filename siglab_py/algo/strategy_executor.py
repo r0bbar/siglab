@@ -827,6 +827,17 @@ async def main():
                 if pos_status!=PositionStatus.UNDEFINED.name:
                     pos_side = OrderSide.BUY if pos and pos>0 else OrderSide.SELL
 
+                '''
+                This condition is to block re-entry on same candle.
+                lo_row_timestamp_ms is timestamp_ms of latest lo row, which is initialized to zero on start.
+                '''
+                if pos_status==PositionStatus.CLOSED.name and lo_row_timestamp_ms!=0:
+                    total_ms_elapsed_since_lo_interval_rolled = int((datetime.now() - lo_row_timestamp_ms).total_seconds() *1000)
+                    log(f"total_ms_elapsed_since_lo_interval_rolled: {total_ms_elapsed_since_lo_interval_rolled:,} (~{int(total_ms_elapsed_since_lo_interval_rolled/1000/60):,} min)")
+                    if (total_ms_elapsed_since_lo_interval_rolled < lo_interval_ms) and (pos_closed*1000)<lo_row_timestamp_ms:
+                        block_entries = True
+                        log(f"Block entries: recent TP, block re-entry within same lo candle")
+
                 if pos_status==PositionStatus.SL.name:
                     total_ms_elapsed_since_sl = int((datetime.now() - pos_closed).total_seconds() *1000)
                     log(f"sl_num_intervals_delay: {param['sl_num_intervals_delay']}, min_sl_age_ms: {min_sl_age_ms:,}, total_ms_elapsed_since_sl: {total_ms_elapsed_since_sl:,} (~{int(total_ms_elapsed_since_sl/1000/60):,} min)")
