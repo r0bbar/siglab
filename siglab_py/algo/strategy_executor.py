@@ -653,6 +653,8 @@ async def main():
                 orderhist_cache['datetime'] = pd.to_datetime(orderhist_cache['datetime'])
 
         block_entries : bool = False
+        any_entry : bool = False
+        any_exit : bool = False
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
@@ -669,6 +671,8 @@ async def main():
         lo_candles_interval_rolled : bool = True
         while (not position_break):
             try:
+                any_entry, any_exit = False, False
+
                 dt_now = datetime.now()
                 block_entries = False
 
@@ -1357,6 +1361,8 @@ async def main():
 
                                 log(executed_position)
                                 dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
+                                any_entry = True
                         
                         '''
                         Have a look at this for a visual explaination how "Gradually tightened stops" works:
@@ -1533,6 +1539,8 @@ async def main():
                                 log(executed_position_close)
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
+                                any_exit = True
+
                             else:
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
@@ -1561,10 +1569,12 @@ async def main():
                         file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
                         df = pd_position_cache
                     )
-                    _safe_update_cache(
-                        file_name  = orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
-                        df = orderhist_cache
-                    )
+
+                    if any_entry or any_exit:
+                        _safe_update_cache(
+                            file_name  = orderhist_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
+                            df = orderhist_cache
+                        )
                         
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
