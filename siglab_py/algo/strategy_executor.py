@@ -144,6 +144,8 @@ param : Dict = {
 
     'rolldate_tz' : 'Asia/Hong_Kong', # Roll date based on what timezone?
 
+    'start_timestamp_ms' : None, # You want your algo to start only after what time?
+
     # economic_calendar related
     'mapped_regions' : [ 'united_states' ],
 
@@ -319,6 +321,8 @@ def parse_args():
 
     parser.add_argument("--dump_candles", help="This is for trouble shooting only. Y or N (default).", default='N')
 
+    parser.add_argument("--start_timestamp_ms", help="You want your algo to start only after what time? This is timestamp in ms. Default is None (start immediately)", default=None)
+
     args = parser.parse_args()
 
     param['target_strategy_name'] = args.target_strategy_name
@@ -402,6 +406,8 @@ def parse_args():
             param['dump_candles'] = False
     else:
         param['dump_candles'] = False
+
+    param['start_timestamp_ms'] = int(args.start_timestamp_ms)
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -610,6 +616,13 @@ async def main():
         balances = await exchange.fetch_balance() 
         log(f"Balances: {json.dumps(balances, indent=4)}") 
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} strategy {TargetStrategy.__name__} starting", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
+        if param['start_timestamp_ms']:
+            while datetime.now().timestamp() < int(param['start_timestamp_ms']/1000):
+                log(f"Waiting to start at {datetime.fromtimestamp(int(param['start_timestamp_ms']/1000))}")
+                time.sleep(10)
+        else:
+            log(f"Strategy starting immediately.")
 
         # Lambdas preparation
         order_notional_adj_func_sig = inspect.signature(order_notional_adj_func)
