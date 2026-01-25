@@ -407,7 +407,7 @@ def parse_args():
     else:
         param['dump_candles'] = False
 
-    param['start_timestamp_ms'] = int(args.start_timestamp_ms)
+    param['start_timestamp_ms'] = int(args.start_timestamp_ms) if args.start_timestamp_ms else None
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
