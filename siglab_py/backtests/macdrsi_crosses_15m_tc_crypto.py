@@ -316,6 +316,12 @@ def _allow_entry_initial(
     lo_row_tm1,
     hi_row_tm1
 ) -> Dict[str, bool]:
+    logger.info(f"********allow_entry_initial ********")
+    logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}")
+    logger.info(f"lo_row_tm1.name: {lo_row_tm1.name}")
+    logger.info(f"macd_cross_last: {lo_row_tm1['macd_cross']}")
+    logger.info(f"rsi_trend: {lo_row_tm1['rsi_trend']}")
+    logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
 	if long_or_short == "long":
 		if (
                 lo_row_tm1['macd_cross'] == 'bullish'
@@ -355,6 +361,7 @@ def allow_entry_final(
     algo_param : Dict
     
 ) -> Dict[str, Union[bool, float, None]]:
+    
     reference_ticker = algo_param['reference_ticker']
     timestamp_ms : int = lo_row['timestamp_ms']
     open : float = lo_row['open']
@@ -367,6 +374,10 @@ def allow_entry_final(
 
     target_price_long = entry_price_long * (1 + pnl_potential_bps/10000)
     target_price_short = entry_price_short * (1 - pnl_potential_bps/10000)
+
+    logger.info(f"********allow_entry_final ********")
+    logger.info(f"open: {open}")
+    logger.info(f"pnl_potential_bps: {pnl_potential_bps}")
 
     return {
             'long' : allow_long,
