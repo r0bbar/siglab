@@ -832,7 +832,7 @@ async def main():
                 lo_row_timestamp_ms is timestamp_ms of latest lo row, which is initialized to zero on start.
                 '''
                 if pos_status==PositionStatus.CLOSED.name and lo_row_timestamp_ms!=0:
-                    total_ms_elapsed_since_lo_interval_rolled = int((datetime.now() - lo_row_timestamp_ms).total_seconds() *1000)
+                    total_ms_elapsed_since_lo_interval_rolled = int((datetime.now().timestamp() - lo_row_timestamp_ms).total_seconds() *1000)
                     log(f"total_ms_elapsed_since_lo_interval_rolled: {total_ms_elapsed_since_lo_interval_rolled:,} (~{int(total_ms_elapsed_since_lo_interval_rolled/1000/60):,} min)")
                     if (total_ms_elapsed_since_lo_interval_rolled < lo_interval_ms) and (pos_closed*1000)<lo_row_timestamp_ms:
                         block_entries = True
