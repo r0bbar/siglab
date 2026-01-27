@@ -563,6 +563,8 @@ def run_scenario(
     ):
     exceptions : Dict = {}
 
+    min_allow_entry_timestamp_ms : int = algo_param['min_allow_entry_timestamp_ms'] if 'min_allow_entry_timestamp_ms' in algo_param else 0
+
     if not pypy_compat:
         pd_ref_candles_segments = segments_to_df(ref_candles_partitions['segments'])
         pd_hi_candles_segments = segments_to_df(pd_hi_candles_partitions['segments'])
@@ -1606,6 +1608,9 @@ def run_scenario(
                     allow_entry_initial_short = allow_entry_initial_func_result['short']
                     allow_entry_final_long = False
                     allow_entry_final_short = False
+
+                    if int(lo_datetime.timestamp() * 1000) < min_allow_entry_timestamp_ms:
+                        allow_entry_initial_long, allow_entry_initial_short = False, False
 
                     if algo_param['enable_sliced_entry']:
                         kwargs = {k: v for k, v in locals().items() if k in allow_slice_entry_func_params}
