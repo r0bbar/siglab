@@ -21,21 +21,23 @@ from siglab_py.util.analytic_util import compute_candles_stats
 
 '''
 candles_provider.py will feed candles to redis. 
-    key example: candles-BTC-USDT-SWAP-okx_linear-1h. 
-    key format: candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$
+    key example: candles-BTC-USDT-SWAP-okx-1h. 
+    key format: candles-$TICKER$-$EXCHANGE_NAME$-$INTERVAL$
 
-candles_ta_provider.py will scan for candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$
+    In this example, $TICKER$ = BTC-USDT-SWAP
+
+candles_ta_provider.py will scan for candles-$TICKER$-$EXCHANGE_NAME$-$INTERVAL$
 Then read candles from redis. If candle's timestamp hasnt been previously processed, it'd perform TA calculations.
 After perform TA calc, it'd publish back to redis under:
-    key example: candles_ta-BTC-USDT-SWAP-okx_linear-1h
-    key format: candles_ta-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$
+    key example: candles_ta-BTC-okx-1h
+    key format: candles_ta-$TICKER$-$EXCHANGE_NAME$-$INTERVAL$
 
 From command prompt:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
+    python candles_ta_provider.py --tickers BTC-USDT-SWAP,ETH-USDT-SWAP,SOL-USDT-SWAP --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
 
 This script is pypy compatible but you'd need specify --pypy_compat Y so from analyti_util we'd skip import scipy and statsmodels (They are not pypy compatible).
-    pypy candles_ta_provider.py --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat Y
+    pypy candles_ta_provider.py --tickers BTC-USDT-SWAP,ETH-USDT-SWAP,SOL-USDT-SWAP --candle_size 1h --ma_long_intervals 24 --ma_short_intervals 8 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat Y
 
 Launch.json if you wish to debug from VSCode:
 {
@@ -48,12 +50,13 @@ Launch.json if you wish to debug from VSCode:
             "program": "${file}",
             "console": "integratedTerminal",
             "args" : [
-                                "--candle_size", "1h",
-                                "--ma_long_intervals", "24",
-                                "--ma_short_intervals", "8",
-                                "--boillenger_std_multiples", "2",
-                                "--redis_ttl_ms", "3600000",
-                                "--processed_hash_queue_max_size", "999"
+                "--tickers", "BTC-USDT-SWAP,ETH-USDT-SWAP,SOL-USDT-SWAP",
+                "--candle_size", "1h",
+                "--ma_long_intervals", "24",
+                "--ma_short_intervals", "8",
+                "--boillenger_std_multiples", "2",
+                "--redis_ttl_ms", "3600000",
+                "--processed_hash_queue_max_size", "999"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
@@ -79,7 +82,7 @@ param : Dict = {
     "boillenger_std_multiples" : 2,
     
     # regex corresponding to candles_publish_topic. If you want specific instances to process specific tickers only (performance concerns), you can use this regex filter to do the trick.
-    "candles_ta_publish_topic_regex" : r"^candles-[A-Z]+-[A-Z]+-[A-Z]+-[a-z_]+-\d+[smhdwMy]$", 
+    "candles_ta_publish_topic_regex" : r"^candles-$TICKERS$-[a-zA-Z_]+-$CANDLE_SIZE$$", 
 
     # processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'.
     # Depending on how many tickers this instance is monitoring, you may want to adjust this queue size.
@@ -126,6 +129,7 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
 
+    parser.add_argument("--tickers", help="This is to amend 'candles_ta_publish_topic_regex' so candles_ta_provider filter by specific ticker(s). Default None (No filtering) ", default=None)
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--ma_long_intervals", help="Window size in number of intervals for higher timeframe", default=24)
     parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
@@ -136,7 +140,42 @@ def parse_args():
     parser.add_argument("--pypy_compatible", help="pypy_compatible: If Y, analytic_util will import statsmodels.api (slopes and divergence calc). In any case, partition_sliding_window requires scipy.stats.linregress and cannot be used with pypy. Y or N (default).", default='N')
 
     args = parser.parse_args()
+    param['tickers'] = args.tickers
+    if param['tickers']:
+        tickers = [ ticker.upper().strip() for ticker in param['tickers'].split(',') ]
+        tickers_expr = ""
+        i = 0
+        for ticker in tickers:
+            tickers_expr += ticker
+            if i<len(tickers)-1:
+                tickers_expr += "|"
+            i += 1
+        param['tickers'] = tickers
+        param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$TICKERS$', f'({tickers_expr})')
+    else:
+        param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$TICKERS$', '.*')
+
     param['candle_size'] = args.candle_size
+    param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$CANDLE_SIZE$', param['candle_size'])
+
+    '''
+    Examples of candles_ta_publish_topic_regex,
+    CASE 1: tickers = BTC-USDT-SWAP
+        '^candles-(BTC-USDT-SWAP)-[a-zA-Z_]+-15m$'
+            This will match candles-BTC-USDT-SWAP-okx-15m
+
+    CASE 2: tickers = BTC-USDT-SWAP,ETH-USDT-SWAP,SOL-USDT-SWAP
+        '^candles-(BTC-USDT-SWAP|ETH-USDT-SWAP|SOL-USDT-SWAP)-[a-zA-Z_]+-15m$'
+            This will match
+                candles-BTC-USDT-SWAP-okx-15m
+                candles-ETH-USDT-SWAP-okx-15m
+                candles-SOL-USDT-SWAP-okx-15m
+    CASE 3: tickers = None
+        '^candles-.*-[a-zA-Z_]+-15m$'
+            This will match any ticker, 
+                candles-*-okx-15m
+    '''
+
     param['ma_long_intervals'] = int(args.ma_long_intervals)
     param['ma_short_intervals'] = int(args.ma_short_intervals)
     param['boillenger_std_multiples'] = int(args.boillenger_std_multiples)
@@ -180,6 +219,7 @@ def work(
     # This is how we avoid reprocess same message twice. We check message hash and cache it.
     processed_hash_queue = deque(maxlen=10)
 
+    i : int = 0
     while True:
         try:
             keys = redis_client.keys()
@@ -234,14 +274,20 @@ def work(
 
                                     log(f"published candles {pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms, compute_candles_stats_elapsed_ms: {compute_candles_stats_elapsed_ms}")
                             else:
-                                log(f"{s_key} message with hash {message_hash} been processed previously.")
+                                if i%100==0:
+                                    log(f"#{i} {s_key} message with hash {message_hash} been processed previously.")
 
-
+                    else:
+                        if i%100==0:
+                            log(f"#{i} {s_key} not matching expression {candles_ta_publish_topic_regex}")
+                            
                 except Exception as key_error:
                     log(f"Failed to process {key}. Error: {key_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
 
         except Exception as loop_error:
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+        finally:
+            i += 1
 
 def main():
     parse_args()
