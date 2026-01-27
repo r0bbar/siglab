@@ -170,7 +170,7 @@ param : Dict = {
     # Ticker change
     'ticker_change_map' : 'ticker_change_map.json',
 
-    "loop_freq_ms" : 5000, # reduce this if you need trade faster
+    "loop_freq_ms" : 1000, # reduce this if you need trade faster
 
     'current_filename' : current_filename,
 
@@ -1400,21 +1400,6 @@ async def main():
                                 and abs(max_pain_percent_notional)>=param['recover_max_pain_percent']
                             ) # Taking 'abs': Trailing stop can fire if trade moves in either direction - if your trade is losing trade.
                         ):
-                            if not sl_trailing_min_threshold_crossed:
-                                sl_trailing_min_threshold_crossed = True
-                                pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
-
-                                msg = {
-                                    'side' : pos_side.name,
-                                    'mid' : mid,
-                                    'entry_px' : entry_px,
-                                    'pnl_open_bps' : pnl_open_bps,
-                                    'tp_min_percent' : tp_min_percent
-                                }
-                                log(msg, LogLevel.CRITICAL)
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-
-
                             _effective_tp_trailing_percent = calc_eff_trailing_sl(
                                 tp_min_percent = tp_min_percent,
                                 tp_max_percent = tp_max_percent,
@@ -1427,6 +1412,23 @@ async def main():
 
                             # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
+
+                            if not sl_trailing_min_threshold_crossed:
+                                sl_trailing_min_threshold_crossed = True
+                                pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
+
+                                msg = {
+                                    'side' : pos_side.name,
+                                    'mid' : mid,
+                                    'entry_px' : entry_px,
+                                    'pnl_open_bps' : pnl_open_bps,
+                                    'tp_min_percent' : tp_min_percent,
+                                    'tp_max_percent' : tp_max_percent,
+                                    'sl_percent_trailing' : param['sl_percent_trailing'],
+                                    'effective_tp_trailing_percent' : effective_tp_trailing_percent
+                                }
+                                log(msg, LogLevel.CRITICAL)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
 
