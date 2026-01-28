@@ -1464,6 +1464,8 @@ async def main():
                                 elif pos_side==OrderSide.SELL:
                                     tp_final = True if mid<=tp_max_target else False
 
+                            if effective_tp_trailing_percent==0:
+                                tp_final = True
                             tp_trailing_stop = True if loss_trailing>=effective_tp_trailing_percent else False
                             tp = tp_final or tp_trailing_stop
 
