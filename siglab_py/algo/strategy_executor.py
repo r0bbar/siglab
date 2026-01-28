@@ -1351,6 +1351,7 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'status'] = PositionStatus.OPEN.name
                                 pos_created = datetime.fromtimestamp(time.time())
                                 pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
+                                pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'entry_px'] = entry_px
                                 pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
