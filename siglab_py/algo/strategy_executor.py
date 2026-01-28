@@ -249,7 +249,7 @@ POSITION_CACHE_COLUMNS = [
         ]
 
 
-ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'remarks' ]
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'remarks' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1381,6 +1381,7 @@ async def main():
                                                         'exchange' : exchange_name,
                                                         'ticker' : _ticker,
                                                         'reason' : 'entry',
+                                                        'reason2' : None,
                                                         'side' : side,
                                                         'avg_price' : new_pos_usdt_from_exchange/new_pos_from_exchange,
                                                         'amount': abs(new_pos_usdt_from_exchange),
@@ -1565,6 +1566,7 @@ async def main():
                                             'exchange' : exchange_name,
                                             'ticker' : _ticker,
                                             'reason' : new_status,
+                                            'reason2' : reason,
                                             'side' : 'sell' if pos_side==OrderSide.BUY else 'buy',
                                             'avg_price' : exit_px,
                                             'amount': abs(new_pos_usdt_from_exchange),
