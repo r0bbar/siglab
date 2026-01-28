@@ -220,7 +220,7 @@ POSITION_CACHE_COLUMNS = [
             'exchange', 'ticker',
             'status', 
             'pos', 'pos_usdt', # pos and pos_usdt: For longs, it's positive number. For shorts, it's a negative number. 
-            'multiplier', 'created', 'closed', 
+            'multiplier', 'created', 'tp_min_crossed', 'closed', 
             'pos_entries',
              
             'entry_px', 
@@ -764,7 +764,9 @@ async def main():
                         'pos' : None, 
                         'pos_usdt' : None,
                         'multiplier' : multiplier,
+
                         'created' : None,
+                        'tp_min_crossed' : None,
                         'closed' : None,
 
                         'pos_entries' : [],
@@ -819,6 +821,12 @@ async def main():
                 if pos_created:
                     pos_created = pos_created.replace(tzinfo=None)
                     total_sec_since_pos_created = (dt_now - pos_created).total_seconds()
+                
+                pos_tp_min_crossed = position_cache_row['tp_min_crossed']
+                pos_tp_min_crossed = arrow.get(pos_tp_min_crossed).datetime if pos_tp_min_crossed and isinstance(pos_tp_min_crossed, str) else pos_tp_min_crossed
+                if pos_tp_min_crossed:
+                    pos_tp_min_crossed = pos_tp_min_crossed.replace(tzinfo=None)
+
                 pos_closed = position_cache_row['closed']
                 pos_closed = arrow.get(pos_closed).datetime if pos_closed and isinstance(pos_closed, str) else pos_closed
                 if pos_closed:
@@ -1414,7 +1422,9 @@ async def main():
                             effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
 
                             if not sl_trailing_min_threshold_crossed:
+                                pos_tp_min_crossed = dt_now
                                 sl_trailing_min_threshold_crossed = True
+                                pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = pos_tp_min_crossed
                                 pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
 
                                 msg = {
@@ -1514,6 +1524,9 @@ async def main():
                                     'running_sl_percent_hard' : running_sl_percent_hard,
                                     'loss_trailing' : loss_trailing,
                                     'effective_tp_trailing_percent' : effective_tp_trailing_percent,
+                                    'created' : pos_created.strftime("%Y%m%d %H:%M:%S") if pos_created else None,
+                                    'tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H:%M:%S") if pos_tp_min_crossed else None,
+                                    'closed' : dt_now.strftime("%Y%m%d %H:%M:%S"),
                                     'reason' : reason
                                 }
 
