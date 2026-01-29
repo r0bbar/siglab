@@ -750,6 +750,7 @@ async def main():
                     full_economic_calendars = fetch_economic_events(redis_client, full_economic_calendars_topic)
 
                     impacting_economic_calendars = None
+                    s_impacting_economic_calendars = None
                     if full_economic_calendars:
                         impacting_economic_calendars = [ x for x in full_economic_calendars 
                                                             if x['event_code'] in param['mapped_event_codes']  
