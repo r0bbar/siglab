@@ -80,7 +80,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb --orderbooks_provider_topic mds_assign_ccc --hi_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-1h --lo_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-15m --orderbook_topic orderbooks_SOL/USDT:USDT_hyperliquid --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
     Step 6. Start order gateway
         Top of the script for instructions
@@ -123,6 +123,13 @@ Debug from VSCode, launch.json:
                         "--economic_calendar_source", "xxx",
                         "--block_entry_impacting_events","Y",
                         "--num_intervals_current_ecoevents", "96",
+
+                        "hi_candles_provider_topic" : "mds_assign_aaa",
+                        "lo_candles_provider_topic" : "mds_assign_bbb",
+                        "orderbooks_provider_topic" : "mds_assign_ccc",
+                        "hi_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-hyperliquid-1h",
+                        "lo_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-hyperliquid-15m",
+                        "orderbook_topic" : "orderbooks_SOL/USDT:USDT_hyperliquid",
 
                         "--trading_window_start", "Mon_00:00",
                         "--trading_window_end", "Fri_17:00",
@@ -187,12 +194,12 @@ param : Dict = {
 
     'mds' : {
         'topics' : {
-            "hi_candles_provider_topic" : "mds_assign_aaa",
-            "lo_candles_provider_topic" : "mds_assign_bbb",
-            "orderbooks_provider_topic" : "mds_assign_ccc",
-            "hi_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx-1h",
-            "lo_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-okx-15m",
-            "orderbook_topic" : "orderbooks_SOL/USDT:USDT_okx",
+            "hi_candles_provider_topic" : None,
+            "lo_candles_provider_topic" : None,
+            "orderbooks_provider_topic" : None,
+            "hi_candles_w_ta_topic" : None,
+            "lo_candles_w_ta_topic" : None,
+            "orderbook_topic" : None,
             
             "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
         },
@@ -323,6 +330,13 @@ def parse_args():
 
     parser.add_argument("--start_timestamp_ms", help="You want your algo to start only after what time? This is timestamp in ms. Default is None (start immediately)", default=None)
 
+    parser.add_argument("--hi_candles_provider_topic", help="hi_candles provider redis topic. Example mds_assign_aaa, this is for strategy_executor to trigger provider. No provider triggering if set to None (default).", default=None)
+    parser.add_argument("--lo_candles_provider_topic", help="lo_candles provider redis topic. Example mds_assign_bbb, this is for strategy_executor to trigger provider. No provider triggering if set to None (default).", default=None)
+    parser.add_argument("--orderbooks_provider_topic", help="orderbooks provider redis topic. Example mds_assign_ccc, this is for strategy_executor to trigger provider. No provider triggering if set to None (default).", default=None)
+    parser.add_argument("--hi_candles_w_ta_topic", help="hi_candles TA redis topic. Example candles_ta-SOL-USDT-SWAP-hyperliquid-1h, this is for strategy_executor source candles TA from redis.", default=None)
+    parser.add_argument("--lo_candles_w_ta_topic", help="lo_candles TA redis topic. Example candles_ta-SOL-USDT-SWAP-hyperliquid-15m, this is for strategy_executor source candles TA from redis.", default=None)
+    parser.add_argument("--orderbook_topic", help="lo_candles TA redis topic. Example orderbooks_SOL/USDT:USDT_hyperliquid, this is for strategy_executor source orderbooks from redis.", default=None)
+
     args = parser.parse_args()
 
     param['target_strategy_name'] = args.target_strategy_name
@@ -391,6 +405,14 @@ def parse_args():
     else:
         param['block_entry_impacting_events'] = False
     
+    param['mds']['topics']['hi_candles_provider_topic'] = args.hi_candles_provider_topic.strip() if args.hi_candles_provider_topic else None
+    param['mds']['topics']['lo_candles_provider_topic'] = args.lo_candles_provider_topic.strip() if args.lo_candles_provider_topic else None
+    param['mds']['topics']['orderbooks_provider_topic'] = args.orderbooks_provider_topic.strip() if args.orderbooks_provider_topic else None
+
+    param['mds']['topics']['hi_candles_w_ta_topic'] = args.hi_candles_w_ta_topic.strip() if args.hi_candles_w_ta_topic else None
+    param['mds']['topics']['lo_candles_w_ta_topic'] = args.lo_candles_w_ta_topic.strip() if args.lo_candles_w_ta_topic else None
+    param['mds']['topics']['orderbook_topic'] = args.orderbook_topic.strip() if args.orderbook_topic else None
+
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
@@ -638,9 +660,21 @@ async def main():
             candles_partition_assign_topic : str):
             # https://redis.io/commands/publish/
             redis_client.publish(channel=candles_partition_assign_topic, message=json.dumps(exchange_tickers).encode('utf-8'))
-        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], hi_candles_provider_topic)
-        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], lo_candles_provider_topic)
-        _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], orderbooks_provider_topic)
+        
+        if hi_candles_provider_topic:
+            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], hi_candles_provider_topic)
+        else:
+            log(f"hi_candles_provider_topic not specified, no hi_candles_provider triggering.")
+        
+        if lo_candles_provider_topic:
+            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], lo_candles_provider_topic)
+        else:
+            log(f"lo_candles_provider_topic not specified, no lo_candles_provider triggering.")
+
+        if orderbooks_provider_topic:
+            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], orderbooks_provider_topic)
+        else:
+            log(f"orderbooks_provider_topic not specified, no orderbooks_provider triggering.")
 
         if param['start_timestamp_ms']:
             while datetime.now().timestamp() < int(param['start_timestamp_ms']/1000):
