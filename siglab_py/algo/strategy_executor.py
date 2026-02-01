@@ -1440,6 +1440,10 @@ async def main():
                                 log(executed_position)
                                 dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
+                                if param['dump_candles']:
+                                    pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp()}.csv")
+                                    pd_lo_candles_w_ta.to_csv(f"lo_candles_entry_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp()}.csv")
+                                    
                                 any_entry = True
                         
                         '''
