@@ -722,7 +722,7 @@ async def main():
         while (not position_break):
             try:
                 if loop_counter>0:
-                    loop_elapsed_sec = (datetime.now() - loop_start).total_seconds()
+                    loop_elapsed_sec = round((datetime.now() - loop_start).total_seconds(), 2)
                 loop_start = datetime.now()
 
                 any_entry, any_exit = False, False
