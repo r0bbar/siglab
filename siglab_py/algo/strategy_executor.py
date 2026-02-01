@@ -707,6 +707,9 @@ async def main():
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
         this_ticker_open_trades : List[Dict] = []
 
+        loop_counter : int = 0
+        loop_start : datetime = datetime.now()
+        loop_elapsed_sec : int = 0
         reversal : bool = False
         tp : bool = False
         sl : bool = False
@@ -718,6 +721,10 @@ async def main():
         lo_candles_interval_rolled : bool = True
         while (not position_break):
             try:
+                if loop_counter>0:
+                    loop_elapsed_sec = (datetime.now() - loop_start).total_seconds()
+                loop_start = datetime.now()
+
                 any_entry, any_exit = False, False
 
                 dt_now = datetime.now()
@@ -1317,6 +1324,7 @@ async def main():
                                 order_notional_adj_func_result = order_notional_adj_func(**kwargs)
                                 target_order_notional = order_notional_adj_func_result['target_order_notional']
                                 
+                                log(f"******** ENTRY (loop# {loop_counter}) ********")
                                 entry_positions : List[DivisiblePosition] = [
                                     DivisiblePosition(
                                         ticker = _ticker,
@@ -1361,6 +1369,7 @@ async def main():
                                     sl_price = entry_px * (1 + running_sl_percent_hard/100)
 
                                 executed_position['position'] = {
+                                        'loop_counter' : loop_counter,
                                         'status' : 'open',
                                         'entry_px' : entry_px,
                                         'mid' : mid,
@@ -1515,6 +1524,7 @@ async def main():
                                 reason = "Hard stop"
 
                     if tp or sl:
+                        log(f"******** EXIT (loop# {loop_counter}) ********")
                         exit_positions : List[DivisiblePosition] = [
                             DivisiblePosition(
                                 ticker = _ticker,
@@ -1529,6 +1539,7 @@ async def main():
                                 reduce_only=True
                             )
                         ]
+                        
                         log(f"Closing position. {_ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
                         executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                         redis_client=redis_client,
@@ -1551,6 +1562,7 @@ async def main():
                                 fees = executed_position_close['fees']
 
                                 executed_position_close['position'] = {
+                                    'loop_counter' : loop_counter,
                                     'status' : 'TP' if tp else 'SL',
                                     'entry_px' : entry_px,
                                     'exit_px' : exit_px,
@@ -1623,7 +1635,7 @@ async def main():
                             else:
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                    log(f"[{gateway_id}]", log_level=LogLevel.INFO)
+                    log(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
@@ -1666,6 +1678,7 @@ async def main():
                 
             finally:
                 time.sleep(int(param['loop_freq_ms']/1000))
+                loop_counter += 1
 
 asyncio.run(
     main()
