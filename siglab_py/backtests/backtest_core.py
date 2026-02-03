@@ -1929,7 +1929,7 @@ def run_all_scenario(
         test_start_date = algo_param['start_date']
         test_fetch_start_date = test_start_date
         lo_candle_size = algo_param['lo_candle_size']
-        lo_num_intervals = int(lo_candle_size[0])
+        lo_num_intervals = int(lo_candle_size.replace(lo_candle_size[-1],""))
         lo_interval = lo_candle_size[-1]
         lo_how_many_candles = algo_param['lo_how_many_candles']
         if lo_interval=="m":
