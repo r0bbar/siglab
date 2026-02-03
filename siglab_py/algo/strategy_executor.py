@@ -29,10 +29,12 @@ from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
 from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.util.module_util import load_module_class
+from siglab_py.util.io_util import purge_old_file
 
 from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, PositionStatus, OrderSide 
 
 current_filename = os.path.basename(__file__)
+current_dir : str = os.path.dirname(os.path.abspath(__file__))
 
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
@@ -180,6 +182,13 @@ param : Dict = {
     "loop_freq_ms" : 1000, # reduce this if you need trade faster
 
     'current_filename' : current_filename,
+    'current_dir' : current_dir,
+
+    'housekeep_filename_regex_list' : [ 
+        "lo_candles_entry_.*\.csv",
+        "hi_candles_entry_.*\.csv"
+    ],
+    'housekeep_max_age_sec' : 60*60*24,
 
     'notification' : {
         'footer' : None,
@@ -1441,8 +1450,8 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 if param['dump_candles']:
-                                    pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
-                                    pd_lo_candles_w_ta.to_csv(f"lo_candles_entry_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
+                                    pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
+                                    pd_lo_candles_w_ta.to_csv(f"lo_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
                                     
                                 any_entry = True
                         
@@ -1682,6 +1691,19 @@ async def main():
                 
             finally:
                 time.sleep(int(param['loop_freq_ms']/1000))
+                
+                if loop_counter==0 or loop_counter%1000==0:
+                    try:
+                        files_purged : List[str] = purge_old_file(
+                            dir = param['current_dir'],
+                            filename_regex_list = param['housekeep_filename_regex_list'],
+                            max_age_sec = param['housekeep_max_age_sec']
+                        )
+                        for file_purged in files_purged:
+                            logger.info(f"Purged: {file_purged}")
+                    except Exception as housekeep_err:
+                        log(f"Error while purging old files... {housekeep_err}", log_level=LogLevel.ERROR)
+
                 loop_counter += 1
 
 asyncio.run(
