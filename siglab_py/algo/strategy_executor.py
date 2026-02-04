@@ -1358,7 +1358,12 @@ async def main():
                                     if not executed_position['done']:
                                         err_msg = executed_position['execution_err']
                                         log(err_msg, log_level=LogLevel.ERROR)
-                                        dispatch_notification(title=f"singlelegta error from order gateway {gateway_id}!!", message=err_msg, log_level=logging.ERROR)
+                                        dispatch_notification(
+                                            title=f"singlelegta error from order gateway {gateway_id}!!", 
+                                            message=err_msg, 
+                                            footer=param['notification']['footer'], 
+	                                        params=notification_params, 
+                                            log_level=logging.ERROR)
                                         raise ValueError(err_msg)
                                 executed_position = executed_positions[0] # We sent only one DivisiblePosition.
 
