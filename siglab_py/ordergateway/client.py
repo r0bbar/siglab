@@ -245,7 +245,7 @@ class DivisiblePosition(Order):
             execution['patch']['amount'] = 0
 
             slice_id = execution['slice_id']
-            correspinding_slice = self.dispatch_slices[slice_id]
+            correspinding_slice = self.dispatched_slices[slice_id]
 
             status = execution['status']
             if status and status.strip().lower()=='closed':
