@@ -632,6 +632,7 @@ async def execute_one_position(
                             order_update = executions[order_id]
                         
                         if order_update:
+                            order_update['slice_id'] = i
                             order_status = order_update['status']
                             filled_amount = order_update['filled']
                             remaining_amount = order_update['remaining']
@@ -653,6 +654,7 @@ async def execute_one_position(
                 if order_status!='closed':
                     # If no update from websocket, do one last fetch via REST
                     order_update = await _fetch_order(order_id, position.ticker, exchange) 
+                    order_update['slice_id'] = i
                     order_status = order_update['status']
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
@@ -676,6 +678,8 @@ async def execute_one_position(
                                 amount=remaining_amount,
                                 side=position.side
                             )
+                            
+                            executed_resent_order['slice_id'] = i
 
                             order_id = executed_resent_order['id']
                             order_status = executed_resent_order['status']

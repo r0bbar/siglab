@@ -237,7 +237,6 @@ class DivisiblePosition(Order):
                 ]
         '''
     def patch_executions(self):
-        i : int = 0
         for order_id in self.executions:
             execution = self.executions[order_id]
             execution['patch'] = {}
@@ -245,7 +244,8 @@ class DivisiblePosition(Order):
             execution['patch']['filled'] = 0
             execution['patch']['amount'] = 0
 
-            corresponding_slice = self.dispatched_slices[i]
+            slice_id = execution['slice_id']
+            correspinding_slice = self.dispatch_slices[slice_id]
 
             status = execution['status']
             if status and status.strip().lower()=='closed':
@@ -269,8 +269,6 @@ class DivisiblePosition(Order):
                         execution['patch']['amount'] = corresponding_slice.dispatched_amount
                     else:
                         execution['patch']['amount'] = execution['amount']
-
-            i += 1
         
     def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
