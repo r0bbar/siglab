@@ -291,7 +291,7 @@ class DivisiblePosition(Order):
             [ 
                 self.executions[order_id]['amount'] 
                 if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
-                else self.executions[order_id]['patch']['dispatched_amount']
+                else self.executions[order_id]['patch']['amount']
                 for order_id in self.executions 
             ]
         )
@@ -304,13 +304,13 @@ class DivisiblePosition(Order):
                     else (
                         self.executions[order_id]['price'] 
                         if self.executions[order_id]['price'] 
-                        else self.executions[order_id]['patch']['dispatched_price']
+                        else self.executions[order_id]['patch']['average']
                     )
                 ) * 
                 (
                     self.executions[order_id]['amount'] 
                     if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
-                    else self.executions[order_id]['patch']['dispatched_amount']
+                    else self.executions[order_id]['patch']['amount']
                 )
                 for order_id in self.executions 
             ]
