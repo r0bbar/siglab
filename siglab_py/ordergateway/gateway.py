@@ -664,59 +664,68 @@ async def execute_one_position(
 
                     if order_status!='closed':
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
-                        await exchange.cancel_order(order_id, position.ticker)
-                        position.get_execution(order_id)['status'] = 'canceled'
-                        log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
-                        
-                        rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
-                        rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
-                        rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
-                        if rounded_slice_amount_in_base_ccy>0:
-                            executed_resent_order = await exchange.create_order(
-                                symbol=position.ticker,
-                                type='market',
-                                amount=remaining_amount,
-                                side=position.side
-                            )
+
+                        try:
+                            canellation_failed = False
+                            await exchange.cancel_order(order_id, position.ticker)
+                        except Exception as cancel_error:
+                            # This could be due to timing issue, the order you're trying to cancelled already filled.
+                            canellation_failed = True
+                            order_update['status'] = 'closed'
+
+                        if not canellation_failed:
+                            position.get_execution(order_id)['status'] = 'canceled'
+                            log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
                             
-                            executed_resent_order['slice_id'] = i
+                            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
+                            rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
+                            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                            if rounded_slice_amount_in_base_ccy>0:
+                                executed_resent_order = await exchange.create_order(
+                                    symbol=position.ticker,
+                                    type='market',
+                                    amount=remaining_amount,
+                                    side=position.side
+                                )
+                                
+                                executed_resent_order['slice_id'] = i
 
-                            order_id = executed_resent_order['id']
-                            order_status = executed_resent_order['status']
-                            executed_resent_order['multiplier'] = multiplier
-                            position.append_execution(order_id, executed_resent_order)
+                                order_id = executed_resent_order['id']
+                                order_status = executed_resent_order['status']
+                                executed_resent_order['multiplier'] = multiplier
+                                position.append_execution(order_id, executed_resent_order)
 
-                            wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+                                wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
 
-                            start_time = time.time()
-                            elapsed_sec = time.time() - start_time
-                            while (not order_status or order_status!='closed') and (elapsed_sec < wait_threshold_sec):
-                                order_update = None
-                                if order_id in executions:
-                                    order_update = executions[order_id]
+                                start_time = time.time()
+                                elapsed_sec = time.time() - start_time
+                                while (not order_status or order_status!='closed') and (elapsed_sec < wait_threshold_sec):
+                                    order_update = None
+                                    if order_id in executions:
+                                        order_update = executions[order_id]
 
-                                if order_update:
-                                    order_id = order_update['id']
+                                    if order_update:
+                                        order_id = order_update['id']
+                                        order_status = order_update['status']
+                                        filled_amount = order_update['filled']
+                                        remaining_amount = order_update['remaining']
+
+                                    elapsed_sec = time.time() - start_time
+                                    log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec}")
+
+                                    loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
+                                    loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
+                                    await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
+
+                                if (not order_status or order_status!='closed'):
+                                    # If no update from websocket, do one last fetch via REST
+                                    order_update = await _fetch_order(order_id, position.ticker, exchange) 
                                     order_status = order_update['status']
                                     filled_amount = order_update['filled']
                                     remaining_amount = order_update['remaining']
+                                    order_update['multiplier'] = multiplier
 
-                                elapsed_sec = time.time() - start_time
-                                log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec}")
-
-                                loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
-                                loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
-                                await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
-
-                            if (not order_status or order_status!='closed'):
-                                # If no update from websocket, do one last fetch via REST
-                                order_update = await _fetch_order(order_id, position.ticker, exchange) 
-                                order_status = order_update['status']
-                                filled_amount = order_update['filled']
-                                remaining_amount = order_update['remaining']
-                                order_update['multiplier'] = multiplier
-
-                            log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
+                                log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
                         log(f"{position.ticker} {order_id} status (From REST): {json.dumps(order_update, indent=4)}")
 
