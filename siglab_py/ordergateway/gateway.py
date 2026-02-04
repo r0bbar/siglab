@@ -671,7 +671,7 @@ async def execute_one_position(
                         except Exception as cancel_error:
                             # This could be due to timing issue, the order you're trying to cancelled already filled.
                             canellation_failed = True
-                            order_update['status'] = 'closed'
+                            position.get_execution(order_id)['status'] = 'closed'
 
                         if not canellation_failed:
                             position.get_execution(order_id)['status'] = 'canceled'
