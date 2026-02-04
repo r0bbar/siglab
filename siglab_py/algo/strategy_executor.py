@@ -35,6 +35,7 @@ from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, Posi
 
 current_filename = os.path.basename(__file__)
 current_dir : str = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
@@ -182,7 +183,7 @@ param : Dict = {
     "loop_freq_ms" : 1000, # reduce this if you need trade faster
 
     'current_filename' : current_filename,
-    'current_dir' : current_dir,
+    'current_dir' : parent_dir,
 
     'housekeep_filename_regex_list' : [ 
         "lo_candles_entry_.*\.csv",
