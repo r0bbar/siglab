@@ -725,6 +725,8 @@ async def execute_one_position(
                                     remaining_amount = order_update['remaining']
                                     order_update['multiplier'] = multiplier
 
+                                    position.append_execution(order_id, order_update)
+
                                 log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
                         log(f"{position.ticker} {order_id} status (From REST): {json.dumps(order_update, indent=4)}")
