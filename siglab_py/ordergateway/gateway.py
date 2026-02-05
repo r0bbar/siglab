@@ -619,6 +619,9 @@ async def execute_one_position(
 
                 log(f"Order dispatched: {order_id}. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount}")
 
+                if order_status in [ 'canceled', 'cancelled' ]:
+                    raise Exception(f"Order {order_id} cancelled by exchange. gateway NOT re-sending slice. Please check log for more detail on why exchange cancelled your order?!")
+
                 if not order_status or order_status!='closed':
                     wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
                     
