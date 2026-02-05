@@ -516,11 +516,9 @@ async def execute_one_position(
                     'reduceOnly': slice.reduce_only
                 }
                 if position.order_type=='limit':
-                    if position.leg_room_bps<0:
-                        order_params['postOnly'] = True
-                    else:
+                    if position.leg_room_bps>0:
                         log(
-                            f"{position.side} {rounded_slice_amount_in_base_ccy} {position.ticker}. Limit order to be sent as Market order. Invalid leg_room_bps: {position.leg_room_bps}. By convention, leg_room_bps more positive means you want your order to get filled more aggressively. To post limit orders, leg_room_bps should be negative.",
+                            f"{position.side} {rounded_slice_amount_in_base_ccy} {position.ticker}. Limit order to be sent as 'taker' order. leg_room_bps: {position.leg_room_bps}. By convention, leg_room_bps more positive means you want your order to get filled more aggressively. To post limit orders, leg_room_bps should be negative.",
                             log_level=LogLevel.WARNING
                             )
 
