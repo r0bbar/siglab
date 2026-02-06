@@ -1530,7 +1530,10 @@ async def main():
                             if effective_tp_trailing_percent==0:
                                 tp_final = True
                             tp_trailing_stop = True if loss_trailing>=effective_tp_trailing_percent else False
-                            tp = tp_final or tp_trailing_stop
+
+                            # Potentially let the order to take deeper TP: exclude tp_final
+                            # tp = tp_final or tp_trailing_stop
+                            tp = tp_trailing_stop
 
                             if tp_final:
                                 reason = f"tp_max_target {tp_max_target} reached."
