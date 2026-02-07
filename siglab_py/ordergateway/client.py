@@ -293,6 +293,7 @@ class DivisiblePosition(Order):
                 if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
                 else self.executions[order_id]['patch']['amount']
                 for order_id in self.executions 
+                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower()=='closed'
             ]
         )
         
@@ -313,6 +314,7 @@ class DivisiblePosition(Order):
                     else self.executions[order_id]['patch']['amount']
                 )
                 for order_id in self.executions 
+                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower()=='closed'
             ]
         )
         average_cost = average_cost / total_amount if total_amount!=0 else 0
