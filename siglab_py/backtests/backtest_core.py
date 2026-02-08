@@ -570,19 +570,18 @@ def run_scenario(
         pd_hi_candles_segments = segments_to_df(pd_hi_candles_partitions['segments'])
         pd_lo_candles_segments = segments_to_df(pd_lo_candles_partitions['segments'])
 
+    lo_num_intervals = int(algo_param['lo_candle_size'].replace(algo_param['lo_candle_size'][-1],""))
     min_sl_age_ms : int = 0
     if algo_param['lo_candle_size'][-1]=="m":
         one_interval_ms = 60*1000
-        min_sl_age_ms = algo_param['sl_num_intervals_delay'] * one_interval_ms
-        num_intervals_block_pending_ecoevents_ms = one_interval_ms*algo_param['num_intervals_block_pending_ecoevents']
     elif algo_param['lo_candle_size'][-1]=="h":
         one_interval_ms = 60*60*1000
-        min_sl_age_ms = algo_param['sl_num_intervals_delay'] * one_interval_ms
-        num_intervals_block_pending_ecoevents_ms = one_interval_ms*algo_param['num_intervals_block_pending_ecoevents']
     elif algo_param['lo_candle_size'][-1]=="d":
         one_interval_ms = 60*60*24*1000
-        min_sl_age_ms = algo_param['sl_num_intervals_delay'] * one_interval_ms
-        num_intervals_block_pending_ecoevents_ms = one_interval_ms*algo_param['num_intervals_block_pending_ecoevents']
+
+    min_tp_age_ms = lo_num_intervals * algo_param['tp_num_intervals_delay'] * one_interval_ms if 'tp_num_intervals_delay' in algo_param else 0
+    min_sl_age_ms = lo_num_intervals* algo_param['sl_num_intervals_delay'] * one_interval_ms
+    num_intervals_block_pending_ecoevents_ms = lo_num_intervals* algo_param['num_intervals_block_pending_ecoevents'] * one_interval_ms
 
     commission_bps = algo_param['commission_bps']
 
@@ -606,6 +605,7 @@ def run_scenario(
     all_trades : List = []
 
     # This is for performance enhancements, trade memory for speed. Reduce list comprehension. These are duplicated trade cache.
+    tp_by_ticker : Dict[str, List[Dict[str, Any]]] = {}
     sl_by_ticker : Dict[str, List[Dict[str, Any]]] = {}
     open_trades_by_ticker : Dict[str, List[Dict[str, Any]]] = {}
 
@@ -708,6 +708,9 @@ def run_scenario(
 
                 if ticker not in open_trades_by_ticker:
                     open_trades_by_ticker[ticker] = []
+
+                if ticker not in tp_by_ticker:
+                    tp_by_ticker[ticker] = []
 
                 if ticker not in sl_by_ticker:
                     sl_by_ticker[ticker] = []
@@ -1110,6 +1113,7 @@ def run_scenario(
                         this_ticker_current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
                         this_ticker_current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
 
+                        this_ticker_historical_tp = tp_by_ticker[ticker]
                         this_ticker_historical_stops = sl_by_ticker[ticker]
 
                         entries_since_sl : Union[int, None] = -1
@@ -1128,6 +1132,11 @@ def run_scenario(
                                     pos_side = 'buy'
                                 else:
                                     pos_side = 'sell'
+
+                        max_tp_trade_age_ms = None
+                        if this_ticker_historical_tp:
+                            last_tp_timestamp_ms = this_ticker_historical_tp[-1]['timestamp_ms']
+                            max_tp_trade_age_ms = timestamp_ms - last_tp_timestamp_ms
 
                         max_sl_trade_age_ms = None
                         if this_ticker_historical_stops:
@@ -1161,6 +1170,7 @@ def run_scenario(
                             'this_ticker_open_positions_side' : this_ticker_open_positions_side,
                             'this_ticker_current_position_usdt' : this_ticker_current_position_usdt,
                             'max_trade_age_ms' : max_trade_age_ms,
+                            'max_tp_trade_age_ms' : max_tp_trade_age_ms,
                             'max_sl_trade_age_ms' : max_sl_trade_age_ms
                         }
                     
@@ -1176,7 +1186,10 @@ def run_scenario(
                     this_ticker_open_positions_side = current_positions_info['this_ticker_open_positions_side']
                     this_ticker_current_position_usdt = current_positions_info['this_ticker_current_position_usdt']
                     max_trade_age_ms = current_positions_info['max_trade_age_ms']
+                    max_tp_trade_age_ms = current_positions_info['max_tp_trade_age_ms']
                     max_sl_trade_age_ms = current_positions_info['max_sl_trade_age_ms']
+                    
+                    block_entry_since_last_tp = True if max_tp_trade_age_ms and max_tp_trade_age_ms<=min_tp_age_ms else False
                     block_entry_since_last_sl = True if max_sl_trade_age_ms and max_sl_trade_age_ms<=min_sl_age_ms else False
 
                     def _close_open_positions(
@@ -1191,6 +1204,7 @@ def run_scenario(
                             reason2,
                             gloabl_state, 
                             all_trades, 
+                            tp_by_ticker,
                             sl_by_ticker,
                             open_trades_by_ticker, 
                             all_canvas,
@@ -1320,6 +1334,8 @@ def run_scenario(
                         all_trades.append(closing_trade)
                         if reason=='SL':
                             sl_by_ticker[ticker].append(closing_trade)
+                        else:
+                            tp_by_ticker[ticker].append(closing_trade)
                         open_trades_by_ticker[ticker].clear()
 
                         if plot_timeseries:
@@ -1505,7 +1521,7 @@ def run_scenario(
                                     unrealized_pnl, 
                                     effective_tp_trailing_percent,
                                     lo_row, reason, reason2, gloabl_state, 
-                                    all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                    all_trades, tp_by_ticker, sl_by_ticker, open_trades_by_ticker, 
                                     all_canvas,
                                     algo_param
                                 )
@@ -1544,7 +1560,7 @@ def run_scenario(
                                     unrealized_pnl_tp, 
                                     effective_tp_trailing_percent,
                                     lo_row, 'TP', '', gloabl_state, 
-                                    all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                    all_trades, tp_by_ticker, sl_by_ticker, open_trades_by_ticker, 
                                     all_canvas,
                                     algo_param
                                 )
@@ -1621,6 +1637,7 @@ def run_scenario(
                             algo_param['strategy_mode'] in [ 'long_only', 'long_short'] 
                             and order_notional_long>0
                             and (not algo_param['block_entries_on_impacting_ecoevents'] or num_impacting_economic_calendars==0)
+                            and not block_entry_since_last_tp
                             and not block_entry_since_last_sl
                             and (
                                 (
@@ -1726,6 +1743,7 @@ def run_scenario(
                             algo_param['strategy_mode'] in [ 'short_only', 'long_short'] 
                             and order_notional_short>0
                             and (not algo_param['block_entries_on_impacting_ecoevents'] or num_impacting_economic_calendars==0)
+                            and not block_entry_since_last_tp
                             and not block_entry_since_last_sl
                             and (
                                 (
@@ -1842,7 +1860,7 @@ def run_scenario(
                                 unrealized_pnl, 
                                 None, lo_row, 'HC', '', 
                                 gloabl_state, 
-                                all_trades, sl_by_ticker, open_trades_by_ticker, 
+                                all_trades, tp_by_ticker, sl_by_ticker, open_trades_by_ticker, 
                                 all_canvas, 
                                 algo_param
                             )
