@@ -1275,7 +1275,7 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
                         pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
 
-                        if pos!=0:
+                        if pos==0:
                             kwargs = {k: v for k, v in locals().items() if k in allow_entry_initial_func_params}
                             allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
                             allow_entry_initial_long = allow_entry_func_initial_result['long']
