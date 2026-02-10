@@ -623,7 +623,7 @@ async def execute_one_position(
                     raise Exception(f"Order {order_id} cancelled by exchange. gateway NOT re-sending slice. Please check log for more detail on why exchange cancelled your order?!")
 
                 if not order_status or order_status!='closed':
-                    wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+                    wait_threshold_sec = int(position.wait_fill_threshold_ms / 1000)
                     
                     start_time = time.time()
                     elapsed_sec = time.time() - start_time
@@ -644,12 +644,11 @@ async def execute_one_position(
                                 log(f"Limit order fully filled: {order_id}, order_update: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
                                 break
 
-                        loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
                         loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
-                        await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
+                        await asyncio.sleep(loop_freq_sec)
 
                         elapsed_sec = time.time() - start_time
-                        log(f"{position.ticker} waiting for order update ... elapsed_sec: {elapsed_sec}")
+                        log(f"{position.ticker} waiting for order update ... elapsed_sec: {elapsed_sec}  / wait_threshold_sec: {wait_threshold_sec}")
                 
                 # Cancel hung limit order, resend as market
                 if order_status!='closed':
@@ -700,7 +699,10 @@ async def execute_one_position(
 
                                 start_time = time.time()
                                 elapsed_sec = time.time() - start_time
-                                while (not order_status or order_status!='closed') or (elapsed_sec < wait_threshold_sec):
+                                while (
+                                    (not order_status or order_status!='closed') 
+                                    and (elapsed_sec < wait_threshold_sec) # What if update never comes?
+                                ):
                                     order_update = None
                                     if order_id in executions:
                                         order_update = executions[order_id]
@@ -714,11 +716,10 @@ async def execute_one_position(
                                         remaining_amount = order_update['remaining']
 
                                     elapsed_sec = time.time() - start_time
-                                    log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec}")
+                                    log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec} / wait_threshold_sec: {wait_threshold_sec}")
 
-                                    loops_random_delay_multiplier : int = random.randint(1, param['loops_random_delay_multiplier']) if param['loops_random_delay_multiplier']!=1 else 1
                                     loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
-                                    await asyncio.sleep(loop_freq_sec * loops_random_delay_multiplier)
+                                    await asyncio.sleep(loop_freq_sec)
 
                                 if (not order_status or order_status!='closed'):
                                     # If no update from websocket, do one last fetch via REST
