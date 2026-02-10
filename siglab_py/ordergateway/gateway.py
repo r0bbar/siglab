@@ -887,7 +887,7 @@ async def work(
                         log_level=LogLevel.ERROR
                         )
 
-            if loop_i%10==0:
+            if loop_i%100==0:
                 balances = await exchange.fetch_balance()
                 log(f"{param['gateway_id']}: account balances {balances}")
 
