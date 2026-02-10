@@ -641,6 +641,7 @@ async def execute_one_position(
                             filled_amount = order_update['filled']
                             remaining_amount = order_update['remaining']
                             order_update['multiplier'] = multiplier
+                            position.executions[order_id] = order_update
 
                             if remaining_amount <= 0:
                                 log(f"Limit order fully filled: {order_id}, order_update: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
@@ -714,6 +715,7 @@ async def execute_one_position(
                                         order_status = order_update['status']
                                         filled_amount = order_update['filled']
                                         remaining_amount = order_update['remaining']
+                                        position.executions[order_id] = order_update
 
                                     elapsed_sec = time.time() - start_time
                                     log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec} / wait_threshold_sec: {wait_threshold_sec}")
@@ -729,6 +731,7 @@ async def execute_one_position(
                                     filled_amount = order_update['filled']
                                     remaining_amount = order_update['remaining']
                                     order_update['multiplier'] = multiplier
+                                    position.executions[order_id] = order_update
 
                                     assert(order_status=='closed') # Market order not getting filled?
                                     executions[order_id] = order_update
