@@ -305,7 +305,9 @@ def parse_args():
 
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
+    parser.add_argument("--amount_quote_ccy", help="Order amount in quote ccy (USD, USDT or USDC ...etc). Always positive, even for sell trades.", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
+    parser.add_argument("--max_pos_amount_quote_ccy", help="Allows for sliced entries. Default is set to 'amount_quote_ccy'", default=None)
     parser.add_argument("--max_pos_amount_base_ccy", help="Allows for sliced entries. Default is set to 'amount_base_ccy'", default=None)
     parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED.", default=100)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
@@ -380,8 +382,16 @@ def parse_args():
 
     param['ticker'] = args.ticker
     param['order_type'] = args.order_type
-    param['amount_base_ccy'] = float(args.amount_base_ccy)
-    if args.max_pos_amount_base_ccy:
+    param['amount_quote_ccy'] = float(args.amount_quote_ccy) if args.amount_quote_ccy else None
+    param['max_pos_amount_quote_ccy'] = param['amount_quote_ccy']
+    if param['amount_quote_ccy'] and args.max_pos_amount_quote_ccy:
+        param['max_pos_amount_quote_ccy'] = max(
+            float(args.max_pos_amount_quote_ccy), 
+            param['amount_quote_ccy']
+        )
+    param['amount_base_ccy'] = float(args.amount_base_ccy) if args.amount_base_ccy else None
+    param['max_pos_amount_base_ccy'] = param['amount_base_ccy']
+    if param['amount_base_ccy'] and args.max_pos_amount_base_ccy:
         param['max_pos_amount_base_ccy'] = max(
             float(args.max_pos_amount_base_ccy), 
             param['amount_base_ccy']
@@ -1103,6 +1113,12 @@ async def main():
                     adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, num_levels_per_side=2)
                     level_below = adjacent_levels[1]
                     level_above = adjacent_levels[3]
+
+                    # amount_quote_ccy takes precedence over amount_base_ccy
+                    if param['amount_quote_ccy']:
+                        param['amount_base_ccy'] = param['amount_quote_ccy']/mid
+                        param['max_pos_amount_base_ccy'] = param['max_pos_amount_quote_ccy']/mid
+                    log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
 
                     if pos!=0:
                         pos_usdt = mid * pos
