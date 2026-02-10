@@ -636,12 +636,10 @@ async def execute_one_position(
                             order_update = executions[order_id]
                         
                         if order_update:
-                            order_update['slice_id'] = i
                             order_status = order_update['status']
                             filled_amount = order_update['filled']
                             remaining_amount = order_update['remaining']
                             order_update['multiplier'] = multiplier
-                            position.append_execution(order_id, order_update)
 
                             if remaining_amount <= 0:
                                 log(f"Limit order fully filled: {order_id}, order_update: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
@@ -662,8 +660,7 @@ async def execute_one_position(
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
                     order_update['multiplier'] = multiplier
-
-                    position.append_execution(order_id, order_update)
+                    executions[order_id] = order_update
 
                     if order_status!='closed':
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
@@ -711,8 +708,6 @@ async def execute_one_position(
                                         order_update = executions[order_id]
 
                                     if order_update:
-                                        order_update['slice_id'] = i
-                                        
                                         order_id = order_update['id']
                                         order_status = order_update['status']
                                         filled_amount = order_update['filled']
@@ -733,7 +728,8 @@ async def execute_one_position(
                                     remaining_amount = order_update['remaining']
                                     order_update['multiplier'] = multiplier
 
-                                position.append_execution(order_id, order_update)
+                                    assert(order_status=='closed') # Market order not getting filled?
+                                    executions[order_id] = order_update
 
                                 log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
