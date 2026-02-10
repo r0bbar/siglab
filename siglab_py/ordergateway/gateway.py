@@ -700,7 +700,7 @@ async def execute_one_position(
 
                                 start_time = time.time()
                                 elapsed_sec = time.time() - start_time
-                                while (not order_status or order_status!='closed') and (elapsed_sec < wait_threshold_sec):
+                                while (not order_status or order_status!='closed') or (elapsed_sec < wait_threshold_sec):
                                     order_update = None
                                     if order_id in executions:
                                         order_update = executions[order_id]
@@ -729,7 +729,7 @@ async def execute_one_position(
                                     remaining_amount = order_update['remaining']
                                     order_update['multiplier'] = multiplier
 
-                                    position.append_execution(order_id, order_update)
+                                position.append_execution(order_id, order_update)
 
                                 log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
