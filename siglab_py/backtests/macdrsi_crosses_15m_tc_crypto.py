@@ -1,6 +1,6 @@
 '''
 Command line:
-    python macdrsi_h_tc_crypto.py --white_list_tickers BTC/USDT:USDT,ETH/USDT:USDT,BNB/USDT:USDT,SOL/USDT:USDT,XRP/USDT:USDT --reference_ticker BTC/USDT:USDT  --force_reload Y --block_entries_on_impacting_ecoevents N
+    python macdrsi_crosses_15m_tc_crypto.py --white_list_tickers BTC/USDT:USDT,ETH/USDT:USDT,BNB/USDT:USDT,SOL/USDT:USDT,XRP/USDT:USDT --reference_ticker BTC/USDT:USDT  --force_reload Y --block_entries_on_impacting_ecoevents N
     
 Debug from vscode, Launch.json:
         {
@@ -316,12 +316,6 @@ def _allow_entry_initial(
     lo_row_tm1,
     hi_row_tm1
 ) -> Dict[str, bool]:
-	logger.info(f"********allow_entry_initial ********")
-	logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}")
-	logger.info(f"lo_row_tm1.name: {lo_row_tm1.name}")
-	logger.info(f"macd_cross_last: {lo_row_tm1['macd_cross']}")
-	logger.info(f"rsi_trend: {lo_row_tm1['rsi_trend']}")
-	logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
 	if long_or_short == "long":
 		if (
                 lo_row_tm1['macd_cross'] == 'bullish'
@@ -375,10 +369,6 @@ def allow_entry_final(
     target_price_long = entry_price_long * (1 + pnl_potential_bps/10000)
     target_price_short = entry_price_short * (1 - pnl_potential_bps/10000)
 
-    logger.info(f"********allow_entry_final ********")
-    logger.info(f"open: {open}")
-    logger.info(f"pnl_potential_bps: {pnl_potential_bps}")
-
     return {
             'long' : allow_long,
             'short' : allow_short,
@@ -418,12 +408,17 @@ def trailing_stop_threshold_eval(
 def pnl_eval (
         this_candle,
         lo_row_tm1,
+        tp_min_percent : float,
+        tp_max_percent : float,
         running_sl_percent_hard : float,
         this_ticker_open_trades : List[Dict],
         algo_param : Dict
 ) -> Dict[str, float]:
     return generic_pnl_eval(
         this_candle,
+        lo_row_tm1,
+        tp_min_percent,
+        tp_max_percent,
         running_sl_percent_hard,
         this_ticker_open_trades,
         algo_param,
