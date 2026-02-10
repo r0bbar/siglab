@@ -1568,7 +1568,7 @@ async def main():
                             DivisiblePosition(
                                 ticker = _ticker,
                                 side = 'sell' if pos_side==OrderSide.BUY else 'buy',
-                                amount = param['amount_base_ccy'],
+                                amount = pos,
                                 leg_room_bps = param['leg_room_bps'],
                                 order_type = param['order_type'],
                                 slices = param['slices'],
