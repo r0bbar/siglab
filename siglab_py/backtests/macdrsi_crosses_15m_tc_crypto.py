@@ -316,12 +316,12 @@ def _allow_entry_initial(
     lo_row_tm1,
     hi_row_tm1
 ) -> Dict[str, bool]:
-    logger.info(f"********allow_entry_initial ********")
-    logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}")
-    logger.info(f"lo_row_tm1.name: {lo_row_tm1.name}")
-    logger.info(f"macd_cross_last: {lo_row_tm1['macd_cross']}")
-    logger.info(f"rsi_trend: {lo_row_tm1['rsi_trend']}")
-    logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
+	logger.info(f"********allow_entry_initial ********")
+	logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}")
+	logger.info(f"lo_row_tm1.name: {lo_row_tm1.name}")
+	logger.info(f"macd_cross_last: {lo_row_tm1['macd_cross']}")
+	logger.info(f"rsi_trend: {lo_row_tm1['rsi_trend']}")
+	logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
 	if long_or_short == "long":
 		if (
                 lo_row_tm1['macd_cross'] == 'bullish'
