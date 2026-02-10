@@ -627,7 +627,10 @@ async def execute_one_position(
                     
                     start_time = time.time()
                     elapsed_sec = time.time() - start_time
-                    while elapsed_sec < wait_threshold_sec:
+                    while (
+                                (not order_status or order_status!='closed') 
+                                and (elapsed_sec < wait_threshold_sec) # What if update never comes?
+                            ):
                         order_update = None
                         if order_id in executions:
                             order_update = executions[order_id]
