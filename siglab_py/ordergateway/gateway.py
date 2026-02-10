@@ -636,6 +636,7 @@ async def execute_one_position(
                             order_update = executions[order_id]
                         
                         if order_update:
+                            order_update['slice_id'] = i
                             order_status = order_update['status']
                             filled_amount = order_update['filled']
                             remaining_amount = order_update['remaining']
@@ -708,6 +709,7 @@ async def execute_one_position(
                                         order_update = executions[order_id]
 
                                     if order_update:
+                                        order_update['slice_id'] = i
                                         order_id = order_update['id']
                                         order_status = order_update['status']
                                         filled_amount = order_update['filled']
