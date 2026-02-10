@@ -1699,10 +1699,11 @@ async def main():
                         if os.path.exists(file_name):
                             os.rename(file_name, bak_file_name)
                         df.to_csv(file_name)
-                    _safe_update_cache(
-                        file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
-                        df = pd_position_cache
-                    )
+                    if (loop_counter%100==0) or (any_entry or any_exit):
+                        _safe_update_cache(
+                            file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
+                            df = pd_position_cache
+                        )
 
                     if any_entry or any_exit:
                         _safe_update_cache(
