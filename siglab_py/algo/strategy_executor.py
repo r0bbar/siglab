@@ -1095,12 +1095,12 @@ async def main():
                             message = message.decode('utf-8')
                         ob = json.loads(message) if message else None
                         orderbook_valid = ob['is_valid']
-                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, fetch from REST instead"
+                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, reason: {ob['reason']}. Fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
 
                     else:
                         orderbook_valid = False
-                        err_msg = f"orderbook missing, topic: {orderbook_topic}, fetch from REST instead"
+                        err_msg = f"orderbook missing from message bus, topic: {orderbook_topic}, fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
                         
                     if not orderbook_valid:
