@@ -115,7 +115,7 @@ sh = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
-# fh = logging.FileHandler(f"{param['job_name']}.log")
+# fh = logging.FileHandler(f"orderbooks_provider.log")
 # fh.setLevel(log_level)
 # fh.setFormatter(formatter)     
 # logger.addHandler(fh)
@@ -214,6 +214,7 @@ class OrderBook:
         self.ts_delta_consecutive_ms : int = 0
         self.ts_delta_observation_ms : int = 0
         self.is_valid : bool = True
+        self.reason : str = None
 
     def update_book(
                 self, 
@@ -238,8 +239,12 @@ class OrderBook:
         self.is_valid = True
         if self.ts_delta_observation_ms>param['ts_delta_observation_ms_threshold']:
             self.is_valid = False
+            self.reason = f"ts_delta_observation_ms: {self.ts_delta_observation_ms}, ts_delta_observation_ms_threshold:  {param['ts_delta_observation_ms_threshold']}"
+            logger.info(f"invalid orderbook! {self.reason}")
         if self.ts_delta_consecutive_ms>param['ts_delta_consecutive_ms_threshold']:
             self.is_valid = False
+            self.reason = f"ts_delta_consecutive_ms: {self.ts_delta_consecutive_ms}, ts_delta_consecutive_ms_threshold:  {param['ts_delta_consecutive_ms_threshold']}"
+            logger.info(f"invalid orderbook! {self.reason}")
 
         self.bids.update((float(bid[0]), float(bid[1])) for bid in update.get('bids', []))
         self.asks.update((float(ask[0]), float(ask[1])) for ask in update.get('asks', []))
@@ -249,7 +254,8 @@ class OrderBook:
             best_ask = float(min(self.asks.keys()))
             best_bid = float(max(self.bids.keys()))
             if best_ask<best_bid:
-                raise ValueError(f"{self.exchange_name} {self.ticker} best bid >= best ask!?! How?")
+                self.reason = "best bid {best_bid} >= best ask {best_ask}!?! How?"
+                raise ValueError(f"{self.exchange_name} {self.ticker} ")
         self.bids = dict(sorted(self.bids.items(), reverse=True))
         self.asks = dict(sorted(self.asks.items()))
     
@@ -265,7 +271,8 @@ class OrderBook:
             "timestamp_ms" : self.timestamp_ms, # in ms (timestamp in update from exchange)
             'ts_delta_observation_ms' : self.ts_delta_observation_ms,
             'ts_delta_consecutive_ms' : self.ts_delta_consecutive_ms,
-            "is_valid" : self.is_valid
+            "is_valid" : self.is_valid,
+            "reason" : self.reason
         }
 
         data['best_ask'] = min(data['asks'])
