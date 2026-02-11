@@ -773,31 +773,32 @@ async def main():
                 else:
                     log(f"No trading window specified")
 
-                if full_economic_calendars_topic:
-                    full_economic_calendars = fetch_economic_events(redis_client, full_economic_calendars_topic)
+                if (loop_counter%10==0):
+                    if full_economic_calendars_topic:
+                        full_economic_calendars = fetch_economic_events(redis_client, full_economic_calendars_topic)
 
-                    impacting_economic_calendars = None
-                    s_impacting_economic_calendars = None
-                    if full_economic_calendars:
-                        impacting_economic_calendars = [ x for x in full_economic_calendars 
-                                                            if x['event_code'] in param['mapped_event_codes']  
-                                                            and x['region'] in param['mapped_regions']
-                                                        ]
-                        if impacting_economic_calendars:
-                            impacting_economic_calendars =  [ x for x in impacting_economic_calendars 
-                                                                if(
-                                                                    (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)>0 # Incoming events
-                                                                    and (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000) < num_intervals_current_ecoevents_ms
-                                                                ) or (
-                                                                    (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)<0 # Passed events
-                                                                    and (datetime.now().timestamp()*1000 - x['calendar_item_timestamp_ms']) < num_intervals_current_ecoevents_ms/3 
-                                                                )
+                        impacting_economic_calendars = None
+                        s_impacting_economic_calendars = None
+                        if full_economic_calendars:
+                            impacting_economic_calendars = [ x for x in full_economic_calendars 
+                                                                if x['event_code'] in param['mapped_event_codes']  
+                                                                and x['region'] in param['mapped_regions']
                                                             ]
-                            s_impacting_economic_calendars = " ".join([ x['event_code'] if x['event_code']!='manual_event' else x['event'] for x in impacting_economic_calendars ])
+                            if impacting_economic_calendars:
+                                impacting_economic_calendars =  [ x for x in impacting_economic_calendars 
+                                                                    if(
+                                                                        (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)>0 # Incoming events
+                                                                        and (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000) < num_intervals_current_ecoevents_ms
+                                                                    ) or (
+                                                                        (x['calendar_item_timestamp_ms'] - datetime.now().timestamp()*1000)<0 # Passed events
+                                                                        and (datetime.now().timestamp()*1000 - x['calendar_item_timestamp_ms']) < num_intervals_current_ecoevents_ms/3 
+                                                                    )
+                                                                ]
+                                s_impacting_economic_calendars = " ".join([ x['event_code'] if x['event_code']!='manual_event' else x['event'] for x in impacting_economic_calendars ])
 
-                    log(f"full_economic_calendars #rows: {len(full_economic_calendars) if full_economic_calendars else 0}")
-                    log(f"impacting_economic_calendars #rows: {len(impacting_economic_calendars) if impacting_economic_calendars else 0} {s_impacting_economic_calendars}.")
-                    
+                        log(f"full_economic_calendars #rows: {len(full_economic_calendars) if full_economic_calendars else 0}")
+                        log(f"impacting_economic_calendars #rows: {len(impacting_economic_calendars) if impacting_economic_calendars else 0} {s_impacting_economic_calendars}.")
+                        
                     if param['block_entry_impacting_events'] and impacting_economic_calendars:
                         block_entries = True
                         log(f"Block entries: Incoming events")
@@ -811,9 +812,10 @@ async def main():
                             _ticker = old_ticker
 
                 # Ticker changes, delisting handling
-                markets = await exchange.load_markets() 
-                market = markets[_ticker]
-                multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
+                if (loop_counter%10==0):
+                    markets = await exchange.load_markets() 
+                    market = markets[_ticker]
+                    multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
 
                 position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==_ticker)]
                 if position_cache_row.shape[0]==0:
@@ -1292,12 +1294,14 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
 
                         if pos==0: # @todo: align with backtest_core, allow multi-slices entries
+                            start_allow_entry_initial = time.time()
                             kwargs = {k: v for k, v in locals().items() if k in allow_entry_initial_func_params}
                             allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
                             allow_entry_initial_long = allow_entry_func_initial_result['long']
                             allow_entry_initial_short = allow_entry_func_initial_result['short']
+                            elapsed_ms_allow_entry_initial = int((time.time() - start_allow_entry_initial) *1000)
 
-                            log(f"block_entries: {block_entries}, allow_entry_initial_long: {allow_entry_initial_long}, allow_entry_initial_short: {allow_entry_initial_short}")
+                            log(f"block_entries: {block_entries}, allow_entry_initial_long: {allow_entry_initial_long}, allow_entry_initial_short: {allow_entry_initial_short}, elapsed_ms_allow_entry_initial: {elapsed_ms_allow_entry_initial}")
 
                             assert(not(allow_entry_initial_long and allow_entry_initial_short))
                             
@@ -1534,8 +1538,11 @@ async def main():
                         reason : str = None
                         if unreal_live>0:
                             if lo_candles_valid:
+                                start_tp_eval = time.time()
                                 kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                                 tp_final = tp_eval_func(**kwargs)
+                                elapsed_ms_tp_eval = int((time.time() - start_tp_eval) * 1000)
+                                log(f"elapsed_ms_tp_eval: {elapsed_ms_tp_eval}")
 
                             else:
                                 # tp_eval_func may use candles, so below a fall back mechanism
@@ -1675,11 +1682,19 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                    log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    if (loop_counter%100==0) or (any_entry or any_exit):                      
+                        log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    else:
+                        print(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}")
 
                     if (
                         lo_candles_interval_rolled
