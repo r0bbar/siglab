@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pprint import pformat
 import logging
 from typing import List, Dict, Any, Union
 
@@ -22,10 +23,15 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         hi_row_tm1,
         last_candles
     )  -> Dict[str, bool]:
-        logger.info(f"********allow_entry_initial ********")
-        logger.info(f"lo_row_tm1['datetime']: {lo_row_tm1['datetime']}, hi_row_tm1['datetime']: {hi_row_tm1['datetime']}")
-        logger.info(f"macd_cross: {lo_row_tm1['macd_cross']}, lo_row_tm1['rsi_trend']: {lo_row_tm1['rsi_trend']}")
-        logger.info(f"lo_row_tm1['close']: {lo_row_tm1['close']}, hi_row_tm1['ema_close']: {hi_row_tm1['ema_close']}")
+        allow_entry_initial_conditions = {
+            "lo_row_tm1['datetime']" : lo_row_tm1['datetime'],
+            "hi_row_tm1['datetime']" : hi_row_tm1['datetime'],
+            "lo_row_tm1['macd_cross']" : lo_row_tm1['macd_cross'],
+            "lo_row_tm1['rsi_trend']" : lo_row_tm1['rsi_trend'],
+            "lo_row_tm1['close']" : lo_row_tm1['close'],
+            "hi_row_tm1['ema_close']" : hi_row_tm1['ema_close']
+        }
+        print(pformat(allow_entry_initial_conditions, indent=2, width=100))
 
         allow_long : bool = (
                 lo_row_tm1['macd_cross'] == 'bullish' 
