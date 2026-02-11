@@ -144,15 +144,15 @@ POST_MOVE_PERCENT_THRESHOLD : int = 3
 enable_hi_timeframe_confirm : bool = True
 
 start_dates : List[datetime] = [ 
-    datetime(2024, 4, 1)
+    datetime(2024, 1, 1)
 ]
 
 hi_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('1h', 24*7, 24*572)
+    ('1h', 24*7, 24 *365)
 ]
 
 lo_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('15m', 15 *10, 15*4*24 *572)
+    ('15m', 15 *10, 4*24 *365)
 ]
 
 hi_ma_short_vs_long_interval_values : List[Tuple[int, int]] = [ (12, 30) ]

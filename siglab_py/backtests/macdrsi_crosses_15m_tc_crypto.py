@@ -168,15 +168,18 @@ POST_MOVE_PERCENT_THRESHOLD : int = 3
 enable_hi_timeframe_confirm : bool = True
 
 start_dates : List[datetime] = [ 
-    datetime(2024, 4, 1)
+    # datetime(2026, 1, 1),
+    datetime(2024, 1, 1),
 ]
 
 hi_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('1h', 24*3, 24*572)
+    # ('1h', 6, 24*31),
+    ('1h', 24*3, 24 *365*2)
 ]
 
 lo_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    ('15m', 15 *10, 15*4*24 *572)
+    # ('15m', 15 *10, 4*24 *31),
+    ('15m', 15 *10, 4*24 *365*2)
 ]
 
 hi_ma_short_vs_long_interval_values : List[Tuple[int, int]] = [ (12, 30) ]
@@ -316,17 +319,17 @@ def _allow_entry_initial(
     lo_row_tm1,
     hi_row_tm1
 ) -> Dict[str, bool]:
+	'''
+    use 'macd_cross_last' instead in combinations with 'macd_bullish_cross_last_id' if you want to make more entries.
+
+    Suggest add additional clause to specify that you want entry only when crosses recently.
+                lo_row_tm1.name >= lo_row_tm1['macd_bullish_cross_last_id']
+                and 
+                (lo_row_tm1.name - lo_row_tm1['macd_bullish_cross_last_id']) < 5
+	'''
 	if long_or_short == "long":
 		if (
                 lo_row_tm1['macd_cross'] == 'bullish'
-                # use 'macd_cross_last' instead in combinations with 'macd_bullish_cross_last_id' if you want to make more entries
-                '''
-                and (
-                      lo_row_tm1.name >= lo_row_tm1['macd_bullish_cross_last_id']
-                      and 
-                      (lo_row_tm1.name - lo_row_tm1['macd_bullish_cross_last_id']) < 5
-                )
-                '''
                 and lo_row_tm1['rsi_trend']=="up"
                 and lo_row_tm1['close']>hi_row_tm1['ema_close']
         ):
@@ -336,13 +339,6 @@ def _allow_entry_initial(
 	elif long_or_short == "short":
 		if (
                 lo_row_tm1['macd_cross'] == 'bearish'
-                '''
-                and (
-                      lo_row_tm1.name >= lo_row_tm1['macd_bearish_cross_last_id']
-                      and 
-                      (lo_row_tm1.name - lo_row_tm1['macd_bearish_cross_last_id']) < 5
-                )
-                '''
                 and lo_row_tm1['rsi_trend']=="down"
                 and lo_row_tm1['close']<hi_row_tm1['ema_close']
         ):
