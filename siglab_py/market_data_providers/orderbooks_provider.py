@@ -88,7 +88,7 @@ param : Dict = {
     # a) ts_delta_observation_ms: Keep track of server clock vs timestamp from exchange
     # b) ts_delta_consecutive_ms: Keep track of gap between consecutive updates
     'ts_delta_observation_ms_threshold' : 350,
-    'ts_delta_consecutive_ms_threshold' : 150,
+    'ts_delta_consecutive_ms_threshold' : 350,
 
     # Publish to message bus
     'mds' : {
