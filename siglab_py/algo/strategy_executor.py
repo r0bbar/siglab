@@ -1105,8 +1105,9 @@ async def main():
                             orderbook_valid = False
                             validation_reason = f"stale orderbook, ob_age_sec: {ob_age_sec}"
 
-                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, reason: {validation_reason}. Fetch from REST instead"
-                        log(err_msg, LogLevel.WARNING)
+                        if not orderbook_valid:
+                            err_msg = f"Invalid orderbook, topic: {orderbook_topic}, reason: {validation_reason}. Fetch from REST instead"
+                            log(err_msg, LogLevel.WARNING)
 
                     else:
                         orderbook_valid = False
