@@ -237,6 +237,7 @@ class OrderBook:
         self.ts_delta_consecutive_ms = self.timestamp_ms - self.last_timestamp_ms if self.last_timestamp_ms else 0
 
         self.is_valid = True
+        self.reason = None
         if self.ts_delta_observation_ms>param['ts_delta_observation_ms_threshold']:
             self.is_valid = False
             self.reason = f"ts_delta_observation_ms: {self.ts_delta_observation_ms}, ts_delta_observation_ms_threshold:  {param['ts_delta_observation_ms_threshold']}"
