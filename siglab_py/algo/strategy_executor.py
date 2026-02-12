@@ -1103,9 +1103,9 @@ async def main():
                         ob_age_sec = (datetime.now().timestamp()-ob['timestamp'])
                         if ob_age_sec > param['ob_max_age_sec']:
                             orderbook_valid = False
-                            ovalidation_reason = f"stale orderbook, ob_age_sec: {ob_age_sec}"
+                            validation_reason = f"stale orderbook, ob_age_sec: {ob_age_sec}"
 
-                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, reason: {ovalidation_reason}. Fetch from REST instead"
+                        err_msg = f"Invalid orderbook, topic: {orderbook_topic}, reason: {validation_reason}. Fetch from REST instead"
                         log(err_msg, LogLevel.WARNING)
 
                     else:
