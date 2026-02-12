@@ -1127,6 +1127,14 @@ async def main():
                     level_below = adjacent_levels[1]
                     level_above = adjacent_levels[3]
 
+                    pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
+                    pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
+                    pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
+                    pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
+                    pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
+                    pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
+                    pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
+
                     # amount_quote_ccy takes precedence over amount_base_ccy
                     if param['amount_quote_ccy']:
                         param['amount_base_ccy'] = param['amount_quote_ccy']/mid
@@ -1295,14 +1303,6 @@ async def main():
                             _all_indicators[indicator] = indicator_value
                         
                         last_candles=trailing_candles # alias
-
-                        pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
-                        pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
-                        pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
-                        pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
-                        pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
-                        pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
-                        pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
 
                         if pos==0: # @todo: align with backtest_core, allow multi-slices entries
                             start_allow_entry_initial = time.time()
