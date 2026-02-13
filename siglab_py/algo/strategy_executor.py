@@ -1068,7 +1068,6 @@ async def main():
                             if lo_row['timestamp_ms']!=lo_row_timestamp_ms:
                                 lo_row_timestamp_ms = lo_row['timestamp_ms']
                                 lo_candles_interval_rolled = True
-                                log(f"lo_candles interval rolled")
 
                             trailing_candles = pd_lo_candles_w_ta \
                                     .tail(param['reversal_num_intervals']) \
