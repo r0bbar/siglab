@@ -102,6 +102,7 @@ class DivisiblePosition(Order):
         self.executions : Dict[str, Dict[str, Any]] = {}
 
         self.timestamp_ms = int(datetime.now().timestamp() * 1000)
+        self.done_timestamp_ms = None
 
     def to_slices(self) -> List[Order]:
         slices : List[Order] = []
@@ -338,6 +339,7 @@ class DivisiblePosition(Order):
         rv['done'] = self.done
         rv['execution_err'] = self.execution_err
         rv['timestamp_ms'] = self.timestamp_ms
+        rv['done_timestamp_ms'] = self.done_timestamp_ms
         return rv
 
 def execute_positions(

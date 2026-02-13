@@ -785,6 +785,7 @@ async def execute_one_position(
             amount = balances[base_ccy]['total']
         position.pos = amount
 
+        position.done_timestamp_ms = int(datetime.now().timestamp() * 1000)
         position.done = True
 
         log(f"Executions:")
