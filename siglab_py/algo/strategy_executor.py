@@ -1068,6 +1068,7 @@ async def main():
                             if lo_row['timestamp_ms']!=lo_row_timestamp_ms:
                                 lo_row_timestamp_ms = lo_row['timestamp_ms']
                                 lo_candles_interval_rolled = True
+                                log(f"lo_candles interval rolled")
 
                             trailing_candles = pd_lo_candles_w_ta \
                                     .tail(param['reversal_num_intervals']) \
@@ -1367,6 +1368,7 @@ async def main():
                                     target_order_notional = order_notional_adj_func_result['target_order_notional']
                                     
                                     log(f"******** ENTRY (loop# {loop_counter}) ********")
+                                    entry_start_timestamp = datetime.now().timestamp()
                                     entry_positions : List[DivisiblePosition] = [
                                         DivisiblePosition(
                                             ticker = _ticker,
@@ -1398,12 +1400,15 @@ async def main():
                                                 log_level=logging.ERROR)
                                             raise ValueError(err_msg)
                                     executed_position = executed_positions[0] # We sent only one DivisiblePosition.
-
+                                    
                                     new_pos_from_exchange = executed_position['filled_amount']
                                     amount_filled_usdt = mid * new_pos_from_exchange
                                     entry_px = executed_position['average_cost']
                                     new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                                     fees = executed_position['fees']
+                                    done_timestamp_ms = executed_position['done_timestamp_ms']
+                                    entry_duration_ms = round(( (done_timestamp_ms/1000) - entry_start_timestamp ) *1000, 3)
+                                    
 
                                     if side=='buy':
                                         tp_max_price = entry_px * (1 + tp_max_percent/100)
@@ -1432,6 +1437,7 @@ async def main():
                                             'pos_usdt' : pos_usdt + new_pos_usdt_from_exchange,
                                             'fees' : fees,
                                             'multiplier' : multiplier,
+                                            'entry_duration_ms' : entry_duration_ms,
                                             'indicators' : {}
                                         }
                                     for indicator in _all_indicators.keys():
@@ -1598,6 +1604,7 @@ async def main():
                         ]
                         
                         log(f"Closing position. {_ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
+                        closing_start_timestamp = datetime.now().timestamp()
                         executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                         redis_client=redis_client,
                                                                                                                         positions=exit_positions,
@@ -1617,6 +1624,9 @@ async def main():
                                 new_pos_from_exchange = pos + executed_position_close['filled_amount']
                                 new_pos_usdt_from_exchange = new_pos_from_exchange * exit_px
                                 fees = executed_position_close['fees']
+                                done_timestamp_ms = executed_position_close['done_timestamp_ms']
+
+                                closing_duration_ms = round(( (done_timestamp_ms/1000) - closing_start_timestamp ) *1000, 3)
 
                                 executed_position_close['position'] = {
                                     'loop_counter' : loop_counter,
@@ -1635,7 +1645,8 @@ async def main():
                                     'created' : pos_created.strftime("%Y%m%d %H:%M:%S") if pos_created else None,
                                     'tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H:%M:%S") if pos_tp_min_crossed else None,
                                     'closed' : dt_now.strftime("%Y%m%d %H:%M:%S"),
-                                    'reason' : reason
+                                    'reason' : reason,
+                                    'closing_duration_ms' : closing_duration_ms
                                 }
 
                                 new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
