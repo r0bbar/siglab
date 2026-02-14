@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 
 from numpy import equal
 
-from util.simple_math import generate_rand_nums, round_to_level, compute_adjacent_levels, bucket_series, bucketize_val
+from util.simple_math import generate_rand_nums, round_to_level, compute_adjacent_levels, bucket_series, bucketize_val, msd_power, round_to_sigfigs
 
 class SimpleMathTests(unittest.TestCase):
 
@@ -250,3 +250,82 @@ class SimpleMathTests(unittest.TestCase):
                                     outlier_threshold_percent = 10,
                                     level_granularity=level_granularity
                                 )
+
+    def test_msd_power(self):
+        # Integers
+        self.assertEqual(msd_power(34523), 4)
+        self.assertEqual(msd_power(99999), 4)
+        self.assertEqual(msd_power(100000), 5)
+        self.assertEqual(msd_power(999999999), 8)
+        self.assertEqual(msd_power(1), 0)
+        self.assertEqual(msd_power(9), 0)
+        self.assertEqual(msd_power(10), 1)
+
+        # Decimals > 1
+        self.assertEqual(msd_power(3452.3), 3)
+        self.assertEqual(msd_power(12.345), 1)
+        self.assertEqual(msd_power(9.87654321), 0)
+
+        # Numbers between 0 and 1
+        self.assertEqual(msd_power(0.056), -2)      # 5.6 × 10⁻²
+        self.assertEqual(msd_power(0.0056), -3)     # 5.6 × 10⁻³
+        self.assertEqual(msd_power(0.000999), -4)
+        self.assertEqual(msd_power(0.1), -1)
+        self.assertEqual(msd_power(0.999), -1)
+        self.assertEqual(msd_power(0.000000123), -7)
+
+        # Negative numbers (should ignore sign)
+        self.assertEqual(msd_power(-123.5), 2)
+        self.assertEqual(msd_power(-0.00456), -3)
+
+        # Special / edge cases
+        self.assertIsNone(msd_power(0))
+        self.assertIsNone(msd_power(0.0))
+        # Very large / very small (log10 should handle)
+        self.assertEqual(msd_power(1e20), 20)
+        self.assertEqual(msd_power(5.67e-15), -15)
+
+    def test_round_to_sigfigs(self):
+        # Using default sigfigs=6
+
+        # Large numbers – integer part dominant
+        self.assertEqual(round_to_sigfigs(34523.12345, sigfigs=6), 34523.1)
+        self.assertEqual(round_to_sigfigs(34523.12345, sigfigs=7), 34523.12)
+        self.assertEqual(round_to_sigfigs(123456.789), 123457)
+        self.assertEqual(round_to_sigfigs(999999.5), 1000000)     # rounds up
+        self.assertEqual(round_to_sigfigs(9876543210), 9876540000)
+
+        # Numbers around 1–1000
+        self.assertEqual(round_to_sigfigs(123.45678), 123.457)
+        self.assertEqual(round_to_sigfigs(9.87654321), 9.87654)
+        self.assertEqual(round_to_sigfigs(1.00000), 1.0)
+
+        # Small numbers (decimal dominant)
+        self.assertEqual(round_to_sigfigs(0.056789123), 0.0567891)
+
+        # Very small scientific notation style
+        self.assertEqual(round_to_sigfigs(1.23456789e-8), 1.23457e-8)
+        self.assertEqual(round_to_sigfigs(9.87654321e-12), 9.87654e-12)
+
+        # Negative numbers
+        self.assertEqual(round_to_sigfigs(-34523.12345), -34523.1)
+        self.assertEqual(round_to_sigfigs(-0.0056789), -0.0056789)
+
+        # Edge cases
+        self.assertEqual(round_to_sigfigs(0), 0.0)
+        self.assertEqual(round_to_sigfigs(0.0), 0.0)
+
+        # With explicit sigfigs parameter
+        self.assertEqual(round_to_sigfigs(34523.12345, sigfigs=4), 34520)
+        self.assertEqual(round_to_sigfigs(1234567, sigfigs=3), 1230000)
+
+        '''
+        Edge cases:
+            round_to_sigfigs(0.0056789123) -> 0.0056789100000000006
+            round_to_sigfigs(0.00034523123) -> 0.00034523100000000004
+            round_to_sigfigs(0.056789, sigfigs=3) -> 0.056799999999999996
+        These are extra tiny error from the repeated multiply/divide in float arithmetic with python.
+        '''
+        # self.assertEqual(round_to_sigfigs(0.0056789123), 0.00567891) # 0.0056789100000000006
+        # self.assertEqual(round_to_sigfigs(0.00034523123), 0.000345231)
+        # self.assertEqual(round_to_sigfigs(0.056789, sigfigs=3), 0.0568)

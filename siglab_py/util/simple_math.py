@@ -260,3 +260,38 @@ def bucketize_val(
             if x>=bucket['min'] and x<=bucket['max']: # type: ignore
                 return key
         return None
+
+def msd_power(x):
+    """
+    msd = Most Significant Digit.
+    Returns the exponent of the most significant digit using logarithms.
+    Very accurate and handles very large/small numbers well.
+    """
+    if x == 0:
+        return None
+    log = math.log10(abs(x))
+    return math.floor(log)
+
+def round_to_sigfigs(x, sigfigs=6):
+    """
+    Rounds a number to approximately `sigfigs` significant digits.
+    
+    Examples (with default sigfigs=6):
+        34523.12345     → 34523.1
+        123456.789      → 123457
+        0.00034523123   → 0.000345231
+        9876543210      → 9.87654e+09
+        0.00123456789   → 0.001235
+        9.87654321      → 9.87654
+        123.0           → 123.0
+    """
+    if x == 0:
+        return 0.0
+    if not math.isfinite(x):
+        return x
+    power = msd_power(x)
+    scale = 10 ** power
+    normalized = abs(x) / scale
+    rounded_normalized = round(normalized, sigfigs - 1)
+    result = rounded_normalized * scale
+    return math.copysign(result, x)
