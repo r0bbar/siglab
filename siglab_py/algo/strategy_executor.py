@@ -1428,6 +1428,7 @@ async def main():
                                             'tp_min_price' : tp_min_price,
                                             'tp_max_price' : tp_max_price,
                                             'sl_price' : sl_price,
+                                            'pnl_potential_bps' : pnl_potential_bps, # If the trade manages to reach tp_max_percent
                                             'tp_max_percent' : tp_max_percent,
                                             'tp_min_percent' : tp_min_percent,
                                             'running_sl_percent_hard' : running_sl_percent_hard,
