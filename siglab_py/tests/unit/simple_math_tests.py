@@ -1,5 +1,6 @@
 import unittest
 from typing import List, Dict, Union
+import time
 
 from numpy import equal
 
@@ -329,3 +330,12 @@ class SimpleMathTests(unittest.TestCase):
         # self.assertEqual(round_to_sigfigs(0.0056789123), 0.00567891) # 0.0056789100000000006
         # self.assertEqual(round_to_sigfigs(0.00034523123), 0.000345231)
         # self.assertEqual(round_to_sigfigs(0.056789, sigfigs=3), 0.0568)
+
+        NUM_CALLS = 10_000
+        start = time.time()
+        for _ in range(10_000):
+            x = round_to_sigfigs(85.123456789, sigfigs=7)
+        elapsed_ms = int((time.time() - start) *1000)
+        avg_per_call_ms = elapsed_ms / NUM_CALLS
+        print(f"elapsed_ms: {elapsed_ms} over {NUM_CALLS} calls, avg_per_call_ms: {avg_per_call_ms}.")
+        assert(avg_per_call_ms<1)
