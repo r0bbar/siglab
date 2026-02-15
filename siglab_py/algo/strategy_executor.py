@@ -23,7 +23,7 @@ from tabulate import tabulate
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 from siglab_py.util.datetime_util import parse_trading_window
-from siglab_py.util.simple_math import compute_adjacent_levels
+from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
@@ -1119,13 +1119,13 @@ async def main():
 
                     best_ask = min([x[0] for x in ob['asks']])
                     best_bid = max([x[0] for x in ob['bids']])
-                    mid = (best_ask+best_bid)/2
-                    spread_bps = (best_ask/best_bid - 1) * 10000
+                    mid = round_to_sigfigs((best_ask+best_bid)/2, sigfigs=6)
+                    spread_bps = round_to_sigfigs((best_ask/best_bid - 1) * 10000, sigfigs=6)
 
                     level_granularity = param['level_granularity']
                     adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, num_levels_per_side=2)
-                    level_below = adjacent_levels[1]
-                    level_above = adjacent_levels[3]
+                    level_below = round_to_sigfigs(adjacent_levels[1], sigfigs=6)
+                    level_above = round_to_sigfigs(adjacent_levels[3], sigfigs=6)
 
                     pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                     pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
@@ -1137,21 +1137,21 @@ async def main():
 
                     # amount_quote_ccy takes precedence over amount_base_ccy
                     if param['amount_quote_ccy']:
-                        param['amount_base_ccy'] = param['amount_quote_ccy']/mid
-                        param['max_pos_amount_base_ccy'] = param['max_pos_amount_quote_ccy']/mid
+                        param['amount_base_ccy'] = round_to_sigfigs(param['amount_quote_ccy']/mid, sigfigs=6)
+                        param['max_pos_amount_base_ccy'] = round_to_sigfigs(param['max_pos_amount_quote_ccy']/mid, sigfigs=6)
                     log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
 
                     if pos!=0:
-                        pos_usdt = mid * pos
+                        pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
                         unrealized_pnl_optimistic, unrealized_pnl_pessimistic = mid, mid
 
                         if pos_side == OrderSide.BUY:
-                            unreal_live = round((mid - entry_px) * param['amount_base_ccy'], 3)
+                            unreal_live = round_to_sigfigs((mid - entry_px) * param['amount_base_ccy'], sigfigs=6)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = round((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], 3)
-                                unrealized_pnl_pessimistic = round((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], 3)
+                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
+                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > (lo_interval_ms/1000) and lo_candles_valid:
                                 '''
@@ -1170,10 +1170,10 @@ async def main():
                                 '''
                                 unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
-                            unreal_live = round((entry_px - mid) * param['amount_base_ccy'], 3)
+                            unreal_live = round_to_sigfigs((entry_px - mid) * param['amount_base_ccy'], sigfigs=6)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = round((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], 3)
-                                unrealized_pnl_pessimistic = round((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], 3)
+                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
+                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > lo_interval_ms/1000 and lo_candles_valid:
                                 unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * param['amount_base_ccy']
@@ -1199,7 +1199,7 @@ async def main():
 
                             kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                             sl_adj_func_result = sl_adj_func(**kwargs)
-                            running_sl_percent_hard = sl_adj_func_result['running_sl_percent_hard']
+                            running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
 
                         else:
                             # Fallback
@@ -1323,8 +1323,8 @@ async def main():
                                 allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                                 allow_entry_final_long = allow_entry_func_final_result['long']
                                 allow_entry_final_short = allow_entry_func_final_result['short']
-                                target_price_long = allow_entry_func_final_result['target_price_long']
-                                target_price_short = allow_entry_func_final_result['target_price_short']
+                                target_price_long = round_to_sigfigs(allow_entry_func_final_result['target_price_long'], sigfigs=6)
+                                target_price_short = round_to_sigfigs(allow_entry_func_final_result['target_price_short'], sigfigs=6)
 
                                 log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
 
@@ -1349,6 +1349,9 @@ async def main():
                                         pnl_potential_bps = (mid/target_price_short - 1) *10000 if target_price_short else None
                                     else:
                                         raise ValueError("Either allow_long or allow_short!")
+
+                                    if pnl_potential_bps:
+                                        pnl_potential_bps = round(pnl_potential_bps, 2)
 
                                     '''
                                     tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
@@ -1401,7 +1404,7 @@ async def main():
                                     executed_position = executed_positions[0] # We sent only one DivisiblePosition.
                                     
                                     new_pos_from_exchange = executed_position['filled_amount']
-                                    amount_filled_usdt = mid * new_pos_from_exchange
+                                    amount_filled_usdt = round_to_sigfigs(mid * new_pos_from_exchange, sigfigs=6)
                                     entry_px = executed_position['average_cost']
                                     new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                                     fees = executed_position['fees']
@@ -1410,14 +1413,14 @@ async def main():
                                     
 
                                     if side=='buy':
-                                        tp_max_price = entry_px * (1 + tp_max_percent/100)
-                                        tp_min_price = entry_px * (1 + tp_min_percent/100)
-                                        sl_price = entry_px * (1 - running_sl_percent_hard/100)
+                                        tp_max_price = round_to_sigfigs(entry_px * (1 + tp_max_percent/100), sigfigs=6)
+                                        tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
+                                        sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
 
                                     elif side=='sell':
-                                        tp_max_price = entry_px * (1 - tp_max_percent/100)
-                                        tp_min_price = entry_px * (1 - tp_min_percent/100)
-                                        sl_price = entry_px * (1 + running_sl_percent_hard/100)
+                                        tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
+                                        tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
+                                        sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
 
                                     executed_position['position'] = {
                                             'loop_counter' : loop_counter,
@@ -1618,7 +1621,7 @@ async def main():
                                     closed_pnl = (executed_position_close['average_cost'] - entry_px) * param['amount_base_ccy']
                                 else:
                                     closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
-                                closed_pnl = round(closed_pnl, 3)
+                                closed_pnl = round_to_sigfigs(closed_pnl, sigfigs=6)
                                 
                                 exit_px = executed_position_close['average_cost']
                                 new_pos_from_exchange = pos + executed_position_close['filled_amount']
@@ -1636,7 +1639,7 @@ async def main():
                                     'mid' : mid,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'pnl' : closed_pnl,
-                                    'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
+                                    'pnl_bps' : round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0,
                                     'fees' : fees,
                                     'max_pain' : max_pain,
                                     'running_sl_percent_hard' : running_sl_percent_hard,
