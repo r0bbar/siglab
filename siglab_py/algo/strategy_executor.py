@@ -1167,6 +1167,7 @@ async def main():
                                     unrealized_pnl_open $2000 per BTC (This is very misleading! This would cause algo to TP prematurely!)
                                 Thus for new entries, 
                                     unrealized_pnl_open = unreal_live
+                                This here, deviates from backtest_core.
                                 '''
                                 unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
