@@ -1506,8 +1506,12 @@ async def main():
                     Have a look at this for a visual explaination how "Gradually tightened stops" works:
                         https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
                     '''
+                    tp_minmax_mid_percent = (tp_min_percent + tp_max_percent)/2
                     if (
                         (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent) # pnl_percent_notional is evaluated using pnl_open_bps to avoid spikes
+                        or (
+                            (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
+                        )
                         or (
                             pnl_percent_notional<0 
                             and max_recovered_pnl_percent_notional>=param['recover_min_percent']
@@ -1576,6 +1580,7 @@ async def main():
                             tp_trailing_stop = True if loss_trailing>=effective_tp_trailing_percent else False
 
                             # Potentially let the order to take deeper TP: exclude tp_final
+                            # This here, deviates from backtest_core.
                             # tp = tp_final or tp_trailing_stop
                             tp = tp_trailing_stop
 
