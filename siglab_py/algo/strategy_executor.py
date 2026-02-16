@@ -48,8 +48,8 @@ if sys.platform == 'win32':
 Usage:
     Step 1. Start candles_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 720 --redis_ttl_ms 3600000
-        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 672 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 48 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 96 --redis_ttl_ms 3600000
 
         Note,
         a. 'ticker_change_map.json' is for ticker change handling.
@@ -58,9 +58,10 @@ Usage:
             gateway.py NO (If will load_market before process each request)
             orderbooks_provider YES (resubscribe on new ticker)
 
-        Note: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
-            720 = 24 x 30 days  
-            672 = 4 x 24 x 7 days (Each hour has four 15m candles. 672 candles means 672 15m candles)
+        c: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
+            48 = 2 days worth of hourly bars
+            96 = 4x24 = 24 hours of 15m bars
+            From performance perspective, you don't want to fetch too many candles: You'd pay a performance penalty.
 
     Step 2. Start candles_ta_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
