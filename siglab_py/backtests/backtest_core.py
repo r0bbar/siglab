@@ -334,9 +334,9 @@ def generic_check_signal_thresholds(
     Thanks.
     '''
     return all([
-        this_candle[signal['lhs']] > (this_candle[signal['rhs']] + adj_bps/10000)
+        this_candle[signal['lhs']] > (this_candle[signal['rhs']] * (1 + adj_bps/10000))
         if signal['op'] == '>' 
-        else this_candle[signal['lhs']] < (this_candle[signal['rhs']] + adj_bps/10000)
+        else this_candle[signal['lhs']] < (this_candle[signal['rhs']] * (1 - adj_bps/10000))
         for signal in signal_thresholds
     ])
 
