@@ -8,6 +8,13 @@ class StrategyBase(ABC):
         pass
     
     @staticmethod
+    def init_algo_params(
+        algo_param : Dict
+    ):
+        # Parameters not coming in from parse_args can be set here.
+        pass
+
+    @staticmethod
     def reversal(
         direction : str,  # up or down
         last_candles
