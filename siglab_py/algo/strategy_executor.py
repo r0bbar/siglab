@@ -90,6 +90,9 @@ Usage:
         Top of the script for instructions
         https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py
 
+    strategy_executor logs trades in orderhist cache (csv).
+    For post trade analysis, use orderhist_cache_viewer.ipynb https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb 
+
 Debug from VSCode, launch.json:
     {
         "version": "0.2.0",
