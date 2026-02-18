@@ -272,7 +272,7 @@ POSITION_CACHE_COLUMNS = [
         ]
 
 
-ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'remarks' ]
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'slippage_bps', 'remarks' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1413,6 +1413,9 @@ async def main():
                                     entry_px = executed_position['average_cost']
                                     new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                                     fees = executed_position['fees']
+
+                                    slippage_bps = round( (max(entry_px, mid)/min(entry_px, mid) -1) * 10000, 2)
+
                                     done_timestamp_ms = executed_position['done_timestamp_ms']
                                     entry_duration_ms = round(( (done_timestamp_ms/1000) - entry_start_timestamp ) *1000, 3)
                                     
@@ -1432,6 +1435,7 @@ async def main():
                                             'status' : 'open',
                                             'entry_px' : entry_px,
                                             'mid' : mid,
+                                            'slippage_bps' : slippage_bps,
                                             'amount_base_ccy' : executed_position['filled_amount'],
                                             'tp_min_price' : tp_min_price,
                                             'tp_max_price' : tp_max_price,
@@ -1494,6 +1498,7 @@ async def main():
                                                             'pnl_bps' : 0,
                                                             'max_pain' : 0,
                                                             'fees' : fees,
+                                                            'slippage_bps' : slippage_bps,
                                                             'remarks' : None
                                                         }
                                     orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
@@ -1639,6 +1644,8 @@ async def main():
                                 fees = executed_position_close['fees']
                                 done_timestamp_ms = executed_position_close['done_timestamp_ms']
 
+                                slippage_bps = round( (max(exit_px, mid)/min(exit_px, mid) -1) * 10000, 2)
+
                                 closing_duration_ms = round(( (done_timestamp_ms/1000) - closing_start_timestamp ) *1000, 3)
 
                                 executed_position_close['position'] = {
@@ -1647,6 +1654,7 @@ async def main():
                                     'entry_px' : entry_px,
                                     'exit_px' : exit_px,
                                     'mid' : mid,
+                                    'slippage_bps' : slippage_bps,
                                     'amount_base_ccy' : executed_position_close['filled_amount'],
                                     'pnl' : closed_pnl,
                                     'pnl_bps' : round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0,
@@ -1704,6 +1712,7 @@ async def main():
                                             'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
                                             'max_pain' : max_pain,
                                             'fees' : fees,
+                                            'slippage_bps' : slippage_bps,
                                             'remarks' : None
                                         }
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
