@@ -1296,6 +1296,8 @@ async def main():
                             best_ask = best_ask,
                             best_bid = best_bid,
                             lo_row_tm1 = lo_row_tm1,
+
+                            dt_targettz = dt_targettz,
                             
                             data_cache = strategy_specific_data_cache
                         )

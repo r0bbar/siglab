@@ -34,6 +34,8 @@ class StrategyBase(ABC):
         best_bid : float,
         lo_row_tm1,
 
+        dt_targettz : datetime,
+
         data_cache : Dict[str, Any]
     ):
         '''
