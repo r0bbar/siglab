@@ -756,6 +756,7 @@ async def main():
         position_break : bool = False
         lo_row_timestamp_ms : int = 0
         lo_candles_interval_rolled : bool = True
+        strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
         while (not position_break):
             try:
                 if loop_counter>0:
@@ -1285,6 +1286,14 @@ async def main():
                             pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
                             pd_lo_candles_w_ta.to_csv(f"lo_candles_{_ticker.replace(':','').replace('/','')}.csv")
                             
+                        TargetStrategy.stage_strat_specific_preentry_data(
+                            algo_param = algo_param,
+                            pd_hi_candles_w_ta = pd_hi_candles_w_ta,
+                            pd_lo_candles_w_ta = pd_lo_candles_w_ta,
+                            ob = ob,
+                            data_cache = strategy_specific_data_cache
+                        )
+
                         # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                         _all_indicators = {}
 

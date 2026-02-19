@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-
 from typing import List, Dict, Any, Union
+import pandas as pd
+
 from siglab_py.constants import OrderSide 
 
 class StrategyBase(ABC):
@@ -11,7 +12,27 @@ class StrategyBase(ABC):
     def init_algo_params(
         algo_param : Dict
     ):
-        # Parameters not coming in from parse_args can be set here.
+        '''
+        parse_args can accept unregistered args. argparse.ArgumentParser parses arguments with "parse_known_args" and stick them all into algo_param
+        Any strategy specific overrides can be done here.
+        '''
+        pass
+
+    @staticmethod
+    def stage_strat_specific_preentry_data(
+        algo_param : Dict,
+        
+        pd_hi_candles_w_ta : pd.DataFrame,
+        pd_lo_candles_w_ta : pd.DataFrame,
+        ob : Dict[str, Any],
+
+        data_cache : Dict[str, Any]
+    ):
+        '''
+        a. pd_hi_candles_w_ta and pd_lo_candles_w_ta are candles from strategy_executor. 
+        b. ob is order book.
+        Strategy specific data pre-processing can be done here: Stick them into data_cache where needed.
+        '''
         pass
 
     @staticmethod
