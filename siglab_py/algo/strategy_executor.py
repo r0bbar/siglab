@@ -355,7 +355,7 @@ def parse_args():
     parser.add_argument("--lo_candles_w_ta_topic", help="lo_candles TA redis topic. Example candles_ta-SOL-USDT-SWAP-hyperliquid-15m, this is for strategy_executor source candles TA from redis.", default=None)
     parser.add_argument("--orderbook_topic", help="lo_candles TA redis topic. Example orderbooks_SOL/USDT:USDT_hyperliquid, this is for strategy_executor source orderbooks from redis.", default=None)
 
-    args = parser.parse_args()
+    args, additional_args = parser.parse_known_args()
 
     param['target_strategy_name'] = args.target_strategy_name
 
@@ -456,6 +456,15 @@ def parse_args():
         param['dump_candles'] = False
 
     param['start_timestamp_ms'] = int(args.start_timestamp_ms) if args.start_timestamp_ms else None
+
+    if additional_args:
+        for i in range(0, len(additional_args), 2):
+            if i + 1 < len(additional_args):
+                key = additional_args[i].lstrip('-')
+                value = additional_args[i+1]
+                param[key] = value
+            else:
+                print(f"Unknown lone argument: {additional_args[i]}")
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
