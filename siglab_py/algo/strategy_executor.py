@@ -1291,6 +1291,12 @@ async def main():
                             pd_hi_candles_w_ta = pd_hi_candles_w_ta,
                             pd_lo_candles_w_ta = pd_lo_candles_w_ta,
                             ob = ob,
+
+                            mid = mid,
+                            best_ask = best_ask,
+                            best_bid = best_bid,
+                            lo_row_tm1 = lo_row_tm1,
+                            
                             data_cache = strategy_specific_data_cache
                         )
 

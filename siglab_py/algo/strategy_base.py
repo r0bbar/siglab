@@ -14,7 +14,10 @@ class StrategyBase(ABC):
     ):
         '''
         parse_args can accept unregistered args. argparse.ArgumentParser parses arguments with "parse_known_args" and stick them all into algo_param
-        Any strategy specific overrides can be done here.
+        Any strategy specific overrides can be done here. 
+
+        For example, you can set defaults here:
+            algo_param['use_rsi_filter'] = False if 'use_rsi_filter' not in algo_param else algo_param['use_rsi_filter']
         '''
         pass
 
@@ -25,6 +28,11 @@ class StrategyBase(ABC):
         pd_hi_candles_w_ta : pd.DataFrame,
         pd_lo_candles_w_ta : pd.DataFrame,
         ob : Dict[str, Any],
+
+        mid : float,
+        best_ask : float,
+        best_bid : float,
+        lo_row_tm1,
 
         data_cache : Dict[str, Any]
     ):
