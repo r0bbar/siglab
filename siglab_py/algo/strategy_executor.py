@@ -325,6 +325,7 @@ def parse_args():
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
     parser.add_argument("--sl_percent_trailing", help="For trailing stops. trailing SL in percent, please refer to trading_util.calc_eff_trailing_sl for documentation.", default=None)
     parser.add_argument("--default_effective_tp_trailing_percent", help="Default for sl_percent_trailing when pnl still below tp_min_percent. Default: float('inf'), meaing trailing stop mechanism will not be activated.", default=float('inf'))
+    parser.add_argument("--min_effective_tp_trailing_percent", help="Don't tighten trailing stops to zero after we get to tp_max_percent: Leave a little breathing room to let the trade fly? Default: 1% (1% of 100bps pnl is to give back max 1 bps)", default=1)
     parser.add_argument("--sl_adj_percent", help="Increment used in SL adj in percent.", default=0)
     parser.add_argument("--sl_hard_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
@@ -412,6 +413,7 @@ def parse_args():
     param['tp_max_percent'] = float(args.tp_max_percent)
     param['sl_percent_trailing'] = float(args.sl_percent_trailing)
     param['default_effective_tp_trailing_percent'] = float(args.default_effective_tp_trailing_percent)
+    param['min_effective_tp_trailing_percent'] = float(args.min_effective_tp_trailing_percent)
     param['sl_adj_percent'] = float(args.sl_adj_percent)
     param['sl_hard_percent'] = float(args.sl_hard_percent)
     param['sl_num_intervals_delay'] = int(args.sl_num_intervals_delay)
@@ -1567,7 +1569,10 @@ async def main():
                         )
 
                         # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
-                        effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
+                        _effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
+
+                        # Let it fly, don't tighten it to zero.
+                        effective_tp_trailing_percent = max(param['min_effective_tp_trailing_percent'], _effective_tp_trailing_percent)
 
                         if not sl_trailing_min_threshold_crossed:
                             pos_tp_min_crossed = dt_now
