@@ -1480,10 +1480,16 @@ async def main():
                                         tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
                                         sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
 
+                                        # negative slippage is to your favor
+                                        slippage_bps = (-1 * slippage_bps) if entry_px<mid else slippage_bps
+
                                     elif side=='sell':
                                         tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
                                         tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                                         sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
+
+                                        # negative slippage is to your favor
+                                        slippage_bps = (-1 * slippage_bps) if entry_px>mid else slippage_bps
 
                                     executed_position['position'] = {
                                             'loop_counter' : loop_counter,
@@ -1703,6 +1709,12 @@ async def main():
                                 done_timestamp_ms = executed_position_close['done_timestamp_ms']
 
                                 slippage_bps = round( (max(exit_px, mid)/min(exit_px, mid) -1) * 10000, 2)
+                                if pos_side==OrderSide.BUY:
+                                    # negative slippage is to your favor
+                                    slippage_bps = (-1 * slippage_bps) if exit_px>mid else slippage_bps
+                                else:
+                                    # negative slippage is to your favor
+                                    slippage_bps = (-1 * slippage_bps) if exit_px<mid else slippage_bps
 
                                 closing_duration_ms = round(( (done_timestamp_ms/1000) - closing_start_timestamp ) *1000, 3)
 
