@@ -24,6 +24,7 @@ from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 from siglab_py.util.datetime_util import parse_trading_window
 from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
+from siglab_py.util.simple_str import is_int_string, is_float_string
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
@@ -464,6 +465,30 @@ def parse_args():
             if i + 1 < len(additional_args):
                 key = additional_args[i].lstrip('-')
                 value = additional_args[i+1]
+
+                if is_int_string(value):
+                    value = int(value)
+                elif is_float_string(value):
+                    value = float(value)
+                else:
+                    if "," in value:
+                        some_list = [ x.strip() for x in value.split(",") ]
+                        _some_list = []
+                        for x in some_list:
+                            if is_int_string(x):
+                                _some_list.append(int(x))
+                            elif is_float_string(x):
+                                _some_list.append(float(x))
+                            else:
+                                if x.strip().upper() in [ "Y", "N" ]:
+                                    _some_list.append(True if x.strip().upper()=="Y" else False)
+                                else:
+                                    _some_list.append(x.strip())
+                        value = _some_list
+                    else:
+                        if value.strip().upper() in [ "Y", "N" ]:
+                            value = True if value.strip().upper()=="Y" else False
+
                 param[key] = value
             else:
                 print(f"Unknown lone argument: {additional_args[i]}")
