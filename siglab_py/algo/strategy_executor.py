@@ -156,6 +156,7 @@ Debug from VSCode, launch.json:
 param : Dict = {
     'trailing_stop_mode': "linear", # linear or parabolic
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
+    'level_granularity' : 0.01, # Default levels are 1% apart
 
     'rolldate_tz' : 'Asia/Hong_Kong', # Roll date based on what timezone?
 
