@@ -546,8 +546,6 @@ async def main():
     else:
         TargetStrategy = strategy_cls
 
-    TargetStrategy.init_algo_params(param)
-
     orderhist_cache_file_name = f"$STRATEGY_CLASS_NAME$_orderhist_cache_$GATEWAY_ID$.csv"
     orderhist_cache_file_name = orderhist_cache_file_name.replace("$STRATEGY_CLASS_NAME$", TargetStrategy.__name__)
     position_cache_file_name = f"$STRATEGY_CLASS_NAME$_position_cache_$GATEWAY_ID$.csv"

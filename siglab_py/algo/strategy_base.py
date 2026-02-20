@@ -10,19 +10,6 @@ class StrategyBase(ABC):
         pass
     
     @staticmethod
-    def init_algo_params(
-        algo_param : Dict
-    ):
-        '''
-        parse_args can accept unregistered args. argparse.ArgumentParser parses arguments with "parse_known_args" and stick them all into algo_param
-        Any strategy specific overrides can be done here. 
-
-        For example, you can set defaults here:
-            algo_param['use_rsi_filter'] = False if 'use_rsi_filter' not in algo_param else algo_param['use_rsi_filter']
-        '''
-        pass
-
-    @staticmethod
     def stage_strat_specific_preentry_data(
         algo_param : Dict,
         
