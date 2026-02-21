@@ -625,9 +625,9 @@ async def main():
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
+    
+    algo_param = param # aliases
 
-    # aliases
-    algo_param = param
     strategic_specific_algo_param = TargetStrategy.get_strategy_algo_params()
     for entry in strategic_specific_algo_param:
         algo_param[entry['key']] = entry['val']
@@ -854,6 +854,8 @@ async def main():
                         ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
                         if datetime.now().timestamp()<ticker_change_cutoff_sec:
                             _ticker = old_ticker
+
+                key = _ticker # aliases
 
                 # Ticker changes, delisting handling
                 if (loop_counter%10==0):
@@ -1363,7 +1365,7 @@ async def main():
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
                             _all_indicators[indicator] = indicator_value
                         
-                        last_candles=trailing_candles # alias
+                        last_candles=trailing_candles # aliases
 
                         if pos==0: # @todo: align with backtest_core, allow multi-slices entries
                             start_allow_entry_initial = time.time()
