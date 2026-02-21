@@ -625,7 +625,7 @@ async def main():
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
-    
+
     algo_param = param # aliases
 
     strategic_specific_algo_param = TargetStrategy.get_strategy_algo_params()
@@ -1329,7 +1329,7 @@ async def main():
 
                             dt_targettz = dt_targettz,
                             
-                            data_cache = strategy_specific_data_cache
+                            strategy_specific_data_cache = strategy_specific_data_cache
                         )
 
                         # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
