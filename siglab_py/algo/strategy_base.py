@@ -24,7 +24,7 @@ class StrategyBase(ABC):
 
         dt_targettz : datetime,
 
-        data_cache : Dict[str, Any]
+        strategy_specific_data_cache : Dict[str, Any]
     ):
         '''
         a. pd_hi_candles_w_ta and pd_lo_candles_w_ta are candles from strategy_executor. 
