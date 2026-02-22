@@ -1171,7 +1171,19 @@ async def main():
                     level_granularity = param['level_granularity']
                     adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, num_levels_per_side=2)
                     level_below = round_to_sigfigs(adjacent_levels[1], sigfigs=6)
-                    level_above = round_to_sigfigs(adjacent_levels[3], sigfigs=6)
+                    level_above = round_to_sigfigs(adjacent_levels[2], sigfigs=6)
+                    if level_granularity==0:
+                        idx_level_below, idx_level_above = 0, 1
+                        for level in adjacent_levels:
+                            level_below = adjacent_levels[idx_level_below]
+                            if level_below>mid:
+                                idx_level_below = idx_level_below - 1
+                                level_below = adjacent_levels[idx_level_below]
+                                break
+                            else:
+                                idx_level_below += 1
+                        idx_level_above = idx_level_below +1
+                        level_above = adjacent_levels[idx_level_above]
 
                     pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                     pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
