@@ -1169,7 +1169,7 @@ async def main():
                     spread_bps = round_to_sigfigs((best_ask/best_bid - 1) * 10000, sigfigs=6)
 
                     level_granularity = param['level_granularity']
-                    msd_adj = param['msd_adj'] if 'msd_adj' in param else 0
+                    msd_adj = param['price_levels_msd_adj'] if 'price_levels_msd_adj' in param else 0
                     adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, msd_adj=msd_adj, num_levels_per_side=2)
                     level_below = round_to_sigfigs(adjacent_levels[1], sigfigs=6)
                     level_above = round_to_sigfigs(adjacent_levels[2], sigfigs=6)
