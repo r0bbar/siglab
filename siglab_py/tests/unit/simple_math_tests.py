@@ -185,6 +185,20 @@ class SimpleMathTests(unittest.TestCase):
         assert(len(adjacent_levels)==7)
         equal(adjacent_levels, [100, 200, 300, 400, 500, 600, 700])
 
+    
+    def test_compute_adjacent_levels_w_zero_level_granularity_and_msd_adj(self):
+        
+        # ******* zero level_granularity and msd_adj *******
+        level_granularity = 0
+        msd_adj = -1
+
+        btc_price = 68000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, msd_adj=msd_adj, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [65000, 66000, 67000, 68000, 69000, 70000, 71000])
+        
+
     def test_bucket_series(self):
 
         level_granularity : float = 0.1

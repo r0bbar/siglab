@@ -58,7 +58,8 @@ def round_to_level(
 def compute_adjacent_levels(
             num : float,
             level_granularity : float = 0.01,
-            num_levels_per_side : int = 1
+            num_levels_per_side : int = 1,
+            msd_adj : int = 0
         ) -> Union[None, List[float]]:
     if math.isnan(num):
         return None
@@ -66,7 +67,7 @@ def compute_adjacent_levels(
         rounded_level_size = compute_level_increment(num, level_granularity)
     else:
         # If caller don't specify level_granularity (i.e. level_granularity=0), then compute major rounded level based on msd (Most Significant Digit)
-        msd = msd_power(num)
+        msd = msd_power(num) + msd_adj
         rounded_level_size = 10**msd
         rounded_num = round(num / rounded_level_size) * rounded_level_size
         for i in range(num_levels_per_side):
