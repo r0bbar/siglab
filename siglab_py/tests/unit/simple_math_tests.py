@@ -111,6 +111,7 @@ class SimpleMathTests(unittest.TestCase):
             assert(rounded_price==expected)
 
     def test_compute_adjacent_levels(self):
+        # ******* non-zero level_granularity *******
         gold_price = 4450
         level_granularity = 0.025 # So levels are $100 apart
         adjacent_levels = compute_adjacent_levels(num=gold_price, level_granularity=level_granularity, num_levels_per_side=3)
@@ -124,6 +125,65 @@ class SimpleMathTests(unittest.TestCase):
         assert(adjacent_levels)
         assert(len(adjacent_levels)==7)
         equal(adjacent_levels, [92000,93000,94000,95000,96000,97000,98000])
+
+    def test_compute_adjacent_levels_w_zero_level_granularity(self):
+        
+        # ******* zero level_granularity *******
+        level_granularity = 0
+
+        btc_price = 48000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [20000, 30000, 40000, 50000, 60000, 70000, 80000])
+
+        btc_price = 88000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [60000, 70000, 80000, 90000, 100000, 110000, 120000])
+
+        btc_price = 118000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [90000, 100000, 110000, 120000, 130000, 140000, 150000])
+
+        btc_price = 178000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [150000, 160000, 170000, 180000, 190000, 200000, 210000])
+
+        btc_price = 378000
+        adjacent_levels = compute_adjacent_levels(num=btc_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [100000, 200000, 300000, 400000, 500000, 600000, 700000])
+
+        sol_price = 18
+        adjacent_levels = compute_adjacent_levels(num=sol_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [15, 16, 17, 18, 19, 20, 21])
+
+        sol_price = 78
+        adjacent_levels = compute_adjacent_levels(num=sol_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [50, 60, 70, 80, 90, 100, 110])
+
+        sol_price = 108
+        adjacent_levels = compute_adjacent_levels(num=sol_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [80, 90, 100, 110, 120, 130, 140])
+
+        sol_price = 408
+        adjacent_levels = compute_adjacent_levels(num=sol_price, level_granularity=level_granularity, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [100, 200, 300, 400, 500, 600, 700])
 
     def test_bucket_series(self):
 
