@@ -81,6 +81,8 @@ param : Dict = {
     # Ticker change
     'ticker_change_map' : '.\\siglab_py\\ticker_change_map.json',
 
+    "loop_freq_ms" : 1000, # reduce this if you need trade faster
+
     # Publish to message bus
     'mds' : {
         'topics' : {
@@ -150,6 +152,7 @@ def parse_args():
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
 
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=1000)
 
     args = parser.parse_args()
     if args.provider_id:
@@ -158,6 +161,7 @@ def parse_args():
     param['how_many_candles'] = int(args.how_many_candles)
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
+    param['loop_freq_ms'] = int(args.loop_freq_ms)
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -193,128 +197,131 @@ def process_universe(
         start = time.time()
         num_fetches_this_wave = 0
 
-        i = 1
-        for index, row in universe.iterrows():
-            exchange_name : str = row['exchange']
-            ticker : str = row['ticker']
-            
-            try:
-                _ticker : str = ticker # In case ticker change
-                if ticker_change_map:
-                    old_ticker= get_old_ticker(_ticker, ticker_change_map)
-                    if old_ticker:
-                        ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
-                        ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
-                        if datetime.now().timestamp()<ticker_change_cutoff_sec:
-                            _ticker = old_ticker
+        try:
+            i = 1
+            for index, row in universe.iterrows():
+                exchange_name : str = row['exchange']
+                ticker : str = row['ticker']
                 
-                this_row_header = f'({i} of {universe.shape[0]}) exchange_name: {exchange_name}, ticker: {_ticker}'
-                
-                exchange = exchanges[exchange_name]
-
-                exchange.load_markets() # in case ticker change after gateway startup
-
-                fetch_again = False
-                last_fetch = None
-                last_fetch_ts = None
-                if subscribed[(exchange_name, _ticker)]:
-                    last_fetch = subscribed[(exchange_name, _ticker)]['candles']
-                    if subscribed[(exchange_name, _ticker)]['num_candles']>0:
-                        last_fetch_ts = last_fetch.iloc[-1]['timestamp_ms']/1000 # type: ignore Otherwise, Error: Cannot access attribute "iloc" for class "None"
-                candle_size = param['candle_size']
-                interval = candle_size[-1]
-                num_intervals_per_candle = int(candle_size.replace(interval,""))
-                number_intervals = param['how_many_candles']
-                
-                start_date : datetime = datetime.now()
-                end_date : datetime = start_date
-                if interval=="m":
-                    end_date = datetime.now()
-                    end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0)
-                    start_date = end_date + timedelta(minutes=-num_intervals_per_candle*number_intervals) 
-
-                    num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
-                    fetch_again = True if num_sec_since_last_fetch >= 60 / 10 else False
-
-                elif interval=="h":
-                    end_date = datetime.now()
-                    end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, 0, 0)
-                    start_date = end_date + timedelta(hours=-num_intervals_per_candle*number_intervals) 
-
-                    num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
-                    fetch_again = True if num_sec_since_last_fetch >= 60*60 / 10 else False
-
-                elif interval=="d":
-                    end_date = datetime.now()
-                    end_date = datetime(end_date.year, end_date.month, end_date.day, 0, 0, 0)
-                    start_date = end_date + timedelta(days=-num_intervals_per_candle*number_intervals) 
-
-                    num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
-                    fetch_again = True if num_sec_since_last_fetch >= 24*60*60 / 10 else False
-                
-                cutoff_ts = int(start_date.timestamp()) # in seconds
-                
-                if fetch_again:
-                    if datetime.now().minute==0:
-                        time.sleep(10) # Give some time for the exchange
-
-                    candles = fetch_candles(
-                                                start_ts=cutoff_ts, 
-                                                end_ts=int(end_date.timestamp()), 
-                                                exchange=exchange, normalized_symbols=[_ticker], 
-                                                candle_size = candle_size, 
-                                                num_candles_limit = 100,
-                                                logger = None
-                                            )
-                    subscribed[(exchange_name, _ticker)] = {
-                        'candles' : candles[ _ticker ],
-                        'num_candles' : candles[ _ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
-                    }
-                    num_fetches_this_wave += 1
-
-                    denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
-
-                    publish_key = param['mds']['topics']['candles_publish_topic']
-                    publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
-                    publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
-                    publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
-
-                    data = candles[_ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                try:
+                    _ticker : str = ticker # In case ticker change
+                    if ticker_change_map:
+                        old_ticker= get_old_ticker(_ticker, ticker_change_map)
+                        if old_ticker:
+                            ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
+                            ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+                            if datetime.now().timestamp()<ticker_change_cutoff_sec:
+                                _ticker = old_ticker
                     
-                    start = time.time()
-                    if redis_client:
-                        '''
-                        https://redis.io/commands/set/
-                        '''
-                        expiry_sec : int = 0
-                        if interval=="m":
-                            expiry_sec = 60 + 60*15
-                        elif interval=="h":
-                            expiry_sec = 60*60 + 60*15
-                        elif interval=="d":
-                            expiry_sec = 60*60*24 
-                        expiry_sec += 60*15 # additional 15min
+                    this_row_header = f'({i} of {universe.shape[0]}) exchange_name: {exchange_name}, ticker: {_ticker}'
+                    
+                    exchange = exchanges[exchange_name]
 
-                        redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
+                    exchange.load_markets() # in case ticker change after gateway startup
 
-                        redis_set_elapsed_ms = int((time.time() - start) *1000)
+                    fetch_again = False
+                    last_fetch = None
+                    last_fetch_ts = None
+                    if subscribed[(exchange_name, _ticker)]:
+                        last_fetch = subscribed[(exchange_name, _ticker)]['candles']
+                        if subscribed[(exchange_name, _ticker)]['num_candles']>0:
+                            last_fetch_ts = last_fetch.iloc[-1]['timestamp_ms']/1000 # type: ignore Otherwise, Error: Cannot access attribute "iloc" for class "None"
+                    candle_size = param['candle_size']
+                    interval = candle_size[-1]
+                    num_intervals_per_candle = int(candle_size.replace(interval,""))
+                    number_intervals = param['how_many_candles']
+                    
+                    start_date : datetime = datetime.now()
+                    end_date : datetime = start_date
+                    if interval=="m":
+                        end_date = datetime.now()
+                        end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0)
+                        start_date = end_date + timedelta(minutes=-num_intervals_per_candle*number_intervals) 
 
-                        log(f"published candles {candles[_ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
+                        num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
+                        fetch_again = True if num_sec_since_last_fetch >= 60 / 10 else False
 
-            except Exception as loop_error:
-                log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+                    elif interval=="h":
+                        end_date = datetime.now()
+                        end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour, 0, 0)
+                        start_date = end_date + timedelta(hours=-num_intervals_per_candle*number_intervals) 
 
-            if not task.keep_running:
-                break
+                        num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
+                        fetch_again = True if num_sec_since_last_fetch >= 60*60 / 10 else False
 
-            i += 1
+                    elif interval=="d":
+                        end_date = datetime.now()
+                        end_date = datetime(end_date.year, end_date.month, end_date.day, 0, 0, 0)
+                        start_date = end_date + timedelta(days=-num_intervals_per_candle*number_intervals) 
 
-        if num_fetches_this_wave>0:
-            log(f"Fetch candles for whole universe done.  elapsed: {time.time()-start} sec, universe_reload_id: {task.universe_reload_id}. # tickers: {len(subscribed)}")
-        else:
-            log(f"universe_reload_id: {task.universe_reload_id}, Nothing to fetch this wave. Sleep a bit.")
-            time.sleep(3)
-    
+                        num_sec_since_last_fetch = (end_date.timestamp() - last_fetch_ts) if last_fetch_ts else sys.maxsize
+                        fetch_again = True if num_sec_since_last_fetch >= 24*60*60 / 10 else False
+                    
+                    cutoff_ts = int(start_date.timestamp()) # in seconds
+                    
+                    if fetch_again:
+                        if datetime.now().minute==0:
+                            time.sleep(10) # Give some time for the exchange
+
+                        candles = fetch_candles(
+                                                    start_ts=cutoff_ts, 
+                                                    end_ts=int(end_date.timestamp()), 
+                                                    exchange=exchange, normalized_symbols=[_ticker], 
+                                                    candle_size = candle_size, 
+                                                    num_candles_limit = 100,
+                                                    logger = None
+                                                )
+                        subscribed[(exchange_name, _ticker)] = {
+                            'candles' : candles[ _ticker ],
+                            'num_candles' : candles[ _ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
+                        }
+                        num_fetches_this_wave += 1
+
+                        denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
+
+                        publish_key = param['mds']['topics']['candles_publish_topic']
+                        publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
+                        publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
+                        publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
+
+                        data = candles[_ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                        
+                        start = time.time()
+                        if redis_client:
+                            '''
+                            https://redis.io/commands/set/
+                            '''
+                            expiry_sec : int = 0
+                            if interval=="m":
+                                expiry_sec = 60 + 60*15
+                            elif interval=="h":
+                                expiry_sec = 60*60 + 60*15
+                            elif interval=="d":
+                                expiry_sec = 60*60*24 
+                            expiry_sec += 60*15 # additional 15min
+
+                            redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
+
+                            redis_set_elapsed_ms = int((time.time() - start) *1000)
+
+                            log(f"published candles {candles[_ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
+
+                except Exception as loop_error:
+                    log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+
+                if not task.keep_running:
+                    break
+
+                i += 1
+
+            if num_fetches_this_wave>0:
+                log(f"Fetch candles for whole universe done.  elapsed: {time.time()-start} sec, universe_reload_id: {task.universe_reload_id}. # tickers: {len(subscribed)}")
+            else:
+                log(f"universe_reload_id: {task.universe_reload_id}, Nothing to fetch this wave. Sleep a bit.")
+                
+        finally:
+            time.sleep(int(param['loop_freq_ms']/1000))
+                
     log(f"process_universe exit, universe_reload_id: {task.universe_reload_id}")
     
 async def main():

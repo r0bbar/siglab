@@ -88,7 +88,9 @@ param : Dict = {
     # Depending on how many tickers this instance is monitoring, you may want to adjust this queue size.
     "processed_hash_queue_max_size" : 999,
 
-    'job_name' : 'candles_ta_provider',
+    "job_name" : "candles_ta_provider",
+
+    "loop_freq_ms" : 1000, # reduce this if you need trade faster
 
     # Publish to message bus
     'mds' : {
@@ -136,6 +138,7 @@ def parse_args():
     parser.add_argument("--boillenger_std_multiples", help="Boillenger bands: # std", default=2)
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
     parser.add_argument("--processed_hash_queue_max_size", help="processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'", default=999)
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=1000)
 
     parser.add_argument("--pypy_compatible", help="pypy_compatible: If Y, analytic_util will import statsmodels.api (slopes and divergence calc). In any case, partition_sliding_window requires scipy.stats.linregress and cannot be used with pypy. Y or N (default).", default='N')
 
@@ -182,6 +185,7 @@ def parse_args():
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
     param['processed_hash_queue_max_size'] = int(args.processed_hash_queue_max_size)
+    param['loop_freq_ms'] = int(args.loop_freq_ms)
 
     if args.pypy_compatible:
         if args.pypy_compatible=='Y':
@@ -288,6 +292,7 @@ def work(
             log(f"Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
         finally:
             i += 1
+            time.sleep(int(param['loop_freq_ms']/1000))
 
 def main():
     parse_args()
