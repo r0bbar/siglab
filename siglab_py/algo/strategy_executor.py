@@ -1747,6 +1747,7 @@ async def main():
                                     'pnl' : closed_pnl,
                                     'pnl_bps' : round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0,
                                     'fees' : fees,
+                                    'max_unreal_live_bps' : max_unreal_live_bps,
                                     'max_pain' : max_pain,
                                     'running_sl_percent_hard' : running_sl_percent_hard,
                                     'loss_trailing' : loss_trailing,
