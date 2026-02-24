@@ -1375,6 +1375,8 @@ async def main():
                                 indicator_value = hi_row[indicator_name]
                             elif indicator_source=="hi_row_tm1":
                                 indicator_value = hi_row_tm1[indicator_name]
+                            elif indicator_source=="strategy_specific_data_cache":
+                                indicator_value = strategy_specific_data_cache[indicator_name]
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
                             _all_indicators[indicator] = indicator_value
                         
