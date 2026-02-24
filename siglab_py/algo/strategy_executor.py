@@ -1827,12 +1827,19 @@ async def main():
                         print(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}")
 
                     if (
-                        lo_candles_interval_rolled
-                        and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
+                        (loop_counter%100==0) or 
+                        (
+                            lo_candles_interval_rolled
+                            and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
+                        )
                     ):
                         log(f"candles_provider lo_candles interval rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                    else:
+                        print(f"candles_provider lo_candles interval rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
 
                     def _safe_update_cache(
                         file_name : str,
