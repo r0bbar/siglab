@@ -1822,14 +1822,15 @@ async def main():
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     log(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]", log_level=LogLevel.INFO)
-                    if (loop_counter%100==0) or (any_entry or any_exit):                      
+                    if (loop_counter%100==0) or (any_entry or any_exit): 
+                        log(f"[position update]", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     else:
-                        print(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]")
+                        print(f"[position update]")
                         print(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}")
