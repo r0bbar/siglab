@@ -1401,8 +1401,11 @@ async def main():
                                 allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                                 allow_entry_final_long = allow_entry_func_final_result['long']
                                 allow_entry_final_short = allow_entry_func_final_result['short']
-                                target_price_long = round_to_sigfigs(allow_entry_func_final_result['target_price_long'], sigfigs=6)
-                                target_price_short = round_to_sigfigs(allow_entry_func_final_result['target_price_short'], sigfigs=6)
+                                target_price_long, target_price_short = None, None
+                                if allow_entry_func_final_result['target_price_long']:
+                                    target_price_long = round_to_sigfigs(allow_entry_func_final_result['target_price_long'], sigfigs=6)
+                                if allow_entry_func_final_result['target_price_short']:
+                                    target_price_short = round_to_sigfigs(allow_entry_func_final_result['target_price_short'], sigfigs=6)
 
                                 log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
 
@@ -1419,12 +1422,14 @@ async def main():
 
                                 pnl_potential_bps : Union[float, None] = None
                                 if allow_entry_final_long or allow_entry_final_short:
-                                    if allow_entry_final_long and target_price_long:
+                                    if allow_entry_final_long:
                                         side = 'buy'
-                                        pnl_potential_bps = (target_price_long/mid - 1) *10000 if target_price_long else None
-                                    elif allow_entry_final_short and target_price_short:
+                                        if target_price_long:
+                                            pnl_potential_bps = (target_price_long/mid - 1) *10000 if target_price_long else None
+                                    elif allow_entry_final_short:
                                         side = 'sell'
-                                        pnl_potential_bps = (mid/target_price_short - 1) *10000 if target_price_short else None
+                                        if target_price_short:
+                                            pnl_potential_bps = (mid/target_price_short - 1) *10000 if target_price_short else None
                                     else:
                                         raise ValueError("Either allow_long or allow_short!")
 
