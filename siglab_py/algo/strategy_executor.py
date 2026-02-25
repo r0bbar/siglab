@@ -1832,11 +1832,8 @@ async def main():
                         print(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}")
 
                     if (
-                        (loop_counter%100==0) or 
-                        (
-                            lo_candles_interval_rolled
-                            and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
-                        )
+                        (loop_counter%100==0 or lo_candles_interval_rolled)
+                        and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
                     ):
                         if lo_candles_interval_rolled:
                             log(f"candles_provider lo_candles interval rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
