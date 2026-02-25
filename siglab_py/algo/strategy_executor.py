@@ -274,7 +274,7 @@ POSITION_CACHE_COLUMNS = [
         ]
 
 
-ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_pain', 'fees', 'slippage_bps', 'remarks' ]
+ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_unreal_live_bps', 'max_pain', 'fees', 'slippage_bps', 'remarks' ]
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1575,6 +1575,7 @@ async def main():
                                                             'amount': abs(new_pos_usdt_from_exchange),
                                                             'pnl' : 0,
                                                             'pnl_bps' : 0,
+                                                            'max_unreal_live_bps' : 0,
                                                             'max_pain' : 0,
                                                             'fees' : fees,
                                                             'slippage_bps' : slippage_bps,
@@ -1799,6 +1800,7 @@ async def main():
                                             'amount': abs(new_pos_usdt_from_exchange),
                                             'pnl' : closed_pnl,
                                             'pnl_bps' : closed_pnl/abs(pos_usdt) *10000 if pos_usdt!=0 else 0,
+                                            'max_unreal_live_bps' : max_unreal_live_bps,
                                             'max_pain' : max_pain,
                                             'fees' : fees,
                                             'slippage_bps' : slippage_bps,
