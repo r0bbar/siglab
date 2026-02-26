@@ -492,8 +492,9 @@ async def execute_one_position(
                 apply_last_randomized_amount = not apply_last_randomized_amount
                     
                 rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-                _rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)>min_amount_base_ccy 
-                if abs(_rounded_slice_amount_in_base_ccy - rounded_slice_amount_in_base_ccy)>=min_amount_base_ccy:
+                _rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)>min_amount_base_ccy
+                amount_diff = amount(float(_rounded_slice_amount_in_base_ccy) - rounded_slice_amount_in_base_ccy)
+                if amount_diff>=min_amount_base_ccy:
                     rounded_slice_amount_in_base_ccy = _rounded_slice_amount_in_base_ccy
 
                 log(f"{position.ticker} multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}") 
