@@ -438,9 +438,9 @@ async def execute_one_position(
             raise ValueError(f"Market not found for {position.ticker} under {exchange.name}")
 
         min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # This is in number of contracts
-        min_amount_base_ccy = min_amount/multiplier
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier
+        min_amount_base_ccy = min_amount/multiplier
 
         order_amount_randomize_max_pct : float = param['order_amount_randomize_max_pct']
 
