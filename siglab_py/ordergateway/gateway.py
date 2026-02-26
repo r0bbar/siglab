@@ -688,8 +688,9 @@ async def execute_one_position(
                             log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
                             rounded_slice_amount_in_base_ccy = float(remaining_amount)
                             if remaining_amount>min_amount:
-                                rounded_slice_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, remaining_amount))
-                            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                                rounded_slice_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy))
+                            if rounded_slice_amount_in_base_ccy>min_amount:
+                                rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy
                             if rounded_slice_amount_in_base_ccy>0:
                                 executed_resent_order = await exchange.create_order(
                                     symbol=position.ticker,
