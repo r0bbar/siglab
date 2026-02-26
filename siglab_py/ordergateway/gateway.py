@@ -457,7 +457,7 @@ async def execute_one_position(
                     slices.pop()
                     slices[-1].amount += last_slice.amount
 
-                log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount}") 
+                    log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount}") 
         
         @retry(num_attempts=3, pause_between_retries_ms=3000)
         async def _fetch_order(
