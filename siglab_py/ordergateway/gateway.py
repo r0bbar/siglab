@@ -440,7 +440,7 @@ async def execute_one_position(
         min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # This is in number of contracts
         multiplier = market['contractSize'] if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier
-        min_amount_base_ccy = min_amount/multiplier
+        min_amount_base_ccy = float(min_amount/multiplier)
 
         order_amount_randomize_max_pct : float = param['order_amount_randomize_max_pct']
 
@@ -454,7 +454,7 @@ async def execute_one_position(
             if last_slice.amount/multiplier>min_amount:
                 last_slice_rounded_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
             last_slice_rounded_amount_in_base_ccy = float(last_slice_rounded_amount_in_base_ccy) if last_slice_rounded_amount_in_base_ccy else 0
-            if last_slice_rounded_amount_in_base_ccy<=min_amount_base_ccy:
+            if last_slice_rounded_amount_in_base_ccy<=min_amount:
                 slices.pop()
                 slices[-1].amount += last_slice.amount
 
@@ -496,7 +496,7 @@ async def execute_one_position(
                 if rounded_slice_amount_in_base_ccy>min_amount:
                     _rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)>min_amount_base_ccy
                 amount_diff = amount(float(_rounded_slice_amount_in_base_ccy) - rounded_slice_amount_in_base_ccy)
-                if amount_diff>=min_amount_base_ccy:
+                if amount_diff>=min_amount:
                     rounded_slice_amount_in_base_ccy = _rounded_slice_amount_in_base_ccy
 
                 log(f"{position.ticker} multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}") 
