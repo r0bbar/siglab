@@ -688,7 +688,7 @@ async def execute_one_position(
                             
                             rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
                             rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
-                            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
+                            rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount_base_ccy else min_amount
                             if rounded_slice_amount_in_base_ccy>0:
                                 executed_resent_order = await exchange.create_order(
                                     symbol=position.ticker,
