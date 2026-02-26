@@ -451,7 +451,8 @@ async def execute_one_position(
         # Residual handling in last slice
         if len(slices)>1:
             last_slice = slices[-1]
-            last_slice_rounded_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
+            if last_slice.amount/multiplier>min_amount:
+                last_slice_rounded_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
             last_slice_rounded_amount_in_base_ccy = float(last_slice_rounded_amount_in_base_ccy) if last_slice_rounded_amount_in_base_ccy else 0
             if last_slice_rounded_amount_in_base_ccy<=min_amount_base_ccy:
                 slices.pop()
@@ -492,7 +493,8 @@ async def execute_one_position(
                 apply_last_randomized_amount = not apply_last_randomized_amount
                     
                 rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-                _rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)>min_amount_base_ccy
+                if rounded_slice_amount_in_base_ccy>min_amount:
+                    _rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy)>min_amount_base_ccy
                 amount_diff = amount(float(_rounded_slice_amount_in_base_ccy) - rounded_slice_amount_in_base_ccy)
                 if amount_diff>=min_amount_base_ccy:
                     rounded_slice_amount_in_base_ccy = _rounded_slice_amount_in_base_ccy
@@ -685,8 +687,8 @@ async def execute_one_position(
                         if not canellation_failed:
                             position.get_execution(order_id)['status'] = 'canceled'
                             log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
-                            
-                            rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
+                            if remaining_amount>min_amount:
+                                rounded_slice_amount_in_base_ccy = exchange.amount_to_precision(position.ticker, remaining_amount)
                             rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy)
                             rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount_base_ccy else min_amount
                             if rounded_slice_amount_in_base_ccy>0:
