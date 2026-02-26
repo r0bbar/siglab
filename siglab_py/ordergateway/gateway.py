@@ -452,12 +452,12 @@ async def execute_one_position(
         if len(slices)>1:
             last_slice = slices[-1]
             if last_slice.amount/multiplier>min_amount:
-                last_slice_rounded_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier)) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
-                if last_slice_rounded_amount_in_base_ccy<=min_amount:
+                last_slice_rounded_amount = float(exchange.amount_to_precision(position.ticker, last_slice.amount/multiplier)) # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
+                if last_slice_rounded_amount<=min_amount:
                     slices.pop()
                     slices[-1].amount += last_slice.amount
 
-                log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount_in_base_ccy}") 
+                log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount}") 
         
         @retry(num_attempts=3, pause_between_retries_ms=3000)
         async def _fetch_order(
