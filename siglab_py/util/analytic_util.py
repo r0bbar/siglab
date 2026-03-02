@@ -331,7 +331,9 @@ def compute_candles_stats(
     pd_candles.loc[:,'atr'] = pd_candles['tr'].rolling(window=sliding_window_how_many_candles).mean()
     pd_candles.loc[:,'atr_avg_short_periods'] = pd_candles['atr'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
     pd_candles.loc[:,'atr_avg_long_periods'] = pd_candles['atr'].rolling(window=sliding_window_how_many_candles).mean()
-    
+    pd_candles.loc[:,'atr_bps'] = pd_candles['atr']/pd_candles['ema_close']
+    pd_candles.loc[:,'atr_avg_short_periods_bps'] = pd_candles['atr_avg_short_periods']/pd_candles['ema_close']
+    pd_candles.loc[:,'atr_avg_long_periods_bps'] = pd_candles['atr_avg_long_periods']/pd_candles['ema_close']
 
     '''
     @hardcode @todo
