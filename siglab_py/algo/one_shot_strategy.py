@@ -11,7 +11,7 @@ from siglab_py.util.simple_math import compute_adjacent_levels
 logger = logging.getLogger()
         
 '''
-
+Why OneShotStrategy when we have tp_algo? OneShotStrategy uses strategy_executor: we can use orderhist_cache_viewer.ipynb for post-trade analysis 
 '''
 class OneShotStrategy(StrategyBase):
     def __init__(self, *args: object) -> None:
