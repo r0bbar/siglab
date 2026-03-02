@@ -1885,7 +1885,7 @@ async def main():
                             df = orderhist_cache
                         )
                         
-                        if param['one_shot_only']:
+                        if any_exit and param['one_shot_only']:
                             log(f"one_shot_only: {param['one_shot_only']}, Exiting strategy.", log_level=LogLevel.INFO)
                             break
 
