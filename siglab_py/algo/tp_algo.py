@@ -35,6 +35,9 @@ TP algo is an excecution algo. It doesn't decide entries for you. It however, ex
 For more on "Gradually Tighted Stops" and 'calc_eff_trailing_sl':
     https://medium.com/@norman-lm-fung/gradually-tightened-trailing-stops-f7854bf1e02b
 
+TP algo is intended to be a very basic script to illustrate integration with order gateway and send manual trades. 
+OneShotStrategy industrialized version of TP algo: It uses strategy_executor, and post-trade analysis can be done with orderhist_cache_viewer.
+
 Now why does TP algo need apikey when gateway.py is sending the orders? TP algo perform position reconciliation (For contracts), and if positions don't match, algo would terminate.
 Why would you do that? Imagine if trader want to intervene and close out positions from mobile?
 
