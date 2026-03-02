@@ -1,5 +1,19 @@
 # [**siglab_py**](https://pypi.org/project/siglab-py) 
-The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. "Infrastructure" means everything from fetching candles, indicators calculation, [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine, to [**order gateway**](https://medium.com/@norman-lm-fung/standalone-order-gateway-on-top-of-ccxt-576680a2d603) dispatching orders to exchanges. Shortest path to setup a quantitative trading desk.
+The repo include all the infrastructure code necessary to backtest a trading strategy, and to trade it live. "Infrastructure" means 
+
++ fetching candles and order books
+
++ indicators calculation
+
++ [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine
+
++ [**order gateway**](https://medium.com/@norman-lm-fung/standalone-order-gateway-on-top-of-ccxt-576680a2d603) - dispatch orders to exchanges. 
+
++ [**strategy_executor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) - Take the lamdba functions with entry/TP/SL logic from back tests, use them in live algo. Ensure backtest-vs-live correspondence.
+
++ [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
+
+**siglab_py** is your shortest path to setup a quantitative trading desk.
 
 ![Overall Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
