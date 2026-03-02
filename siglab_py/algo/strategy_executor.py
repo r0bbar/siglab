@@ -1886,6 +1886,7 @@ async def main():
                         )
                         
                         if 'one_shot_only' in param and param['one_shot_only']:
+                            log(f"one_shot_only: {param['one_shot_only']}, Exiting strategy.", log_level=LogLevel.INFO)
                             break
 
             except Exception as loop_err:
@@ -1904,7 +1905,7 @@ async def main():
                             max_age_sec = param['housekeep_max_age_sec']
                         )
                         for file_purged in files_purged:
-                            logger.info(f"Purged: {file_purged}")
+                            log(f"Purged: {file_purged}", log_level=LogLevel.INFO)
                     except Exception as housekeep_err:
                         log(f"Error while purging old files... {housekeep_err}", log_level=LogLevel.ERROR)
 
