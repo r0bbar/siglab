@@ -336,6 +336,8 @@ def parse_args():
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     parser.add_argument("--recover_min_percent", help="This is minimum unreal pnl recovery when your trade is red before trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
     parser.add_argument("--recover_max_pain_percent", help="This is minimum max_pain endured when your trade is red. For trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop mechanism will remain inactive.", default=float('inf'))
+
+    parser.add_argument("--one_shot_only", help="If true, after first TP or SL, strategy will exit. Y or N (default).", default='N')
     
     parser.add_argument("--economic_calendar_source", help="Source of economic calendar'. Default: None", default=None)
     parser.add_argument("--num_intervals_current_ecoevents", help="Num intervals to block on incoming/outgoing economic events. For 15m bars for example, num_intervals_current_ecoevents=4*24 means 24 hours. Default: 0", default=0)
@@ -424,6 +426,14 @@ def parse_args():
     param['non_linear_pow'] = float(args.non_linear_pow)
     param['recover_min_percent'] = float(args.recover_min_percent)
     param['recover_max_pain_percent'] = float(args.recover_max_pain_percent)
+
+    if args.one_shot_only:
+        if args.one_shot_only=='Y':
+            param['one_shot_only'] = True
+        else:
+            param['one_shot_only'] = False
+    else:
+        param['one_shot_only'] = False
 
     param['economic_calendar_source'] = args.economic_calendar_source
 
@@ -1875,6 +1885,9 @@ async def main():
                             df = orderhist_cache
                         )
                         
+                        if 'one_shot_only' in param and param['one_shot_only']:
+                            break
+
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
