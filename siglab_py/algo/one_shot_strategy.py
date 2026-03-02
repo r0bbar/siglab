@@ -28,10 +28,17 @@ class OneShotStrategy(StrategyBase):
         mid,
         lo_row_tm1,
         hi_row_tm1,
-        last_candles
+        last_candles,
+        algo_param : Dict
     )  -> Dict[str, bool]:
-        allow_long : bool = True
-        allow_short : bool = True
+        allow_long : bool = False
+        allow_short : bool = False
+
+        side = algo_param['side']
+        if side=='buy':
+            allow_long = True
+        elif side=='sell':
+            allow_short = True
             
         return {
             'long' : allow_long,
