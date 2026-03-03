@@ -670,7 +670,9 @@ async def execute_one_position(
                     filled_amount = order_update['filled']
                     remaining_amount = order_update['remaining']
                     order_update['multiplier'] = multiplier
-                    executions[order_id] = order_update
+
+                    position.executions[order_id] = order_update
+                    executions[order_id] = order_update # This came in from REST, not ws. Thus you'd need to additionally append to "executions" which is a separate Dict.
 
                     if order_status!='closed':
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
