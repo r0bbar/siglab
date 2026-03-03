@@ -1635,7 +1635,7 @@ async def main():
                                 tp_min_percent = tp_min_percent,
                                 tp_max_percent = tp_max_percent,
                                 sl_percent_trailing = param['sl_percent_trailing'],
-                                pnl_percent_notional = max_unreal_open_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
+                                pnl_percent_notional = max_unreal_open_bps/100 if param['tp_min_threshold_mode']=="open" else max_unreal_live_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
                                 default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
                                 linear=param['trailing_stop_mode'],
                                 pow=param['non_linear_pow']
