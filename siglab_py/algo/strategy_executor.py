@@ -1502,7 +1502,8 @@ async def main():
                                     new_pos_usdt_from_exchange = new_pos_from_exchange * executed_position['average_cost']
                                     fees = executed_position['fees']
 
-                                    slippage_bps = round( (max(entry_px, mid)/min(entry_px, mid) -1) * 10000, 2)
+                                    # To make it more bullet proof: For whatever reason average_cost is zero?
+                                    slippage_bps = round( (max(entry_px, mid)/min(entry_px, mid) -1) * 10000, 2) if entry_px!=0 else None
 
                                     done_timestamp_ms = executed_position['done_timestamp_ms']
                                     entry_duration_ms = round(( (done_timestamp_ms/1000) - entry_start_timestamp ) *1000, 3)
@@ -1514,7 +1515,7 @@ async def main():
                                         sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
 
                                         # negative slippage is to your favor
-                                        slippage_bps = (-1 * slippage_bps) if entry_px<mid else slippage_bps
+                                        slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px<mid else slippage_bps
 
                                     elif side=='sell':
                                         tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
@@ -1522,7 +1523,7 @@ async def main():
                                         sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
 
                                         # negative slippage is to your favor
-                                        slippage_bps = (-1 * slippage_bps) if entry_px>mid else slippage_bps
+                                        slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px>mid else slippage_bps
 
                                     executed_position['position'] = {
                                             'loop_counter' : loop_counter,
@@ -1743,13 +1744,14 @@ async def main():
                                 fees = executed_position_close['fees']
                                 done_timestamp_ms = executed_position_close['done_timestamp_ms']
 
-                                slippage_bps = round( (max(exit_px, mid)/min(exit_px, mid) -1) * 10000, 2)
+                                # To make it more bullet proof: For whatever reason average_cost is zero?
+                                slippage_bps = round( (max(exit_px, mid)/min(exit_px, mid) -1) * 10000, 2) if exit_px!=0 else None
                                 if pos_side==OrderSide.BUY:
                                     # negative slippage is to your favor
-                                    slippage_bps = (-1 * slippage_bps) if exit_px>mid else slippage_bps
+                                    slippage_bps = (-1 * slippage_bps) if slippage_bps and exit_px>mid else slippage_bps
                                 else:
                                     # negative slippage is to your favor
-                                    slippage_bps = (-1 * slippage_bps) if exit_px<mid else slippage_bps
+                                    slippage_bps = (-1 * slippage_bps) if slippage_bps and exit_px<mid else slippage_bps
 
                                 closing_duration_ms = round(( (done_timestamp_ms/1000) - closing_start_timestamp ) *1000, 3)
 
@@ -1871,7 +1873,7 @@ async def main():
                         if os.path.exists(bak_file_name):
                             os.remove(bak_file_name)
                         if os.path.exists(file_name):
-                            os.rename(file_name, bak_file_name)
+                            os.rename(file_name, bak_file_name)st
                         df.to_csv(file_name)
                     if (loop_counter%100==0) or (any_entry or any_exit):
                         _safe_update_cache(
