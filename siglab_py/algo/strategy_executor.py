@@ -1873,7 +1873,7 @@ async def main():
                         if os.path.exists(bak_file_name):
                             os.remove(bak_file_name)
                         if os.path.exists(file_name):
-                            os.rename(file_name, bak_file_name)st
+                            os.rename(file_name, bak_file_name)
                         df.to_csv(file_name)
                     if (loop_counter%100==0) or (any_entry or any_exit):
                         _safe_update_cache(
