@@ -6,7 +6,7 @@ import numpy as np
 from tabulate import tabulate
 
 from siglab_py.util.slack_notification_util import slack_dispatch_notification
-
+from siglab_py.util.collection_util import recursive_clean_dict
 from siglab_py.constants import LogLevel
 
 def dispatch_notification(
@@ -19,7 +19,8 @@ def dispatch_notification(
         ):
     try:
         if isinstance(message, Dict):
-            _message = json.dumps(message, indent=2, separators=(' ', ':'))
+            cleaned = recursive_clean_dict(message)
+            _message = json.dumps(cleaned, indent=2, separators=(' ', ':'))
         elif isinstance(message, pd.DataFrame):
             _message = tabulate(message, headers='keys', tablefmt='orgtbl') # type: ignore
         else:
