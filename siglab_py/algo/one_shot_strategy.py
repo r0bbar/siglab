@@ -36,22 +36,24 @@ class OneShotStrategy(StrategyBase):
 
         side = algo_param['side']
         entry_on_reversal = algo_param['entry_on_reversal'] if "entry_on_reversal" in algo_param else False
+        target_entry_price = algo_param['target_entry_price'] if "target_entry_price" in algo_param else None
 
         normalized_ema_long_slope = lo_row_tm1['normalized_ema_long_slope']
 
         if side=='buy':
             allow_long = True
             if entry_on_reversal:
-                allow_long = True if normalized_ema_long_slope>=0 else False
+                allow_long = True if normalized_ema_long_slope>=0 and mid<=target_entry_price else False
 
         elif side=='sell':
             allow_short = True
             if entry_on_reversal:
-                allow_short = True if normalized_ema_long_slope<=0 else False
+                allow_short = True if normalized_ema_long_slope<=0 and mid>=target_entry_price else False
 
         allow_entry_initial_conditions  = {
             "side" : side,
             "entry_on_reversal" : entry_on_reversal,
+            "target_entry_price" : target_entry_price,
             "lo_row_tm1['datetime']" : lo_row_tm1['datetime'],
             "last_candles[-1]['datetime']" : last_candles[-1]['datetime'],
             "normalized_ema_long_slope" : normalized_ema_long_slope
