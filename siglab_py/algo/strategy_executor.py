@@ -1285,7 +1285,11 @@ async def main():
 
                         pnl_live_bps = round(unreal_live / abs(pos_usdt) * 10000, 2) if pos_usdt else 0
                         pnl_open_bps = round(unrealized_pnl_open / abs(pos_usdt)  * 10000, 2) if pos_usdt else 0
-                        pnl_percent_notional = pnl_open_bps/100
+
+                        if param['tp_min_threshold_mode']=="open":
+                            pnl_percent_notional = pnl_open_bps/100 # pnl_percent_notional evaluated using pnl_open_bps to avoid spikes
+                        elif param['tp_min_threshold_mode']=="live":
+                            pnl_percent_notional = pnl_live_bps/100
 
                         if unreal_live>max_unreal_live:
                             max_unreal_live = unreal_live
@@ -1618,59 +1622,61 @@ async def main():
                     '''
                     tp_minmax_mid_percent = (tp_min_percent + tp_max_percent)/2
 
-                    tp_min_breached : bool = (max_unreal_open_bps/100)>tp_min_percent
-                    if param['tp_min_threshold_mode']=="live":
-                        tp_min_breached = (max_unreal_live_bps/100)>tp_min_percent
-                    if tp_min_breached: # Otherwise, calc_eff_trailing_sl returns default_effective_tp_trailing_percent anyway
-                        if (
-                            (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent) # pnl_percent_notional is evaluated using pnl_open_bps to avoid spikes
-                            or (
-                                (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
-                            )
-                            or (
-                                pnl_percent_notional<0 
-                                and max_recovered_pnl_percent_notional>=param['recover_min_percent']
-                                and abs(max_pain_percent_notional)>=param['recover_max_pain_percent']
-                            ) # Taking 'abs': Trailing stop can fire if trade moves in either direction - if your trade is losing trade.
-                        ):
-                            _effective_tp_trailing_percent = calc_eff_trailing_sl(
-                                tp_min_percent = tp_min_percent,
-                                tp_max_percent = tp_max_percent,
-                                sl_percent_trailing = param['sl_percent_trailing'],
-                                pnl_percent_notional = max_unreal_open_bps/100 if param['tp_min_threshold_mode']=="open" else max_unreal_live_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
-                                default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
-                                linear=param['trailing_stop_mode'],
-                                pow=param['non_linear_pow']
-                            )
+                    tp_min_breached : bool = False
+                    if param['tp_min_threshold_mode']=="open" and (max_unreal_open_bps/100)>=tp_min_percent:
+                        tp_min_breached = True # use max_unreal_open_bps to avoid spikes
+                    elif param['tp_min_threshold_mode']=="live" and (max_unreal_live_bps/100)>=tp_min_percent:
+                        tp_min_breached = True
 
-                            # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
-                            _effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
+                    if (
+                        tp_min_breached
+                        or (
+                            (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
+                        )
+                        or (
+                            pnl_percent_notional<0 
+                            and max_recovered_pnl_percent_notional>=param['recover_min_percent']
+                            and abs(max_pain_percent_notional)>=param['recover_max_pain_percent']
+                        ) # Taking 'abs': Trailing stop can fire if trade moves in either direction - if your trade is losing trade.
+                    ):
+                        _effective_tp_trailing_percent = calc_eff_trailing_sl(
+                            tp_min_percent = tp_min_percent,
+                            tp_max_percent = tp_max_percent,
+                            sl_percent_trailing = param['sl_percent_trailing'],
+                            pnl_percent_notional = max_unreal_open_bps/100 if param['tp_min_threshold_mode']=="open" else max_unreal_live_bps/100, # Note: Use [max]_unrealized_pnl_percent, not unrealized_pnl_percent!
+                            default_effective_tp_trailing_percent = param['default_effective_tp_trailing_percent'],
+                            linear=param['trailing_stop_mode'],
+                            pow=param['non_linear_pow']
+                        )
 
-                            # Let it fly, don't tighten it to zero.
-                            effective_tp_trailing_percent = max(param['min_effective_tp_trailing_percent'], _effective_tp_trailing_percent)
+                        # Once pnl pass tp_min_percent, trailing stops will be activated. Even if pnl fall back below tp_min_percent.
+                        _effective_tp_trailing_percent = min(effective_tp_trailing_percent, round(_effective_tp_trailing_percent, 2))
 
-                            if not sl_trailing_min_threshold_crossed:
-                                pos_tp_min_crossed = dt_now
-                                sl_trailing_min_threshold_crossed = True
-                                pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = pos_tp_min_crossed
-                                pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
+                        # Let it fly, don't tighten it to zero.
+                        effective_tp_trailing_percent = max(param['min_effective_tp_trailing_percent'], _effective_tp_trailing_percent)
 
-                                msg = {
-                                    'side' : pos_side.name,
-                                    'mid' : mid,
-                                    'entry_px' : entry_px,
-                                    'pnl_open_bps' : pnl_open_bps,
-                                    'tp_min_percent' : tp_min_percent,
-                                    'tp_max_percent' : tp_max_percent,
-                                    'sl_percent_trailing' : param['sl_percent_trailing'],
-                                    'effective_tp_trailing_percent' : effective_tp_trailing_percent
-                                }
-                                log(msg, LogLevel.CRITICAL)
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                        if not sl_trailing_min_threshold_crossed:
+                            pos_tp_min_crossed = dt_now
+                            sl_trailing_min_threshold_crossed = True
+                            pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = pos_tp_min_crossed
+                            pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
 
-                            pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
+                            msg = {
+                                'side' : pos_side.name,
+                                'mid' : mid,
+                                'entry_px' : entry_px,
+                                'pnl_open_bps' : pnl_open_bps,
+                                'tp_min_percent' : tp_min_percent,
+                                'tp_max_percent' : tp_max_percent,
+                                'sl_percent_trailing' : param['sl_percent_trailing'],
+                                'effective_tp_trailing_percent' : effective_tp_trailing_percent
+                            }
+                            log(msg, LogLevel.CRITICAL)
+                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                            log(f"calc_eff_trailing_sl tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}")
+                        pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
+
+                        log(f"calc_eff_trailing_sl tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}")
 
 
                     # STEP 2. Unwind position
