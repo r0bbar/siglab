@@ -312,6 +312,7 @@ def parse_args():
     parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
 
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
+    parser.add_argument("--long_short", help="long_short (Default, can trade both sides), long_only, short_only", default='long_short')
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
     parser.add_argument("--amount_quote_ccy", help="Order amount in quote ccy (USD, USDT or USDC ...etc). Always positive, even for sell trades.", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
@@ -393,6 +394,7 @@ def parse_args():
         param['verbose'] = False
 
     param['ticker'] = args.ticker
+    param['long_short'] = args.long_short
     param['order_type'] = args.order_type
     param['amount_quote_ccy'] = float(args.amount_quote_ccy) if args.amount_quote_ccy else None
     param['max_pos_amount_quote_ccy'] = param['amount_quote_ccy']
