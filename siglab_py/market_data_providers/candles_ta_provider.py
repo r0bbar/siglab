@@ -231,9 +231,6 @@ def work(
                 try:
                     s_key : str = key.decode("utf-8")
                     if candles_ta_publish_topic_regex_pattern.match(s_key):
-
-                        publish_key : str = s_key.replace('candles-', 'candles_ta-')
-
                         candles = None
                         message = redis_client.get(key)
                         if message:
@@ -245,6 +242,9 @@ def work(
 
                                 candles = json.loads(message)
                                 pd_candles = pd.read_json(StringIO(candles), convert_dates=False)
+
+                                publish_key : str = s_key.replace('candles-', 'candles_ta-')
+                                publish_key = publish_key + f"-L{ma_long_intervals}-S{ma_short_intervals}"
 
                                 log(f"sliding window size ma_long_intervals: {ma_long_intervals}, ma_short_intervals: {ma_short_intervals}")
 
