@@ -45,16 +45,28 @@ class OneShotStrategy(StrategyBase):
             if entry_on_reversal:
                 allow_long = True if normalized_ema_long_slope>=0 else False
             if target_entry_price:
-                if mid>target_entry_price:
-                    allow_long = False
+                if normalized_ema_long_slope<0:
+                    # Prices still falling (Still waiting for reversal)
+                    if mid>target_entry_price:
+                        allow_long = False
+                else:
+                    # Reversal already happenned (Chasing longs)
+                    if mid<target_entry_price:
+                        allow_long = False
 
         elif side=='sell':
             allow_short = True
             if entry_on_reversal:
                 allow_short = True if normalized_ema_long_slope<=0 else False                
             if target_entry_price:
-                if mid<target_entry_price:
-                    allow_short = False
+                if normalized_ema_long_slope>0:
+                    # Prices still rising (Still waiting for reversal)
+                    if mid<target_entry_price:
+                        allow_short = False
+                else:
+                    # Reversal already happenned (Chasing shorts)
+                    if mid>target_entry_price:
+                        allow_short = False
 
         allow_entry_initial_conditions  = {
             "side" : side,
