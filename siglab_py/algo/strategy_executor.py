@@ -452,6 +452,8 @@ def parse_args():
             param['block_entry_impacting_events'] = False
     else:
         param['block_entry_impacting_events'] = False
+
+    param['num_intervals_current_ecoevents'] = int(args.num_intervals_current_ecoevents)
     
     param['mds']['topics']['hi_candles_provider_topic'] = args.hi_candles_provider_topic.strip() if args.hi_candles_provider_topic else None
     param['mds']['topics']['lo_candles_provider_topic'] = args.lo_candles_provider_topic.strip() if args.lo_candles_provider_topic else None
