@@ -1882,8 +1882,9 @@ async def main():
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     else:
-                        print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}")
-                        print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
+                        if lo_candles_valid: # Sometimes when you started strategy_executor just when lo_candles rolled
+                            print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}")
+                            print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
 
                     def _safe_update_cache(
                         file_name : str,
@@ -1930,8 +1931,8 @@ async def main():
                             log(f"Purged: {file_purged}", log_level=LogLevel.INFO)
                     except Exception as housekeep_err:
                         log(f"Error while purging old files... {housekeep_err}", log_level=LogLevel.ERROR)
-
-                loop_counter += 1
+                
+                loop_counter = loop_counter + (1 if lo_candles_valid else 0)
 
 asyncio.run(
     main()
