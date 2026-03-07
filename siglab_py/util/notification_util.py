@@ -32,7 +32,8 @@ def dispatch_notification(
         slack_dispatch_notification(title, _message, footer, params, log_level)
     except Exception as any_notification_error:
         if logger:
-            logger.info(f"Failed to dispatch notification for {str(title)}: {any_notification_error}")
+            logger.error(f"Failed to dispatch notification for {str(title)}: {any_notification_error}")
+            logger.error(message)
 
 if __name__ == '__main__':
     params : Dict[str, Any] = {
