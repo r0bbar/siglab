@@ -2437,7 +2437,7 @@ def parseargs():
         else:
             recompute_ta = False
     else:
-        recompute_ta = False
+        recompute_ta = True
 
     if args.white_list_tickers:
         white_list_tickers = args.white_list_tickers.split(',')
