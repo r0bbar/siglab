@@ -1627,24 +1627,22 @@ async def main():
                                         pd_lo_candles_w_ta.to_csv(f"lo_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
                                         
                                     any_entry = True
-                            
-                    '''
-                    Have a look at this for a visual explaination how "Gradually tightened stops" works:
-                        https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
-                    '''
+                    
                     tp_minmax_mid_percent = (tp_min_percent + tp_max_percent)/2
 
                     tp_min_breached : bool = False
                     if param['tp_min_threshold_mode']=="open" and (max_unreal_open_bps/100)>=tp_min_percent:
                         tp_min_breached = True # use max_unreal_open_bps to avoid spikes
                     elif param['tp_min_threshold_mode']=="live" and (max_unreal_live_bps/100)>=tp_min_percent:
-                        tp_min_breached = True
+                        tp_min_breached = True # This here, deviates from backtest_core. In backtest_core: pnl_percent_notional = unrealized_pnl_open / current_position_usdt * 100, and pnl_percent_notional>=tp_min_percent to trigger trailing stop (look for 'calc_eff_trailing_sl')
 
+                    '''
+                    Have a look at this for a visual explaination how "Gradually tightened stops" works:
+                        https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/trading_util_tests.ipynb
+                    '''
                     if (
                         tp_min_breached
-                        or (
-                            (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
-                        )
+                        or (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
                         or (
                             pnl_percent_notional<0 
                             and max_recovered_pnl_percent_notional>=param['recover_min_percent']
