@@ -832,7 +832,7 @@ async def main():
                     parsed_trading_window = parse_trading_window(dt_targettz, trading_window)
                     if in_window!=parsed_trading_window['in_window']:
                         trading_window_notification_msg = "Entering trading window." if not in_window else "Exiting trading window."
-                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {_ticker} {trading_window_notification_msg}.", message=trading_window, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} {_ticker} {trading_window_notification_msg}.", message=trading_window, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     in_window = parsed_trading_window['in_window']
                     if not parsed_trading_window['in_window']:
