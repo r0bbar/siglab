@@ -22,6 +22,8 @@ from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.analytic_util import compute_candles_stats, lookup_fib_target, partition_sliding_window
 from siglab_py.util.simple_math import bucket_series, bucketize_val
 
+CACHE_DIR : str = "cache"
+
 def get_logger(report_name : str):
     logging.Formatter.converter = time.gmtime
     logger = logging.getLogger(report_name)
@@ -1978,6 +1980,12 @@ def run_all_scenario(
     start = datetime.now()
     max_test_end_date = start
 
+    current_dir : str = os.getcwd()
+    cache_dir_fullpath : str = f"{current_dir}\\{CACHE_DIR}"
+    if not os.path.isdir(cache_dir_fullpath):
+        os.mkdir(cache_dir_fullpath)
+        logger.info(f"Created cache dir for market data, cache_dir_fullpath: {cache_dir_fullpath}")
+
     economic_calendars_file = algo_params[0]['economic_calendars_file']
     ecoevents_mapped_regions = algo_params[0]['ecoevents_mapped_regions']
     pd_economic_calendars = None
@@ -1986,6 +1994,16 @@ def run_all_scenario(
         pd_economic_calendars  = pd.read_csv(economic_calendars_file)
         pd_economic_calendars = pd_economic_calendars[pd_economic_calendars.region.isin(ecoevents_mapped_regions)]
         economic_calendars_loaded = True if pd_economic_calendars.shape[0]>0 else False
+
+    distinct_hi_sliding_windows = set([ f"{algo_param['hi_candle_size']}-{algo_param['hi_ma_short_interval']}-{algo_param['hi_candle_size']}" for algo_param in algo_params])
+    for hi_sliding_window in distinct_hi_sliding_windows:
+        logger.info(f"hi_sliding_window: {hi_sliding_window}")
+
+    distinct_lo_sliding_windows = set([ f"{algo_param['lo_candle_size']}-{algo_param['lo_ma_short_interval']}-{algo_param['lo_candle_size']}" for algo_param in algo_params])
+    for lo_sliding_window in distinct_lo_sliding_windows:
+        logger.info(f"lo_sliding_window: {lo_sliding_window}")
+
+    only_one_sliding_window_setting : bool = len(distinct_hi_sliding_windows)==1 and len(distinct_lo_sliding_windows)==1
 
     i : int = 1
     algo_results : List[Dict] = []
@@ -2020,6 +2038,17 @@ def run_all_scenario(
         test_end_date_ref = test_end_date_ref if test_end_date_ref < max_test_end_date else max_test_end_date
         cutoff_ts = int(test_fetch_start_date.timestamp()) # in seconds
         
+        '''
+        * If candles reloaded (Fetched again), TA always recomputed.
+        * Any change to sliding window size (or more than one such setting) requires TA recomputed.
+        * Also this is for backward compatibility or backtests which don't specify 'recompute_ta'
+        '''
+        if (
+            algo_param['force_reload'] 
+            or not only_one_sliding_window_setting
+            or 'recompute_ta' not in algo_param 
+        ):
+            algo_param['recompute_ta'] = True
 
         ####################################### STEP 1. Fetch candles (Because each test may have diff test_end_date, you need re-fetch candles for each algo_param) #######################################
         '''
@@ -2042,14 +2071,30 @@ def run_all_scenario(
         
         # Fetch BTC
         reference_ticker : str = algo_param['reference_ticker']
-        target_candle_file_name_fast : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
-        target_candle_file_name_slow : str = f'{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_file_name_fast : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_ta_file_name_fast : str = target_candle_file_name_fast.replace('candles', 'candles_ta')
+        target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_ta_file_name_slow : str = target_candle_file_name_slow.replace('candles', 'candles_ta')
         logger.info(f"reference_ticker: {reference_ticker}, target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}, reference_candles_file: {algo_param['reference_candles_file'] if 'reference_candles_file' in algo_param else '---'}")
-        if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name_fast):
-            if algo_param['force_reload'] and 'reference_candles_file' in algo_param and algo_param['reference_candles_file'] and os.path.isfile(algo_param['reference_candles_file']):
+        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name_fast) or not os.path.isfile(target_candle_ta_file_name_slow):
+            if (
+                not algo_param['force_reload'] 
+                and os.path.isfile(target_candle_file_name_fast) 
+                and os.path.isfile(target_candle_file_name_slow)
+            ):
+                pd_ref_candles_fast = pd.read_csv(target_candle_file_name_fast)
+                pd_ref_candles_slow = pd.read_csv(target_candle_file_name_slow)
+
+                logger.info(f"reference candles loaded from target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}")
+
+            elif (
+                'reference_candles_file' in algo_param 
+                and algo_param['reference_candles_file'] 
+                and os.path.isfile(algo_param['reference_candles_file'])
+            ):
                 pd_ref_candles_fast = pd.read_csv(algo_param['reference_candles_file'])
                 pd_ref_candles_slow : pd.DataFrame = pd_ref_candles_fast.copy(deep=True)
-                logger.info(f"reference candles loaded from {algo_param['reference_candles_file']}")
+                logger.info(f"reference candles (without TA) loaded from {algo_param['reference_candles_file']}")
 
             else:
                 ref_candles : Dict[str, pd.DataFrame] = fetch_candles(
@@ -2063,23 +2108,29 @@ def run_all_scenario(
                                                                                         cache_dir=algo_param['cache_candles'],
                                                                                         list_ts_field=exchanges[0].options['list_ts_field'] if 'list_ts_field' in exchanges[0].options else None
                                                                                         )
-                logger.info(f"Reference candles fetched: {reference_ticker}, start: {reference_start_dt}, end: {test_end_date_ref}")
+                
                 pd_ref_candles_fast : pd.DataFrame = ref_candles[reference_ticker]
                 pd_ref_candles_slow : pd.DataFrame = pd_ref_candles_fast.copy(deep=True)
 
+                pd_ref_candles_fast.to_csv(target_candle_file_name_fast)
+                pd_ref_candles_slow.to_csv(target_candle_file_name_slow)
+
+                logger.info(f"Reference candles fetched: {reference_ticker}, start: {reference_start_dt}, end: {test_end_date_ref} target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}")
+
             compute_candles_stats(pd_candles=pd_ref_candles_fast, boillenger_std_multiples=2, sliding_window_how_many_candles=algo_param['ref_ema_num_days_fast'], slow_fast_interval_ratio=int(algo_param['ref_ema_num_days_fast']/2), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
             compute_candles_stats(pd_candles=pd_ref_candles_slow, boillenger_std_multiples=2, sliding_window_how_many_candles=algo_param['ref_ema_num_days_slow'], slow_fast_interval_ratio=int(algo_param['ref_ema_num_days_slow']/2), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
-            logger.info(f"Reference candles {reference_ticker} compute_candles_stats done.")
             
-            pd_ref_candles_fast.to_csv(target_candle_file_name_fast)
-            pd_ref_candles_slow.to_csv(target_candle_file_name_slow)
+            pd_ref_candles_fast.to_csv(target_candle_ta_file_name_fast)
+            pd_ref_candles_slow.to_csv(target_candle_ta_file_name_slow)
+
+            logger.info(f"Reference {reference_ticker} compute_candles_stats done. Reference candles with TA here, target_candle_ta_file_name_fast: {target_candle_ta_file_name_fast}, target_candle_ta_file_name_slow: {target_candle_ta_file_name_slow}")
 
         else:
-            pd_ref_candles_fast : pd.DataFrame = pd.read_csv(target_candle_file_name_fast)
-            pd_ref_candles_slow : pd.DataFrame = pd.read_csv(target_candle_file_name_slow)
+            pd_ref_candles_fast : pd.DataFrame = pd.read_csv(target_candle_ta_file_name_fast)
+            pd_ref_candles_slow : pd.DataFrame = pd.read_csv(target_candle_ta_file_name_slow)
             fix_column_types(pd_ref_candles_fast)
             fix_column_types(pd_ref_candles_slow)
-            logger.info(f"Reference candles {reference_ticker} loaded from target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}")
+            logger.info(f"Reference candles w/TA {reference_ticker} loaded from target_candle_ta_file_name_slow: {target_candle_ta_file_name_slow}, target_candle_ta_file_name_slow: {target_candle_ta_file_name_slow}")
 
         total_seconds = (test_end_date_ref - test_start_date).total_seconds()
         total_hours = total_seconds / 3600
@@ -2133,9 +2184,13 @@ def run_all_scenario(
                         sliding_window_how_many_candles = int(total_days / algo_param['sliding_window_ratio'])
                     
                         pd_hi_candles = None
-                        target_candle_file_name : str = f'{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["hi_candle_size"]}.csv'
-                        if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name):
-                            if algo_param['force_reload'] and 'hi_candles_file' in algo_param and algo_param['hi_candles_file'] and os.path.isfile(algo_param['hi_candles_file']):
+                        target_candle_file_name : str = f'{cache_dir_fullpath}\\{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["hi_candle_size"]}.csv'
+                        target_candle_ta_file_name : str = target_candle_file_name.replace('candles', 'candles_ta')
+                        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
+                            if (
+                                (not algo_param['force_reload'] and os.path.isfile(target_candle_file_name))
+                                or 'hi_candles_file' in algo_param and algo_param['hi_candles_file'] and os.path.isfile(algo_param['hi_candles_file'])
+                            ):
                                 pd_hi_candles : pd.DataFrame = pd.read_csv(algo_param['hi_candles_file'])
 
                             else:
@@ -2150,10 +2205,12 @@ def run_all_scenario(
                                                                                                 list_ts_field=exchange.options['list_ts_field']
                                                                                                 )
                                 pd_hi_candles : pd.DataFrame = hi_candles[ticker]
-                                logger.info(f"pd_hi_candles fetched: {ticker} {pd_hi_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())}")
+                                logger.info(f"pd_hi_candles fetched: {ticker} {pd_hi_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
+                                pd_hi_candles.to_csv(target_candle_file_name)
+
                             compute_candles_stats(pd_candles=pd_hi_candles, boillenger_std_multiples=algo_param['boillenger_std_multiples'], sliding_window_how_many_candles=algo_param['hi_stats_computed_over_how_many_candles'], slow_fast_interval_ratio=(algo_param['hi_stats_computed_over_how_many_candles']/algo_param['hi_ma_short_interval']), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
-                            logger.info(f"pd_hi_candles {ticker} compute_candles_stats done: {target_candle_file_name}")
-                            pd_hi_candles.to_csv(target_candle_file_name)
+                            logger.info(f"pd_hi_candles {ticker} compute_candles_stats done. Candles with TA here: {target_candle_ta_file_name}")
+                            pd_hi_candles.to_csv(target_candle_ta_file_name)
 
                             if pd_hi_candles is not None and pd_hi_candles.shape[0]>0:
                                 first_candle_datetime = datetime.fromtimestamp(pd_hi_candles.iloc[0]['timestamp_ms']/1000)
@@ -2164,9 +2221,9 @@ def run_all_scenario(
                                 err_msg = f"{ticker} no hi candles?"
                                 logger.error(err_msg)
                         else:
-                            pd_hi_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
+                            pd_hi_candles : pd.DataFrame = pd.read_csv(target_candle_ta_file_name)
                             fix_column_types(pd_hi_candles)
-                            logger.info(f"pd_hi_candles {ticker} {pd_hi_candles.shape} loaded from {target_candle_file_name}")
+                            logger.info(f"pd_hi_candles with TA {ticker} {pd_hi_candles.shape} loaded from {target_candle_ta_file_name}")
 
                         if not algo_param['pypy_compat']:
                             pd_hi_candles_partitions = partition_sliding_window(
@@ -2188,9 +2245,13 @@ def run_all_scenario(
 
                         pd_lo_candles = None
                         _ticker = ticker.split(":")[0].replace("/","")
-                        target_candle_file_name : str = f'{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["lo_candle_size"]}.csv'
-                        if algo_param['force_reload'] or not os.path.isfile(target_candle_file_name):
-                            if algo_param['force_reload'] and 'lo_candles_file' in algo_param and algo_param['lo_candles_file'] and os.path.isfile(algo_param['lo_candles_file']):
+                        target_candle_file_name : str = f'{cache_dir_fullpath}\\{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["lo_candle_size"]}.csv'
+                        target_candle_ta_file_name : str = target_candle_file_name.replace('candles', 'candles_ta')
+                        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
+                            if (
+                                (not algo_param['force_reload'] and os.path.isfile(target_candle_file_name))
+                                or 'lo_candles_file' in algo_param and algo_param['lo_candles_file'] and os.path.isfile(algo_param['lo_candles_file'])
+                            ):
                                 pd_lo_candles : pd.DataFrame = pd.read_csv(algo_param['lo_candles_file'])
 
                             else:
@@ -2205,10 +2266,12 @@ def run_all_scenario(
                                                                                                 list_ts_field=exchange.options['list_ts_field']
                                                                                                 )
                                 pd_lo_candles : pd.DataFrame = lo_candles[ticker]
-                                logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())}")
+                                logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
+                                pd_lo_candles.to_csv(target_candle_file_name)
+
                             compute_candles_stats(pd_candles=pd_lo_candles, boillenger_std_multiples=algo_param['boillenger_std_multiples'], sliding_window_how_many_candles=algo_param['lo_stats_computed_over_how_many_candles'], slow_fast_interval_ratio=(algo_param['lo_stats_computed_over_how_many_candles']/algo_param['lo_ma_short_interval']), rsi_sliding_window_how_many_candles=algo_param['rsi_sliding_window_how_many_candles'], rsi_trend_sliding_window_how_many_candles=algo_param['rsi_trend_sliding_window_how_many_candles'], hurst_exp_window_how_many_candles=algo_param['hurst_exp_window_how_many_candles'], target_fib_level=algo_param['target_fib_level'], pypy_compat=algo_param['pypy_compat'])
-                            logger.info(f"pd_lo_candles {ticker} compute_candles_stats done. {target_candle_file_name}")
-                            pd_lo_candles.to_csv(target_candle_file_name)
+                            logger.info(f"pd_lo_candles {ticker} compute_candles_stats done. Candles with TA here: {target_candle_ta_file_name}")
+                            pd_lo_candles.to_csv(target_candle_ta_file_name)
                             
                             if pd_lo_candles is not None and pd_lo_candles.shape[0]>0:
                                 first_candle_datetime = datetime.fromtimestamp(pd_lo_candles.iloc[0]['timestamp_ms']/1000)
@@ -2219,9 +2282,9 @@ def run_all_scenario(
                                 err_msg = f"{ticker} no lo candles?"
                                 logger.error(err_msg)
                         else:
-                            pd_lo_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
+                            pd_lo_candles : pd.DataFrame = pd.read_csv(target_candle_ta_file_name)
                             fix_column_types(pd_lo_candles)
-                            logger.info(f"pd_lo_candles {ticker} {pd_lo_candles.shape} loaded from {target_candle_file_name}")
+                            logger.info(f"pd_lo_candles with TA {ticker} {pd_lo_candles.shape} loaded from {target_candle_ta_file_name}")
 
                         if not algo_param['pypy_compat']:
                             pd_lo_candles_partitions = partition_sliding_window(
