@@ -2076,7 +2076,7 @@ def run_all_scenario(
         target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_ta_file_name_slow : str = target_candle_file_name_slow.replace('candles', 'candles_ta')
         logger.info(f"reference_ticker: {reference_ticker}, target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}, reference_candles_file: {algo_param['reference_candles_file'] if 'reference_candles_file' in algo_param else '---'}")
-        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name_fast) or not os.path.isfile(target_candle_ta_file_name_slow):
+        if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name_fast) or not os.path.isfile(target_candle_ta_file_name_slow):
             if (
                 not algo_param['force_reload'] 
                 and os.path.isfile(target_candle_file_name_fast) 
@@ -2186,12 +2186,19 @@ def run_all_scenario(
                         pd_hi_candles = None
                         target_candle_file_name : str = f'{cache_dir_fullpath}\\{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["hi_candle_size"]}.csv'
                         target_candle_ta_file_name : str = target_candle_file_name.replace('candles', 'candles_ta')
-                        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
+                        if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
                             if (
-                                (not algo_param['force_reload'] and os.path.isfile(target_candle_file_name))
-                                or 'hi_candles_file' in algo_param and algo_param['hi_candles_file'] and os.path.isfile(algo_param['hi_candles_file'])
+                                not algo_param['force_reload'] and os.path.isfile(target_candle_file_name)
+                            ):
+                                pd_hi_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
+                                logger.info(f"pd_hi_candles loaded from {target_candle_file_name}")
+
+                            elif (
+                                'hi_candles_file' in algo_param 
+                                and algo_param['hi_candles_file'] and os.path.isfile(algo_param['hi_candles_file'])
                             ):
                                 pd_hi_candles : pd.DataFrame = pd.read_csv(algo_param['hi_candles_file'])
+                                logger.info(f"pd_hi_candles loaded from hi_candles_file: {algo_param['hi_candles_file']}")
 
                             else:
                                 hi_candles : Dict[str, pd.DataFrame] = fetch_candles(
@@ -2247,12 +2254,19 @@ def run_all_scenario(
                         _ticker = ticker.split(":")[0].replace("/","")
                         target_candle_file_name : str = f'{cache_dir_fullpath}\\{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["lo_candle_size"]}.csv'
                         target_candle_ta_file_name : str = target_candle_file_name.replace('candles', 'candles_ta')
-                        if not algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
+                        if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
                             if (
-                                (not algo_param['force_reload'] and os.path.isfile(target_candle_file_name))
-                                or 'lo_candles_file' in algo_param and algo_param['lo_candles_file'] and os.path.isfile(algo_param['lo_candles_file'])
+                                not algo_param['force_reload'] and os.path.isfile(target_candle_file_name)
+                            ):
+                                pd_lo_candles : pd.DataFrame = pd.read_csv(target_candle_file_name)
+                                logger.info(f"pd_lo_candles loaded from {target_candle_file_name}")
+
+                            elif (
+                                'lo_candles_file' in algo_param 
+                                and algo_param['lo_candles_file'] and os.path.isfile(algo_param['lo_candles_file'])
                             ):
                                 pd_lo_candles : pd.DataFrame = pd.read_csv(algo_param['lo_candles_file'])
+                                logger.info(f"pd_lo_candles loaded from lo_candles_file: {algo_param['lo_candles_file']}")
 
                             else:
                                 lo_candles : Dict[str, pd.DataFrame] = fetch_candles(
