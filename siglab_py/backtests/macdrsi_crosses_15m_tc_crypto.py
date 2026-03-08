@@ -1,6 +1,6 @@
 '''
 Command line:
-    python macdrsi_crosses_15m_tc_crypto.py --white_list_tickers BTC/USDT:USDT,ETH/USDT:USDT,BNB/USDT:USDT,SOL/USDT:USDT,XRP/USDT:USDT --reference_ticker BTC/USDT:USDT  --force_reload Y --block_entries_on_impacting_ecoevents N
+    python macdrsi_crosses_15m_tc_crypto.py --white_list_tickers BTC/USDT:USDT,ETH/USDT:USDT,BNB/USDT:USDT,SOL/USDT:USDT,XRP/USDT:USDT --reference_ticker BTC/USDT:USDT  --force_reload Y --recompute_ta Y --block_entries_on_impacting_ecoevents N
     
 Debug from vscode, Launch.json:
         {
@@ -17,6 +17,7 @@ Debug from vscode, Launch.json:
                                 "--white_list_tickers", "BTC/USDT:USDT,ETH/USDT:USDT,BNB/USDT:USDT,SOL/USDT:USDT,XRP/USDT:USDT",
                                 "--reference_ticker", "BTC/USDT:USDT",
                                 "--force_reload", "Y",
+                                "--recompute_ta", "Y",
                                 "--block_entries_on_impacting_ecoevents", "N"
                             ]
                 }
@@ -73,6 +74,7 @@ white_list_tickers : List[str] = [
 white_list_tickers : List[str] = [ "SOL/USDT:USDT" ]
 
 force_reload : bool = False
+recompute_ta : bool = False
 
 num_candles_limit = 100 # Depends on exchange but generally 100 ok!
 param = {
@@ -174,15 +176,15 @@ start_dates : List[datetime] = [
 
 hi_how_many_candles_values : List[Tuple[str, int, int]] = [ 
     # ('1h', 6, 24*31),
-    ('1h', 24*3, 24 *365*2)
+    ('1h', 6, 24 *365*2)
 ]
 
 lo_how_many_candles_values : List[Tuple[str, int, int]] = [ 
-    # ('15m', 15 *10, 4*24 *31),
-    ('15m', 15 *10, 4*24 *365*2)
+    # ('15m', 10, 4*24 *31),
+    ('15m', 10, 4*24 *365*2)
 ]
 
-hi_ma_short_vs_long_interval_values : List[Tuple[int, int]] = [ (12, 30) ]
+hi_ma_short_vs_long_interval_values : List[Tuple[int, int]] = [ (3, 6) ]
 lo_ma_short_vs_long_interval_values : List[Tuple[int, int]] = [ (5, 10) ]
 
 rsi_sliding_window_how_many_candles : int = 14 # For RSI, 14 is standard.  If you want see spikes >70 and <30, use this config.
