@@ -2415,6 +2415,7 @@ def run_all_scenario(
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--force_reload", help="Reload candles? Both candles and TA previously computed will be loaded from disk. Y or N (default)", default=False)
+    parser.add_argument("--recompute_ta", help="Recompute TA/indicators from candles? Y (default) or N", default=True)
     parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
     parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
     parser.add_argument("--block_entries_on_impacting_ecoevents", help="Block entries on economic event? Y (default) or N", default=True)
@@ -2429,6 +2430,14 @@ def parseargs():
             force_reload = False
     else:
         force_reload = False
+
+    if args.recompute_ta:
+        if args.recompute_ta=='Y':
+            recompute_ta = True
+        else:
+            recompute_ta = False
+    else:
+        recompute_ta = False
 
     if args.white_list_tickers:
         white_list_tickers = args.white_list_tickers.split(',')
@@ -2455,6 +2464,7 @@ def parseargs():
 
     return {
         'force_reload': force_reload,
+        'recompute_ta': recompute_ta,
         'white_list_tickers' : white_list_tickers,
         'reference_ticker' : reference_ticker,
         'block_entries_on_impacting_ecoevents' : block_entries_on_impacting_ecoevents,
