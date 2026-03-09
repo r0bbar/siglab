@@ -167,6 +167,7 @@ def compute_candles_stats(
     
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
     pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open']
+    pd_candles['wig_ratio_pct'] = round(pd_candles['candle_height'] / pd_candles['candle_body_height'] * 100, 2)
 
     '''
     market_data_gizmo inserted dummy lines --> Need exclude those or "TypeError: unorderable types for comparison": pd_btc_candles = pd_btc_candles[pd_btc_candles.close.notnull()]
