@@ -496,7 +496,10 @@ async def execute_one_position(
                     _rounded_slice_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy))
                     amount_diff = _rounded_slice_amount_in_base_ccy - rounded_slice_amount_in_base_ccy
                 else:
-                    raise Exception(f"Order amount < min_amount will be rejected by exchange. slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, multiplier: {multiplier}. rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}, min_amount: {min_amount}")
+                    # Order amount < min_amount will be rejected by exchange. Deliberate design to just set order amount to min_amount for simplicity sake.
+                    rounded_slice_amount_in_base_ccy = min_amount
+                    amount_diff = 0
+                    # raise Exception(f"Order amount < min_amount will be rejected by exchange. slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, multiplier: {multiplier}. rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}, min_amount: {min_amount}")
                 if amount_diff>=min_amount:
                     rounded_slice_amount_in_base_ccy = _rounded_slice_amount_in_base_ccy
 
