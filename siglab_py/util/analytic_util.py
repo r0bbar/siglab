@@ -167,7 +167,6 @@ def compute_candles_stats(
     
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
     pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open']
-    pd_candles['wig_ratio_pct'] = round(pd_candles['candle_height'] / abs(pd_candles['candle_body_height']) * 100, 2)
 
     '''
     market_data_gizmo inserted dummy lines --> Need exclude those or "TypeError: unorderable types for comparison": pd_btc_candles = pd_btc_candles[pd_btc_candles.close.notnull()]
@@ -203,11 +202,9 @@ def compute_candles_stats(
     pd_candles['vwap_short_periods'] = (pd_candles['close'] * pd_candles['volume']).rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).sum() / pd_candles['volume'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).sum()
     pd_candles['vwap_long_periods'] = (pd_candles['close'] * pd_candles['volume']).rolling(window=sliding_window_how_many_candles).sum() / pd_candles['volume'].rolling(window=sliding_window_how_many_candles).sum()
 
-    pd_candles['candle_height_percent'] = pd_candles['candle_height'] / pd_candles['ema_close'] * 100
-    pd_candles['candle_height_percent_rounded'] = pd_candles['candle_height_percent'].round().astype('Int64')
-
-    pd_candles['candle_body_height_percent'] = pd_candles['candle_body_height'] / pd_candles['ema_close'] * 100
-    pd_candles['candle_body_height_percent_rounded'] = pd_candles['candle_body_height_percent'].round().astype('Int64')
+    pd_candles['candle_height_percent'] = round(pd_candles['candle_height'] / pd_candles['ema_close'] * 100, 2)
+    pd_candles['candle_body_height_percent'] = round(pd_candles['candle_body_height'] / pd_candles['ema_close'] * 100, 2)
+    pd_candles['wig_ratio_pct'] = round(pd_candles['candle_height'] / abs(pd_candles['candle_body_height']) * 100, 2)
 
     '''
     To annualize volatility:
