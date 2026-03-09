@@ -111,7 +111,7 @@ expected_columns : List[str] = [
             'sma_short_periods', 'sma_long_periods', 'ema_short_periods', 'ema_long_periods', 'ema_close', 
             'std', 'std_percent', 
             'vwap_short_periods', 'vwap_long_periods',
-            'candle_height_percent', 'candle_body_height_percent','wig_ratio_pct',
+            'candle_height_percent', 'candle_body_height_percent','wig_ratio_pct','ema_wig_ratio_pct',
             'log_return', 'interval_hist_vol', 'annualized_hist_vol',
             'chop_against_ema', 
             'ema_volume_short_periods', 'ema_volume_long_periods', 

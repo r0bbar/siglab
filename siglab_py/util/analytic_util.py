@@ -205,6 +205,7 @@ def compute_candles_stats(
     pd_candles['candle_height_percent'] = round(pd_candles['candle_height'] / pd_candles['ema_close'] * 100, 2)
     pd_candles['candle_body_height_percent'] = round(pd_candles['candle_body_height'] / pd_candles['ema_close'] * 100, 2)
     pd_candles['wig_ratio_pct'] = round(pd_candles['candle_height'] / abs(pd_candles['candle_body_height']) * 100, 2)
+    pd_candles['ema_wig_ratio_pct'] = pd_candles['wig_ratio_pct'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
 
     '''
     To annualize volatility:
