@@ -1335,6 +1335,7 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = max_unreal_open_bps
 
                         pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = loss_trailing
+                        pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = running_sl_percent_hard
 
                         # This is for tp_eval_func
                         this_ticker_open_trades.append(
@@ -1347,13 +1348,14 @@ async def main():
                             }
                         )
 
-                        log(f"pnl eval block tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}")
+                        log(f"pnl eval block tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
                         
                     '''
                     On turn of interval, candles_provider may need a little time to publish latest candles.
                     It's by design strategy_executor will make entries only if you have valid candles.
                     However, TP/SL may be triggered regardless - mid price is coming from orderbook, not historical candles.
                     '''
+                    print(f"hi_candles_valid: {hi_candles_valid}, lo_candles_valid: {lo_candles_valid}")
                     if hi_candles_valid and lo_candles_valid:
                         if param['dump_candles']:
                             pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
@@ -1412,7 +1414,7 @@ async def main():
                         
                         last_candles=trailing_candles # aliases
 
-                        if pos==0: # @todo: align with backtest_core, allow multi-slices entries
+                        if not pos or pos==0: # @todo: align with backtest_core, allow multi-slices entries
                             start_allow_entry_initial = time.time()
                             kwargs = {k: v for k, v in locals().items() if k in allow_entry_initial_func_params}
                             allow_entry_func_initial_result = allow_entry_initial_func(**kwargs)
@@ -1877,6 +1879,7 @@ async def main():
 
                     if (
                         (loop_counter%100==0 or lo_candles_interval_rolled)
+                        and hi_candles_valid 
                         and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
                     ):
                         if lo_candles_interval_rolled:
@@ -1886,7 +1889,7 @@ async def main():
                         log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     else:
-                        if lo_candles_valid: # Sometimes when you started strategy_executor just when lo_candles rolled
+                        if hi_candles_valid and lo_candles_valid: # Sometimes when you started strategy_executor just when lo_candles rolled
                             print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}")
                             print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
 
