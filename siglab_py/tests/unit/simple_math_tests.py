@@ -197,6 +197,12 @@ class SimpleMathTests(unittest.TestCase):
         assert(adjacent_levels)
         assert(len(adjacent_levels)==7)
         equal(adjacent_levels, [65000, 66000, 67000, 68000, 69000, 70000, 71000])
+
+        sol_price = 78
+        adjacent_levels = compute_adjacent_levels(num=sol_price, level_granularity=level_granularity, msd_adj=msd_adj, num_levels_per_side=3)
+        assert(adjacent_levels)
+        assert(len(adjacent_levels)==7)
+        equal(adjacent_levels, [75, 76, 77, 78, 79, 80, 81])
         
 
     def test_bucket_series(self):
