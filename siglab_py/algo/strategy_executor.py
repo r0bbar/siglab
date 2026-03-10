@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 import inspect
 from tabulate import tabulate
+from pprint import pformat
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -1677,7 +1678,11 @@ async def main():
                                 'side' : pos_side.name,
                                 'mid' : mid,
                                 'entry_px' : entry_px,
+                                'tp_min_threshold_mode' : param['tp_min_threshold_mode'],
                                 'pnl_open_bps' : pnl_open_bps,
+                                'pnl_live_bps' : pnl_live_bps,
+                                'max_unreal_open_bps' : max_unreal_open_bps,
+                                'max_unreal_live_bps' : max_unreal_live_bps,
                                 'tp_min_percent' : tp_min_percent,
                                 'tp_max_percent' : tp_max_percent,
                                 'sl_percent_trailing' : param['sl_percent_trailing'],
@@ -1732,6 +1737,7 @@ async def main():
 
                     if tp or sl:
                         log(f"******** EXIT (loop# {loop_counter}) ********")
+                        
                         exit_positions : List[DivisiblePosition] = [
                             DivisiblePosition(
                                 ticker = _ticker,
@@ -1747,7 +1753,26 @@ async def main():
                             )
                         ]
                         
-                        log(f"Closing position. {_ticker}, pos: {pos}, pos_usdt: {pos_usdt}") 
+                        log(
+                            pformat(
+                                {
+                                    "reason" : reason,
+                                    "pnl_live_bps" : pnl_live_bps,
+                                    "mid" : mid,
+                                    "tp_max_target" : tp_max_target,
+                                    "running_sl_percent_hard" : running_sl_percent_hard,
+                                    "loss_trailing" : loss_trailing,
+                                    "effective_tp_trailing_percent" : effective_tp_trailing_percent,
+                                    "tp_min_percent" : tp_min_percent,
+                                    "tp_max_percent" : tp_max_percent,
+                                    "unreal_live" : unreal_live,
+                                    "unrealized_pnl_open" : unrealized_pnl_open,
+                                    "pos" : pos,
+                                    "pos_usdt" : pos_usdt
+                                }, indent=2, width=100
+                            )
+                        )
+
                         closing_start_timestamp = datetime.now().timestamp()
                         executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = execute_positions(
                                                                                                                         redis_client=redis_client,
