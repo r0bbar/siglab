@@ -1236,8 +1236,8 @@ async def main():
                         if pos_side == OrderSide.BUY:
                             unreal_live = round_to_sigfigs((mid - entry_px) * pos, sigfigs=6)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
-                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
+                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * pos, sigfigs=6)
+                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * pos, sigfigs=6)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > (lo_interval_ms/1000) and lo_candles_valid:
                                 '''
@@ -1255,15 +1255,15 @@ async def main():
                                     unrealized_pnl_open = unreal_live
                                 This here, deviates from backtest_core.
                                 '''
-                                unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
+                                unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * pos
                         elif pos_side == OrderSide.SELL:
                             unreal_live = round_to_sigfigs((entry_px - mid) * abs(pos), sigfigs=6)
                             if lo_candles_valid:
-                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
-                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
+                                unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * abs(pos), sigfigs=6)
+                                unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * abs(pos), sigfigs=6)
                             unrealized_pnl_open = unreal_live
                             if total_sec_since_pos_created > lo_interval_ms/1000 and lo_candles_valid:
-                                unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * param['amount_base_ccy']
+                                unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * abs(pos)
 
                         if lo_candles_valid:
                             # lamda's may reference candles
