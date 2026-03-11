@@ -929,7 +929,12 @@ async def work(
 async def main():
     parse_args()
 
-    print(pformat(param, indent=2, width=100)) # Pay attention: credentials not yet decrypted
+    _param = param.copy()
+    del _param['aws_kms_key_id']
+    del _param['secret']
+    del _param['passphrase']
+    log(pformat(_param, indent=2, width=100)) # Pay attention: credentials not yet decrypted, but still safer to remove it.
+    del _param
 
     fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log")
     fh.setLevel(log_level)
