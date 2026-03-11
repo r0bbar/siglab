@@ -21,7 +21,7 @@ The **top** part of above diagram is to illustrate **candles_provider** pull can
 
 The **bottom** part of the diagram says: **Trading Strategy** (You write this) publish orders (JSON format) to Redis (Blue arrows). These pending orders are picked up by **gateway.py** from Redis. **gateway.py** then send them to Exchanges (Red arrow). Executions come back to **gateway.py**, which publishes them to Redis (Green arrow). **Trading Strategy** picks up executions from Redis and update position cache.
 
-It consists of two primary components.
+It consists of Four primary components.
 
 ## 1. Under [**market_data_providers**](https://github.com/r0bbar/siglab/tree/master/siglab_py/market_data_providers)
 
@@ -389,3 +389,50 @@ gateway.py argument 'order_amount_randomize_max_pct' adds small variance to slic
 [**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) has a parameter 'dry_run'. If set to True, it won't actually send orders out to exchange. Instead, it'd respond by faking some fills. This is for integration testing.
 
 The spirit of the implementation is to have a very very simple standalone order gateway, which is separate from strategy implementation. Strategies implementation should only have entry/exit logic. Strategy concerns, and Execution concerns should be separate.
+
+
+## 3. Under [**backtest_core**](https://github.com/r0bbar/siglab/tree/master/siglab_py/backtests)
+
+**backtest_core** doc is [here](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?tab=t.0)
+
+Why siglab_py backtest_core.py?
++ Clean separation between strategy file (small nimble) and back test common logic such as replaying historical market data/signals (That’s what they all do), unrealised pnl estimation, entry/TP/SL. Thus, Reflection and Lambdas.
+
++ Forward Bias (No Crystal Balls!): backtest_core.py makes it easy to avoid forward bias which is a major source of mess up’s in strategy research. Simply use lo_row_tm1, hi_row_tm1, and current row’s open (not close, high, low)!
+
++ Out of the box TP, SL, Trailing stops Trigger. Your responsibility is configure key TP/SL related parameters:
+        tp_min_percent
+        tp_max_percent
+        sl_percent_trailing
+        sl_hard_percent
+
++ And if you so choose, more dynamic behavior, whether based on market conditions, or state of your open trade, can be modeled in these lambdas:
+        sl_adj
+        trailing_stop_threshold_eval
+        pnl_eval
+        tp_eval
+    Otherwise, they can be left empty, in which case default implementation is applicable.
+
++ Out of the box pnl evaluation: allow_entry_final set entry price. Have a look at generic_pnl_eval how we estimate exit prices.
+
++ Pnl estimation errors: backtest_core.py minimize errors in pnl estimation out of the box. Very frequently, traders use candles close to mark pnl. When you have tall candles or if you’re trading lower time frames, that's very misleading.
+
++ Do it the same way back tests vs live: 
+
+Historical candles retrieval and signals calculations done in market_data_util [**fetch_candles**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) and [analytic_util.**compute_candles_stats**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py) respectively. They are well packaged as simple, stateless functions. You can use them in your live trading, exactly how you did it in back tests. [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) also is provided out of the box: it’s for live trading, strategy lambda used in back tests can be specified (almost) exactly in live trading. 
+Out-of-box reference implementation of live algo: [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) (Uses Example 2.1 MACDRSICrosses15mTCStrategy - this is not Equity Curve 2.2 however). If you’re trading crypto and exchanges you trade are supported by CCXT library, you’re 90% ready to go and trade it live (Config changes, key/secrets…etc).
+
+
+## 4. Under [**algo**](https://github.com/r0bbar/siglab/tree/master/siglab_py/algo)
+
++ [**strategy_base.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_base.py)
+Your strategy should subclass from StrategyBase, it's got default Lambdas which control entries, TP/SL, order notional adjustments, trailing stop tightening ...etc
+
++ [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py)
+This is the core live algo engine: It loads strategy you specify from command line argument and execute them.
+
++ [**one_shot_strategy.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/one_shot_strategy.py)
+This is the industrailized of [**tp_algo.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/tp_algo.py), which is primarily for manual trades: You decides on entry, and from command line arguments specify TP/SL targets. OneShotStrategy will do the rest.
+
++ [**macdrsi_crosses_15m_tc_strategy.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/macdrsi_crosses_15m_tc_strategy.py)
+This is the live version of Example 2.1 from [backtest_core doc](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?tab=t.0)ac
