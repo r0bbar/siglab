@@ -571,6 +571,7 @@ async def execute_one_position(
                             symbol = position.ticker,
                             type = position.order_type,
                             amount = rounded_slice_amount_in_base_ccy,
+                            price = rounded_limit_price, # Even for market orders, still pass price. Some exchanges may require this.
                             side = position.side,
                             params = order_params
                         )
@@ -707,6 +708,7 @@ async def execute_one_position(
                                     symbol=position.ticker,
                                     type='market',
                                     amount=remaining_amount,
+                                    price = rounded_limit_price, # Even for market orders, still pass price. Some exchanges may require this.
                                     side=position.side
                                 )
                                 
