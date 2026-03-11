@@ -1257,7 +1257,7 @@ async def main():
                                 '''
                                 unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * param['amount_base_ccy']
                         elif pos_side == OrderSide.SELL:
-                            unreal_live = round_to_sigfigs((entry_px - mid) * pos, sigfigs=6)
+                            unreal_live = round_to_sigfigs((entry_px - mid) * abs(pos), sigfigs=6)
                             if lo_candles_valid:
                                 unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
                                 unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * param['amount_base_ccy'], sigfigs=6)
