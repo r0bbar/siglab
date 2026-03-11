@@ -19,6 +19,7 @@ import re
 from re import Pattern
 from redis import StrictRedis
 import asyncio
+from pprint import pformat
 
 import ccxt.pro as ccxtpro
 
@@ -927,6 +928,8 @@ async def work(
 
 async def main():
     parse_args()
+
+    print(pformat(param, indent=2, width=100)) # Pay attention: credentials not yet decrypted
 
     fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log")
     fh.setLevel(log_level)
