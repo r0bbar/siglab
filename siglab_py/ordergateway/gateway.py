@@ -307,6 +307,7 @@ def parse_args():
     parser.add_argument("--default_sub_type", help="default_sub_type", default=None)
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
+    parser.add_argument("--default_max_slippage_bps", help="Default max slippage in bps when sending market orders. Default 100 bps.", default=100)
     parser.add_argument("--default_fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
     parser.add_argument("--order_amount_randomize_max_pct", help="Randomize order amount to hide your track? This is max percentage variance applied on sliced amount (not entire order amount)", default=10)
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=500)
@@ -337,6 +338,8 @@ def parse_args():
     param['default_type'] = args.default_type
     param['default_sub_type'] = args.default_sub_type
     param['rate_limit_ms'] = int(args.rate_limit_ms)
+
+    param['default_max_slippage_bps'] = int(args.default_max_slippage_bps)
     param['default_fees_ccy'] = args.default_fees_ccy
     param['order_amount_randomize_max_pct'] = float(args.order_amount_randomize_max_pct)
     param['loop_freq_ms'] = int(args.loop_freq_ms)
@@ -968,6 +971,7 @@ async def main():
         default_type=param['default_type'],
         default_sub_type=param['default_sub_type'],
         rate_limit_ms=param['rate_limit_ms'],
+        default_max_slippage_bps=param['default_max_slippage_bps'],
         verbose=param['verbose']
     )
     if exchange:
