@@ -34,6 +34,7 @@ def instantiate_exchange(
     passphrase : Union[str, None] = None,
     default_type : Union[str, None] = 'spot',
     default_sub_type : Union[str, None] = None,
+    default_max_slippage_bps : int = 100, # This is for market orders
     rate_limit_ms : float = 100
 ) -> Union[AnyExchange, None]:
     exchange_name = exchange_name.lower().strip()
@@ -46,7 +47,8 @@ def instantiate_exchange(
                         'enableRateLimit'  : True,
                         'rateLimit' : rate_limit_ms,
                         'options' : {
-                            'defaultType' : default_type
+                            'defaultType' : default_type,
+                            'defaultSlippage' : default_max_slippage_bps
                         }
                     }
     
@@ -91,6 +93,7 @@ async def async_instantiate_exchange(
     passphrase : str,
     default_type : Union[str, None] = 'spot',
     default_sub_type : Union[str, None] = None,
+    default_max_slippage_bps : int = 100, # This is for market orders
     rate_limit_ms : float = 100,
     verbose : bool = False
 ) -> Union[AnyExchange, None]:
@@ -106,7 +109,8 @@ async def async_instantiate_exchange(
                         'enableRateLimit'  : True,
                         'rateLimit' : rate_limit_ms,
                         'options' : {
-                            'defaultType' : default_type
+                            'defaultType' : default_type,
+                            'defaultSlippage' : default_max_slippage_bps
                         },
                         'verbose': verbose
                     }
