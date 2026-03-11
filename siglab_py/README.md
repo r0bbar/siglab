@@ -436,3 +436,5 @@ This is the industrailized of [**tp_algo.py**](https://github.com/r0bbar/siglab/
 
 + [**macdrsi_crosses_15m_tc_strategy.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/macdrsi_crosses_15m_tc_strategy.py)
 This is the live version of Example 2.1 from [backtest_core doc](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?tab=t.0)
+
++ [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
