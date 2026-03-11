@@ -40,9 +40,13 @@ def basic_exchange_connectivity_test(
         market = markets[normalized_ticker]
         print(market)
 
+        trailing_candles = await exchange.fetch_ohlcv(symbol=normalized_ticker, timeframe='1m', limit=10)
+        price = trailing_candles[-1][4]
+
         entry_order = exchange.create_order(
             symbol = normalized_ticker,
             amount = amount,
+            price = price,
             type=order_type,
             side=side
         )
@@ -60,6 +64,7 @@ def basic_exchange_connectivity_test(
             exit_order = exchange.create_order(
                 symbol = normalized_ticker,
                 amount = pos['contracts'],
+                price = price,
                 type=order_type,
                 side='buy' if pos['side']=='short' else 'sell'
             )
