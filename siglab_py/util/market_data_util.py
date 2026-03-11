@@ -4,12 +4,14 @@ import tzlocal
 from datetime import datetime, timezone
 import time
 from typing import List, Dict, Union, NoReturn, Any, Tuple
+from types import MethodType
 from pathlib import Path
 import math
 import pandas as pd
 import numpy as np
 import asyncio
 from tabulate import tabulate
+import inspect
 
 from ccxt.base.exchange import Exchange as CcxtExchange
 import ccxt
@@ -78,11 +80,37 @@ def instantiate_exchange(
                 'enableRateLimit'  : True,
                 'rateLimit' : rate_limit_ms
             }
+        )
+        def patch_create_order_response(
+                current_price : float,
+                create_order_response : Dict,
+                order_type : str = "market"
+            ):
+                if order_type=='market':
+                    create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
+                    create_order_response['average'] = current_price # For market orders, they tag 'average' null
+
+        exchange.patch_create_order_response = MethodType(
+            patch_create_order_response,
+            exchange
         )  
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}.")
 
     exchange.load_markets() # type: ignore
+
+    if not hasattr(exchange, "patch_create_order_response"):
+        def default_patch_create_order_response(
+            current_price : float,
+            create_order_response : Dict,
+            order_type : str = "market"
+        ):
+            pass
+
+        exchange.patch_create_order_response = MethodType(
+            default_patch_create_order_response,
+            exchange
+        )
 
     return exchange # type: ignore
 
@@ -177,10 +205,36 @@ async def async_instantiate_exchange(
                 'verbose': verbose
             }  # type: ignore
         )
+        def patch_create_order_response(
+                current_price : float,
+                create_order_response : Dict,
+                order_type : str = "market"
+            ):
+                if order_type=='market':
+                    create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
+                    create_order_response['average'] = current_price # For market orders, they tag 'average' null
+
+        exchange.patch_create_order_response = MethodType(
+            patch_create_order_response,
+            exchange
+        )
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
     await exchange.load_markets() # type: ignore
+
+    if not hasattr(exchange, "patch_create_order_response"):
+        def default_patch_create_order_response(
+            current_price : float,
+            create_order_response : Dict,
+            order_type : str = "market"
+        ):
+            pass
+
+        exchange.patch_create_order_response = MethodType(
+            default_patch_create_order_response,
+            exchange
+        )
 
     '''
     Is this necessary? The added trouble is for example bybit.authenticate requires arg 'url'. binance doesn't. And fetch_balance already test credentials.
