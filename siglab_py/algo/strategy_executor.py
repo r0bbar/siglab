@@ -1784,9 +1784,9 @@ async def main():
                             executed_position_close = executed_positions[0] # We sent only one DivisiblePosition.
                             if executed_position_close['done']:
                                 if pos_side==OrderSide.BUY:
-                                    closed_pnl = (executed_position_close['average_cost'] - entry_px) * param['amount_base_ccy']
+                                    closed_pnl = (executed_position_close['average_cost'] - entry_px) * pos
                                 else:
-                                    closed_pnl = (entry_px - executed_position_close['average_cost']) * param['amount_base_ccy']
+                                    closed_pnl = (entry_px - executed_position_close['average_cost']) * abs(pos)
                                 closed_pnl = round_to_sigfigs(closed_pnl, sigfigs=6)
                                 
                                 exit_px = executed_position_close['average_cost']
