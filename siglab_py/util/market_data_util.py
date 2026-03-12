@@ -83,13 +83,18 @@ def instantiate_exchange(
         )
         def patch_create_order_response(
                 self,            
-                current_price : float,
+                average_price : float,
                 create_order_response : Dict,
                 order_type : str = "market"
             ):
                 if order_type=='market':
                     create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
-                    create_order_response['average'] = current_price # For market orders, they tag 'average' null
+                    if (
+                        'average' not in executed_resent_order 
+                        or not executed_resent_order['average'] 
+                        or executed_resent_order['average']==0
+                    ):
+                        create_order_response['average'] = average_price # For market orders, they tag 'average' null
 
         exchange.patch_create_order_response = MethodType(
             patch_create_order_response,
@@ -103,7 +108,7 @@ def instantiate_exchange(
     if not hasattr(exchange, "patch_create_order_response"):
         def default_patch_create_order_response(
             self,
-            current_price : float,
+            average_price : float,
             create_order_response : Dict,
             order_type : str = "market"
         ):
@@ -209,13 +214,20 @@ async def async_instantiate_exchange(
         )
         def patch_create_order_response(
                 self,
-                current_price : float,
+                average_price : float,
                 create_order_response : Dict,
                 order_type : str = "market"
             ):
                 if order_type=='market':
                     create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
-                    create_order_response['average'] = current_price # For market orders, they tag 'average' null
+                    if order_type=='market':
+                        create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
+                        if (
+                            'average' not in executed_resent_order 
+                            or not executed_resent_order['average'] 
+                            or executed_resent_order['average']==0
+                        ):
+                        create_order_response['average'] = current_price # For market orders, they tag 'average' null
 
         exchange.patch_create_order_response = MethodType(
             patch_create_order_response,
@@ -229,7 +241,7 @@ async def async_instantiate_exchange(
     if not hasattr(exchange, "patch_create_order_response"):
         def default_patch_create_order_response(
             self,
-            current_price : float,
+            average_price : float,
             create_order_response : Dict,
             order_type : str = "market"
         ):
