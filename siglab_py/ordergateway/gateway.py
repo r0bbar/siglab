@@ -714,12 +714,15 @@ async def execute_one_position(
                                 )
                                 
                                 executed_resent_order['slice_id'] = i
-
+                                average_price = executed_resent_order['average'] if ('average' in executed_resent_order and executed_resent_order['average'] and executed_resent_order['average']!=0) else rounded_limit_price
+                                
                                 order_id = executed_resent_order['id']
                                 order_status = executed_resent_order['status']
                                 executed_resent_order['multiplier'] = multiplier
                                 position.append_execution(order_id, executed_resent_order)
 
+                                log(f"Resent market order {order_id}. status: {order_status}, average_price: {average_price}, rounded_limit_price: {rounded_limit_price}. {json.dumps(executed_resent_order, indent=4)}")
+                                
                                 wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
 
                                 start_time = time.time()
@@ -739,6 +742,7 @@ async def execute_one_position(
                                         filled_amount = order_update['filled']
                                         remaining_amount = order_update['remaining']
                                         position.executions[order_id] = order_update
+                                        exchange.patch_create_order_response(average_price=average_price, create_order_response=order_update, order_type='market')
 
                                     elapsed_sec = time.time() - start_time
                                     log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec} / wait_threshold_sec: {wait_threshold_sec}")
@@ -754,6 +758,7 @@ async def execute_one_position(
                                     filled_amount = order_update['filled']
                                     remaining_amount = order_update['remaining']
                                     order_update['multiplier'] = multiplier
+                                    exchange.patch_create_order_response(average_price=average_price, create_order_response=order_update, order_type='market')
                                     position.executions[order_id] = order_update
 
                                     assert(order_status=='closed') # Market order not getting filled?
