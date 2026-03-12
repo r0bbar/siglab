@@ -82,6 +82,7 @@ def instantiate_exchange(
             }
         )
         def patch_create_order_response(
+                self,            
                 current_price : float,
                 create_order_response : Dict,
                 order_type : str = "market"
@@ -101,6 +102,7 @@ def instantiate_exchange(
 
     if not hasattr(exchange, "patch_create_order_response"):
         def default_patch_create_order_response(
+            self,
             current_price : float,
             create_order_response : Dict,
             order_type : str = "market"
@@ -206,6 +208,7 @@ async def async_instantiate_exchange(
             }  # type: ignore
         )
         def patch_create_order_response(
+                self,
                 current_price : float,
                 create_order_response : Dict,
                 order_type : str = "market"
@@ -225,6 +228,7 @@ async def async_instantiate_exchange(
 
     if not hasattr(exchange, "patch_create_order_response"):
         def default_patch_create_order_response(
+            self,
             current_price : float,
             create_order_response : Dict,
             order_type : str = "market"
