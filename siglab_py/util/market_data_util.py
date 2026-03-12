@@ -227,7 +227,7 @@ async def async_instantiate_exchange(
                             or not executed_resent_order['average'] 
                             or executed_resent_order['average']==0
                         ):
-                        create_order_response['average'] = current_price # For market orders, they tag 'average' null
+                            create_order_response['average'] = current_price # For market orders, they tag 'average' null
 
         exchange.patch_create_order_response = MethodType(
             patch_create_order_response,
