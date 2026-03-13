@@ -805,6 +805,7 @@ async def main():
         sl : bool = False
         tp_max_percent : float  = param['tp_max_percent']
         tp_min_percent : float  = param['tp_min_percent']
+        sl_hard_percent : float = param['sl_hard_percent']
         executed_position = None
         position_break : bool = False
         lo_row_timestamp_ms : int = 0
@@ -913,6 +914,10 @@ async def main():
 
                         'pos_entries' : [],
                         
+                        'tp_min_percent' : algo_param['tp_min_percent'],
+                        'tp_max_percent' : algo_param['tp_max_percent'],
+                        'sl_hard_percent' : algo_param['sl_hard_percent'],
+
                         'entry_px' : None,
                         'tp_max_target' : None,
 						'tp_min_target' : None,
@@ -1017,6 +1022,7 @@ async def main():
 
                 # targets adjustments: Potential parameter changes after re-start with existing position
                 if position_cache_row['tp_min_percent']!=algo_param['tp_min_percent']:
+                    log(f"Parameter changed? position_cache_row['tp_min_percent']: {position_cache_row['tp_min_percent']}, algo_param['tp_min_percent']: {algo_param['tp_min_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
 
                     if tp_min_target:
@@ -1032,6 +1038,7 @@ async def main():
                         log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, original_tp_min_target: {original_tp_min_target}, updated tp_min_target: {tp_min_target}")
 
                 if position_cache_row['tp_max_percent']!=algo_param['tp_max_percent']:
+                    log(f"Parameter changed? position_cache_row['tp_max_percent']: {position_cache_row['tp_max_percent']}, algo_param['tp_max_percent']: {algo_param['tp_max_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
 
                     if tp_max_target:
@@ -1047,6 +1054,7 @@ async def main():
                         log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
 
                 if position_cache_row['sl_hard_percent']!=algo_param['sl_hard_percent']:
+                    log(f"Parameter changed? position_cache_row['sl_hard_percent']: {position_cache_row['sl_hard_percent']}, algo_param['sl_hard_percent']: {algo_param['sl_hard_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = algo_param['sl_hard_percent']
 
                     if sl_price:
@@ -1941,6 +1949,7 @@ async def main():
                     if (loop_counter%100==0) or (any_entry or any_exit): 
                         log(f"[position update]", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'tp_min_target':'sl_hard_percent'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
@@ -1948,6 +1957,7 @@ async def main():
                     else:
                         print(f"[position update]")
                         print(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'tp_min_target':'sl_hard_percent'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}")
