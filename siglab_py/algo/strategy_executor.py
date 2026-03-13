@@ -323,7 +323,7 @@ def parse_args():
 
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--long_short", help="long_short (Default, can trade both sides), long_only, short_only", default='long_short')
-    parser.add_argument("--directional_override", help="Directional bias override, permissible values: long, short, None (Default: No override). Override means: strategies can use 'directional_override' to override Trend Bias (or 'Northstar') logic, if any, in lambdas.", default=None)
+    parser.add_argument("--directional_override", help="Directional bias override, permissible values: long, short, both, None (Default: No override). Override means: strategies can use 'directional_override' to override Trend Bias (or 'Northstar') logic, if any, in lambdas. 'both' means long OR SHORT.", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
     parser.add_argument("--amount_quote_ccy", help="Order amount in quote ccy (USD, USDT or USDC ...etc). Always positive, even for sell trades.", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
