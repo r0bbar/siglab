@@ -30,13 +30,32 @@ if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 '''
-TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also gradually tighted trailing stops.
+TP algo is an excecution algo. It doesn't decide entries for you. It however, execute the trade with target TP and SL with hard and also gradually tighted trailing stops. 
+So, it's for manual entries. It however automates everything after the initial entry: TP/SL, tighten trailing stops ...etc
+TP algo is also a simple toy algo, purpose is to illustrate integration with order gateway and gradually tightened stops with calc_eff_trailing_sl (trading_util).
 
 For more on "Gradually Tighted Stops" and 'calc_eff_trailing_sl':
     https://medium.com/@norman-lm-fung/gradually-tightened-trailing-stops-f7854bf1e02b
 
 TP algo is intended to be a very basic script to illustrate integration with order gateway and send manual trades. 
-OneShotStrategy industrialized version of TP algo: It uses strategy_executor, and post-trade analysis can be done with orderhist_cache_viewer.
+
+The industrailized version of TP algo is OneShotStrategy: https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/one_shot_strategy.py
+OneShotStrategy, like all other algo's with siglab_py, uses 'strategy_executor' https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py
+Strategy Executor handles all the commmon concerns, and strategies themselves are responsible for strategy-specific conerns:
+* entries
+* TP
+* SL
+* Order Notional adjustments
+* Gradually tightened stops
+These comes from 
+* Algo parameters coming in from Command line args
+* Lambda's from individual strategy implementation file contains the concrete implementation of strategy-specific behaviors.
+
+'strategy_executor' loads individual strategy from startup, which to load depends on command line arg 'target_strategy_name'. 
+'strategy_executor' also perform these house keeping tasks:
+* Local position cache maintenance
+* Position reconciliation vs exchange
+* Order history maintenance - post-trade analysis can be done with orderhist_cache_viewer https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb
 
 Now why does TP algo need apikey when gateway.py is sending the orders? TP algo perform position reconciliation (For contracts), and if positions don't match, algo would terminate.
 Why would you do that? Imagine if trader want to intervene and close out positions from mobile?
