@@ -253,6 +253,11 @@ POSITION_CACHE_COLUMNS = [
             'multiplier', 'created', 'tp_min_crossed', 'closed', 
             'pos_entries',
              
+            'tp_min_percent',
+            'tp_max_percent',
+            'sl_hard_percent',
+            'sl_adj_percent',
+
             'entry_px', 
             'tp_max_target',
 			'tp_min_target',
@@ -1002,13 +1007,59 @@ async def main():
                         elif len(dt_parts) == 6:
                             pos_entries.append(datetime(*dt_parts, microsecond=0))
                 num_pos_entries = len(pos_entries) if pos_entries else 0
-
+                
                 entry_px = position_cache_row['entry_px']
                 tp_max_target = position_cache_row['tp_max_target']
                 tp_min_target = position_cache_row['tp_min_target']
                 sl_price = position_cache_row['sl_price']
                 max_pnl_potential_bps = position_cache_row['max_pnl_potential_bps']
                 close_px = position_cache_row['close_px']
+
+                # targets adjustments: Potential parameter changes after re-start with existing position
+                if position_cache_row['tp_min_percent']!=algo_param['tp_min_percent']:
+                    pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
+
+                    if tp_min_target:
+                        if pos_side == OrderSide.BUY:
+                            original_tp_min_percent = ((tp_min_target/entry_px) -1)/100
+                        else:
+                            original_tp_min_percent = ((entry_px/tp_min_target) -1)/100
+                        adj_ratio = algo_param['tp_min_percent']/original_tp_min_percent
+                        original_tp_min_target = tp_min_target
+                        tp_min_target = adj_ratio * original_tp_min_target
+                        pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_target
+
+                        log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, original_tp_min_target: {original_tp_min_target}, updated tp_min_target: {tp_min_target}")
+
+                if position_cache_row['tp_max_percent']!=algo_param['tp_max_percent']:
+                    pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
+
+                    if tp_max_target:
+                        if pos_side == OrderSide.BUY:
+                            original_tp_max_target = ((tp_max_target/entry_px) -1)/100
+                        else:
+                            original_tp_max_target = ((entry_px/tp_max_target) -1)/100
+                        adj_ratio = algo_param['tp_max_percent']/original_tp_max_target
+                        orignal_tp_max_target = tp_max_target
+                        tp_max_target = adj_ratio * orignal_tp_max_target
+                        pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_target
+
+                        log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
+
+                if position_cache_row['sl_hard_percent']!=algo_param['sl_hard_percent']:
+                    pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = algo_param['sl_hard_percent']
+
+                    if sl_price:
+                        if pos_side == OrderSide.BUY:
+                            original_sl_price = ((sl_price/entry_px) -1)/100
+                        else:
+                            original_sl_price = ((entry_px/sl_price) -1)/100
+                        adj_ratio = algo_param['sl_hard_percent']/original_sl_price
+                        original_sl_price = sl_price
+                        sl_price = adj_ratio * original_sl_price
+                        pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
+
+                        log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, original_sl_price: {original_sl_price}, updated sl_price: {sl_price}")
 
                 unreal_live = position_cache_row['unreal_live']
                 max_unreal_live = position_cache_row['max_unreal_live']
