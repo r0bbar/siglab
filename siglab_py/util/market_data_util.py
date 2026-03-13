@@ -91,8 +91,8 @@ def instantiate_exchange(
                     create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
                     if (
                         'average' not in create_order_response 
-                        or not create_order_response['average'] 
-                        or create_order_response['average']==0
+                        or ('average' in create_order_response and not create_order_response['average'])
+                        or ('average' in create_order_response and create_order_response['average']==0)
                     ):
                         create_order_response['average'] = average_price # For market orders, they tag 'average' null
 
@@ -224,8 +224,8 @@ async def async_instantiate_exchange(
                         create_order_response['type'] = order_type # Hyperliquid tag market orders as limit orders (but with very wide limit prices)
                         if (
                             'average' not in create_order_response 
-                            or not create_order_response['average'] 
-                            or create_order_response['average']==0
+                            or ('average' in create_order_response and not create_order_response['average'])
+                            or ('average' in create_order_response and create_order_response['average']==0)
                         ):
                             create_order_response['average'] = current_price # For market orders, they tag 'average' null
 
