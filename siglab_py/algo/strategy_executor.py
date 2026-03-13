@@ -833,7 +833,7 @@ async def main():
                                     (dt_targettz.replace(tzinfo=None) - dt_now).total_seconds()/3600
                                 )
                 
-                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}")
+                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}, today_dayofweek: {today_dayofweek}")
                 
                 if param['trading_window_start'] and param['trading_window_end']:
                     trading_window : Dict[str, str] = {
