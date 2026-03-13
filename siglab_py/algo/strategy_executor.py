@@ -323,6 +323,7 @@ def parse_args():
 
     parser.add_argument("--ticker", help="Ticker you're trading. Example BTC/USDC:USDC", default=None)
     parser.add_argument("--long_short", help="long_short (Default, can trade both sides), long_only, short_only", default='long_short')
+    parser.add_argument("--directional_override", help="Directional override to force algo to either long or short, permissible values: long, short, None (Default: No override). Override means: Override param 'long_short' and Trend Bias (or 'Northstar') logic, if any, in algo allow_entry lambdas.", default=None)
     parser.add_argument("--order_type", help="Order type: market or limit", default=None)
     parser.add_argument("--amount_quote_ccy", help="Order amount in quote ccy (USD, USDT or USDC ...etc). Always positive, even for sell trades.", default=None)
     parser.add_argument("--amount_base_ccy", help="Order amount in base ccy (Not # contracts). Always positive, even for sell trades.", default=None)
@@ -405,6 +406,12 @@ def parse_args():
 
     param['ticker'] = args.ticker
     param['long_short'] = args.long_short
+    param['directional_override'] = args.directional_override
+    if param['directional_override']:
+        if param['directional_override']=='long':
+            param['long_short'] = 'long_only'
+        elif param['directional_override']=='short':
+            param['long_short'] = 'short_only'
     param['order_type'] = args.order_type
     param['amount_quote_ccy'] = float(args.amount_quote_ccy) if args.amount_quote_ccy else None
     param['max_pos_amount_quote_ccy'] = param['amount_quote_ccy']
