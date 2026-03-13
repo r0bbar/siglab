@@ -779,7 +779,7 @@ async def main():
         else:
             log(f"Strategy starting immediately.")
 
-        print('Hit any key to start strategy.')
+        input('Hit any key to start strategy.')
 
         # Load cached positions from disk, if any
         if os.path.exists(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id)) and os.path.getsize(position_cache_file_name.replace("$GATEWAY_ID$", gateway_id))>0:
