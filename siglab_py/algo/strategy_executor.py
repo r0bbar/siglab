@@ -1949,7 +1949,7 @@ async def main():
                     if (loop_counter%100==0) or (any_entry or any_exit): 
                         log(f"[position update]", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
-                        log(f"{tabulate(pd_position_cache.loc[:, 'tp_min_target':'sl_hard_percent'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+                        log(f"{tabulate(pd_position_cache.loc[:, 'tp_min_percent':'sl_hard_percent'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                         log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
@@ -1957,7 +1957,7 @@ async def main():
                     else:
                         print(f"[position update]")
                         print(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}")
-                        print(f"{tabulate(pd_position_cache.loc[:, 'tp_min_target':'sl_hard_percent'], headers='keys', tablefmt='psql')}")
+                        print(f"{tabulate(pd_position_cache.loc[:, 'tp_min_percent':'sl_hard_percent'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'entry_px':'close_px'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}")
                         print(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}")
