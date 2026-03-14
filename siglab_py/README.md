@@ -53,7 +53,9 @@ TAs computed (This is an expanding list):
 
 + Inflections points: where 'close' crosses EMA from above or below.
 
-+ [levels (Simple rounded numbers, not Volume Profile)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/simple_math_tests.py)
++ [Levels (Simple rounded numbers, not Volume Profiles)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/simple_math_tests.py)
+
++ [Volume Profiles (analytic_util.compute_volume_profile)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
 
 [**aggregated_orderbook_provider.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
 
