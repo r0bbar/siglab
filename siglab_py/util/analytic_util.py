@@ -153,6 +153,21 @@ def compute_volume_profile(
             else:
                 volume_profile[bucket_key]['down_volume'] += volume
     
+    volume_profile = [
+        {**v, 'bucket_key': k}
+        for k, v in sorted(volume_profile.items(), key=lambda x: x[1]['min'])
+    ]
+
+    merge_distance: int = 5
+    maxima_minima = find_local_max_min(
+        values = [ x['volume'] for x in volume_profile], 
+        merge_distance=1
+    )
+    maxima_minima # Format: {'local_max': [0, 5], 'local_min': [8]}
+    for i in range(len(volume_profile)):
+        volume_profile[i]['local_maxima'] = i in maxima_minima['local_max']
+        volume_profile[i]['local_minima'] = i in maxima_minima['local_min']
+        
     return volume_profile
     
 '''
