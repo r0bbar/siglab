@@ -42,6 +42,8 @@ class AnalyticUtilTests(unittest.TestCase):
             ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
         )
 
+        # See also: https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/volume_profiles.ipynb
+
     def test_compute_candle_stats(self):
         '''
         Folder structure:
