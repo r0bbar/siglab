@@ -833,9 +833,9 @@ def find_local_max_min(values: List[float], merge_distance: int = 5) -> Union[Di
     if n < 2:
         return None
 
-    if values[0] > values[1]:
+    if values[0] < values[1]:
         mn.append(0)
-    elif values[0] < values[1]:
+    elif values[0] > values[1]:
         mx.append(0)
 
     for i in range(1, n-1):
