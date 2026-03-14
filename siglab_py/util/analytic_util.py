@@ -117,7 +117,43 @@ def trend_from_lows(series: np.ndarray) -> float:
         return TrendDirection.HIGHER_LOWS.value
     else:
         return TrendDirection.SIDEWAYS.value
+
+def compute_volume_profile(
+        pd_candles : pd.DataFrame,
+        level_granularity = 0.1, # i.e. 10%
+        ohlc : str = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
+) -> Dict[str, Dict[str, float]]:
+    buckets : Dict[
+        str, 
+        Dict[str,Union[float, Dict]]
+    ] = bucket_series(
+                                            values = pd_candles[ohlc].tolist(),
+                                            outlier_threshold_percent = 10,
+                                            level_granularity=level_granularity
+                                        )
+
+    volume_profile : Dict[str, Dict[str, float]] = {}
+    for i, candle in pd_candles.iterrows():
+        is_green = candle['close']>candle['open']
+        price = candle[ohlc]
+        volume = candle['volume']
+        bucket_key = bucketize_val(price, buckets)
+        if bucket_key not in volume_profile:
+            volume_profile[bucket_key] = {
+                'min' : buckets[bucket_key]['min'],
+                'max' : buckets[bucket_key]['max'],
+                'up_volume' : volume if is_green else 0,
+                'down_volume' : volume if not is_green else 0,
+                'volume' : volume
+            }
+        else:
+            volume_profile[bucket_key]['volume'] += volume
+            if is_green:
+                volume_profile[bucket_key]['up_volume'] += volume
+            else:
+                volume_profile[bucket_key]['down_volume'] += volume
     
+    return volume_profile
     
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:

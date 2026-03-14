@@ -2,7 +2,7 @@ import unittest
 from typing import List
 from pathlib import Path
 
-from util.analytic_util import compute_candles_stats, lookup_fib_target
+from util.analytic_util import compute_volume_profile, compute_candles_stats, lookup_fib_target
 
 import pandas as pd
 
@@ -12,6 +12,35 @@ Manual checks against for example Tradingview here: \siglab\siglab_py\tests\manu
 
 # @unittest.skip("Skip all integration tests.")
 class AnalyticUtilTests(unittest.TestCase):
+
+    def test_compute_volume_profile(self):
+        '''
+        Folder structure:
+            \ siglab
+                \ siglab_py	<-- python project root
+                    \ sigab_py
+                        __init__.py
+                        \ util
+                            __init__.py
+                            market_data_util.py
+                        \ tests
+                            \ unit
+                                __init__.py
+                                analytic_util_tests.py <-- Tests here
+                            
+                \ siglab_rs <-- Rust project root
+                \ data	 <-- Data files here!
+        '''
+        data_dir = Path(__file__).parent.parent.parent.parent / "data"
+        csv_path = data_dir / "sample_btc_candles.csv"
+        pd_candles : pd.DataFrame = pd.read_csv(csv_path)
+
+        level_granularity = 0.1
+        volume_profile = compute_volume_profile(
+            pd_candles = pd_candles,
+            level_granularity = 0.1, # i.e. 10%
+            ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
+        )
 
     def test_compute_candle_stats(self):
         '''
