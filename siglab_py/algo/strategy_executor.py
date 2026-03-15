@@ -1031,9 +1031,9 @@ async def main():
 
                     if tp_min_target:
                         if pos_side == OrderSide.BUY:
-                            original_tp_min_percent = ((tp_min_target/entry_px) -1)/100
+                            original_tp_min_percent = ((tp_min_target/entry_px) -1)*100
                         else:
-                            original_tp_min_percent = ((entry_px/tp_min_target) -1)/100
+                            original_tp_min_percent = ((entry_px/tp_min_target) -1)*100
                         adj_ratio = algo_param['tp_min_percent']/original_tp_min_percent
                         original_tp_min_target = tp_min_target
                         tp_min_target = adj_ratio * original_tp_min_target
@@ -1047,15 +1047,15 @@ async def main():
 
                     if tp_max_target:
                         if pos_side == OrderSide.BUY:
-                            original_tp_max_target = ((tp_max_target/entry_px) -1)/100
+                            original_tp_max_target = ((tp_max_target/entry_px) -1)*100
                         else:
-                            original_tp_max_target = ((entry_px/tp_max_target) -1)/100
+                            original_tp_max_target = ((entry_px/tp_max_target) -1)*100
                         adj_ratio = algo_param['tp_max_percent']/original_tp_max_target
                         orignal_tp_max_target = tp_max_target
                         tp_max_target = adj_ratio * orignal_tp_max_target
                         pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_target
 
-                        log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
+                        log(f"tp_max_percent adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
 
                 if position_cache_row['sl_hard_percent']!=algo_param['sl_hard_percent']:
                     log(f"Parameter changed? position_cache_row['sl_hard_percent']: {position_cache_row['sl_hard_percent']}, algo_param['sl_hard_percent']: {algo_param['sl_hard_percent']}")
@@ -1063,15 +1063,15 @@ async def main():
 
                     if sl_price:
                         if pos_side == OrderSide.BUY:
-                            original_sl_price = ((sl_price/entry_px) -1)/100
+                            original_sl_price = ((sl_price/entry_px) -1)*100
                         else:
-                            original_sl_price = ((entry_px/sl_price) -1)/100
+                            original_sl_price = ((entry_px/sl_price) -1)*100
                         adj_ratio = algo_param['sl_hard_percent']/original_sl_price
                         original_sl_price = sl_price
                         sl_price = adj_ratio * original_sl_price
                         pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
 
-                        log(f"tp_min_target adjusted from parameter change, adj_ratio: {adj_ratio}, original_sl_price: {original_sl_price}, updated sl_price: {sl_price}")
+                        log(f"sl_hard_percent adjusted from parameter change, adj_ratio: {adj_ratio}, original_sl_price: {original_sl_price}, updated sl_price: {sl_price}")
 
                 unreal_live = position_cache_row['unreal_live']
                 max_unreal_live = position_cache_row['max_unreal_live']
