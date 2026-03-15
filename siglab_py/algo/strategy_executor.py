@@ -822,7 +822,7 @@ async def main():
                     loop_elapsed_sec = round((datetime.now() - loop_start).total_seconds(), 2)
                 loop_start = datetime.now()
 
-                any_entry, any_exit = False, False
+                any_entry, any_exit, any_target_adj = False, False, False
 
                 dt_now = datetime.now()
                 block_entries = False
@@ -1105,8 +1105,6 @@ async def main():
                     tp_max_pnl_est = abs(pos_usdt) * algo_param['tp_max_percent']/100, 4
                     tp_min_pnl_est = abs(pos_usdt) * algo_param['tp_min_percent']/100, 4
                     sl_pnl_est = abs(pos_usdt) * running_sl_percent_hard/100
-                    
-                    any_target_adj = False # Reset it
                     
                     target_adj_dtails = {
                         'tp_max_percent' : algo_param['tp_max_percent'],
