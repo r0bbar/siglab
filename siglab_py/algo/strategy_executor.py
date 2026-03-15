@@ -1054,8 +1054,9 @@ async def main():
                         orignal_tp_max_target = tp_max_target
                         tp_max_target = adj_ratio * orignal_tp_max_target
                         pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_target
+                        pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = adj_ratio * max_pnl_potential_bps
 
-                        log(f"tp_max_percent adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
+                        log(f"tp_max_percent adjusted from parameter change, adj_ratio: {adj_ratio}, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}, max_pnl_potential_bps: {max_pnl_potential_bps}")
 
                 if position_cache_row['sl_hard_percent']!=algo_param['sl_hard_percent']:
                     log(f"Parameter changed? position_cache_row['sl_hard_percent']: {position_cache_row['sl_hard_percent']}, algo_param['sl_hard_percent']: {algo_param['sl_hard_percent']}")
