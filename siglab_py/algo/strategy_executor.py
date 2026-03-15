@@ -1608,9 +1608,15 @@ async def main():
                                         tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
                                         tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                                         sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
+                                        tp_max_pnl_est = amount_filled_usdt * tp_max_percent/100
+                                        tp_min_pnl_est = amount_filled_usdt * tp_min_percent/100
 
                                         # negative slippage is to your favor
                                         slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px>mid else slippage_bps
+
+                                    tp_max_pnl_est = abs(amount_filled_usdt) * tp_max_percent/100
+                                    tp_min_pnl_est = abs(amount_filled_usdt) * tp_min_percent/100
+                                    sl_pnl_est = abs(amount_filled_usdt) * running_sl_percent_hard/100
 
                                     executed_position['position'] = {
                                             'loop_counter' : loop_counter,
@@ -1625,6 +1631,9 @@ async def main():
                                             'pnl_potential_bps' : pnl_potential_bps, # If the trade manages to reach tp_max_percent
                                             'tp_max_percent' : tp_max_percent,
                                             'tp_min_percent' : tp_min_percent,
+                                            'tp_max_pnl_est' : tp_max_pnl_est,
+                                            'tp_min_pnl_est' : tp_min_pnl_est,
+                                            'sl_pnl_est' : sl_pnl_est,
                                             'running_sl_percent_hard' : running_sl_percent_hard,
                                             'filled_amount' : new_pos_from_exchange,
                                             'pos' : pos + new_pos_from_exchange,
