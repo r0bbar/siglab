@@ -161,7 +161,8 @@ def compute_volume_profile(
     merge_distance: int = 5
     maxima_minima = find_local_max_min(
         values = [ x['volume'] for x in volume_profile], 
-        merge_distance=1
+        merge_distance=1,
+        simple_neighbour_compare=True
     )
     maxima_minima # Format: {'local_max': [0, 5], 'local_min': [8]}
     for i in range(len(volume_profile)):
@@ -825,7 +826,11 @@ If you have consecutive-duplicates, things will gall apart!
 
 Fix: https://stackoverflow.com/questions/75013708/python-finding-local-minima-and-maxima?noredirect=1#comment132376733_75013708
 '''
-def find_local_max_min(values: List[float], merge_distance: int = 5) -> Union[Dict[str, List], None]:
+def find_local_max_min(
+    values: List[float], 
+    merge_distance: int = 5,
+    simple_neighbour_compare : bool = True
+) -> Union[Dict[str, List], None]:
     mx = []
     mn = []
 
@@ -839,10 +844,16 @@ def find_local_max_min(values: List[float], merge_distance: int = 5) -> Union[Di
         mx.append(0)
 
     for i in range(1, n-1):
-        if all(values[i] >= values[j] for j in range(i-10, i+11) if 0 <= j < n):
-            mx.append(i)
-        elif all(values[i] <= values[j] for j in range(i-10, i+11) if 0 <= j < n):
-            mn.append(i)
+        if simple_neighbour_compare:
+            if values[i]>=values[i-1] and values[i]>=values[i+1]:
+                mx.append(i)
+            elif values[i]<=values[i-1] and values[i]<=values[i+1]:
+                mn.append(i)
+        else:
+            if all(values[i] >= values[j] for j in range(i-10, i+11) if 0 <= j < n):
+                mx.append(i)
+            elif all(values[i] <= values[j] for j in range(i-10, i+11) if 0 <= j < n):
+                mn.append(i)
 
     if values[-1] > values[-2]:
         mx.append(n-1)
