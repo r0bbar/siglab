@@ -796,6 +796,7 @@ async def main():
         in_window : bool = False
         any_entry : bool = False
         any_exit : bool = False
+        any_target_adj : bool = False
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
         effective_tp_trailing_percent : float = param['default_effective_tp_trailing_percent']
@@ -1030,6 +1031,8 @@ async def main():
                     pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
 
                     if tp_min_target:
+                        any_target_adj = True
+
                         if pos_side == OrderSide.BUY:
                             original_tp_min_percent = ((tp_min_target/entry_px) -1)*100
                         else:
@@ -1046,6 +1049,8 @@ async def main():
                     pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
 
                     if tp_max_target:
+                        any_target_adj = True
+
                         if pos_side == OrderSide.BUY:
                             original_tp_max_target = ((tp_max_target/entry_px) -1)*100
                         else:
@@ -1063,6 +1068,8 @@ async def main():
                     pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = algo_param['sl_hard_percent']
 
                     if sl_price:
+                        any_target_adj = True
+
                         if pos_side == OrderSide.BUY:
                             original_sl_price = ((sl_price/entry_px) -1)*100
                         else:
@@ -1071,9 +1078,10 @@ async def main():
                         original_sl_price = sl_price
                         sl_price = adj_ratio * original_sl_price
                         pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
+                        pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = algo_param['sl_hard_percent']
 
                         log(f"sl_hard_percent adjusted from parameter change, adj_ratio: {adj_ratio}, original_sl_price: {original_sl_price}, updated sl_price: {sl_price}")
-
+                
                 unreal_live = position_cache_row['unreal_live']
                 max_unreal_live = position_cache_row['max_unreal_live']
                 max_pain = position_cache_row['max_pain']
@@ -1092,6 +1100,25 @@ async def main():
                 pnl_percent_notional = pnl_open_bps/100
                 max_pain_percent_notional = max_pain / pos_usdt * 100 if pos_usdt!=0 else 0
                 max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
+
+                if any_target_adj = True:
+                    tp_max_pnl_est = abs(pos_usdt) * algo_param['tp_max_percent']/100, 4
+                    tp_min_pnl_est = abs(pos_usdt) * algo_param['tp_min_percent']/100, 4
+                    sl_pnl_est = abs(pos_usdt) * running_sl_percent_hard/100
+                    
+                    any_target_adj = False # Reset it
+                    
+                    target_adj_dtails = {
+                        'tp_max_percent' : algo_param['tp_max_percent'],
+                        'tp_min_percent' : algo_param['tp_min_percent'],
+                        'sl_hard_percent' : algo_param['sl_hard_percent'],
+                        'tp_max_pnl_est' : tp_max_pnl_est,
+                        'tp_min_pnl_est' : tp_min_pnl_est,
+                        'sl_pnl_est' : sl_pnl_est
+                    }
+
+                    log(f"TARGET ADJUSTMENT {pformat(target_adj_dtails, indent=2, width=100)}")
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_dtails, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 '''
                 'fetch_position' is for perpetual. 
