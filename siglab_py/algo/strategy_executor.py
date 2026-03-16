@@ -1100,6 +1100,11 @@ async def main():
                         'tp_max_percent' : algo_param['tp_max_percent'],
                         'tp_min_percent' : algo_param['tp_min_percent'],
                         'sl_hard_percent' : algo_param['sl_hard_percent'],
+
+                        'tp_min_target' : tp_min_target,
+                        'tp_max_target' : tp_max_target,
+                        'sl_price'  : sl_price,
+                        
                         'tp_max_pnl_est' : tp_max_pnl_est,
                         'tp_min_pnl_est' : tp_min_pnl_est,
                         'sl_pnl_est' : sl_pnl_est
