@@ -82,7 +82,7 @@ param : Dict = {
     "boillenger_std_multiples" : 2,
     
     # regex corresponding to candles_publish_topic. If you want specific instances to process specific tickers only (performance concerns), you can use this regex filter to do the trick.
-    "candles_ta_publish_topic_regex" : r"^candles-$TICKERS$-[a-zA-Z_]+-$CANDLE_SIZE$$", 
+    "candles_ta_publish_topic_regex" : r"^candles-$PREFIX$-$TICKERS$-[a-zA-Z_]+-$CANDLE_SIZE$$", 
 
     # processed_hash_queue is how we avoid reprocess already processed messages. We store hash of candles read in 'processed_hash_queue'.
     # Depending on how many tickers this instance is monitoring, you may want to adjust this queue size.
@@ -132,6 +132,7 @@ def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
 
     parser.add_argument("--tickers", help="This is to amend 'candles_ta_publish_topic_regex' so candles_ta_provider filter by specific ticker(s). Default None (No filtering) ", default=None)
+    parser.add_argument("--publish_key_prefix", help="publish_key prefix", default=None)
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--ma_long_intervals", help="Window size in number of intervals for higher timeframe", default=24)
     parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
@@ -157,6 +158,12 @@ def parse_args():
         param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$TICKERS$', f'({tickers_expr})')
     else:
         param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$TICKERS$', '.*')
+    
+    param['publish_key_prefix'] = args.publish_key_prefix
+    if param['publish_key_prefix']:
+        param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$PREFIX$', param['publish_key_prefix'])
+    else:
+        param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('-$PREFIX$', '')
 
     param['candle_size'] = args.candle_size
     param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$CANDLE_SIZE$', param['candle_size'])

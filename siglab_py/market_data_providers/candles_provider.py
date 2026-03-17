@@ -87,7 +87,7 @@ param : Dict = {
     'mds' : {
         'topics' : {
             'partition_assign_topic' : 'mds_assign_$PROVIDER_ID$',
-            'candles_publish_topic' : 'candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
+            'candles_publish_topic' : 'candles-$PREFIX$-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
         },
         'redis' : {
             'host' : 'localhost',
@@ -148,6 +148,7 @@ def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
 
     parser.add_argument("--provider_id", help="candle_provider will go to work if from redis a matching topic partition_assign_topic with provider_id in it.", default=None)
+    parser.add_argument("--publish_key_prefix", help="publish_key prefix", default=None)
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
 
@@ -157,6 +158,7 @@ def parse_args():
     args = parser.parse_args()
     if args.provider_id:
         param['provider_id'] = args.provider_id
+    param['publish_key_prefix'] = args.publish_key_prefix
     param['candle_size'] = args.candle_size
     param['how_many_candles'] = int(args.how_many_candles)
 
@@ -280,6 +282,10 @@ def process_universe(
                         denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
 
                         publish_key = param['mds']['topics']['candles_publish_topic']
+                        if param['publish_key_prefix']:
+                            publish_key = publish_key.replace('$PREFIX$', param['publish_key_prefix'])
+                        else:
+                            publish_key = publish_key.replace('-$PREFIX$', '')
                         publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
                         publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                         publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
