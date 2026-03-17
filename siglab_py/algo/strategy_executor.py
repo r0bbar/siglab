@@ -20,6 +20,7 @@ import numpy as np
 import inspect
 from tabulate import tabulate
 from pprint import pformat
+import plotext as plt
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -27,6 +28,7 @@ from siglab_py.util.datetime_util import parse_trading_window
 from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
 from siglab_py.util.simple_str import is_int_string, is_float_string
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
+from siglab_py.util.analytic_util import compute_volume_profile
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.notification_util import dispatch_notification
 from siglab_py.util.aws_util import AwsKmsUtil
@@ -350,6 +352,8 @@ def parse_args():
     parser.add_argument("--recover_max_pain_percent", help="This is minimum max_pain endured when your trade is red. For trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop mechanism will remain inactive.", default=float('inf'))
     parser.add_argument("--tp_min_threshold_mode", help="When to trigger calc_eff_trailing_sl? When we say the trade has reached tp_min_percent? open (default), or live. 'open' means evaluation use 'max_unreal_open_bps'. 'live' means evaluation use 'max_unreal_live_bps'", default="open")
 
+    parser.add_argument("--build_volume_profile", help="Compute volume profile? Y or N (default).", default='N')
+
     parser.add_argument("--one_shot_only", help="If true, after first TP or SL, strategy will exit. Y or N (default).", default='N')
     
     parser.add_argument("--economic_calendar_source", help="Source of economic calendar'. Default: None", default=None)
@@ -442,6 +446,14 @@ def parse_args():
     param['recover_min_percent'] = float(args.recover_min_percent)
     param['recover_max_pain_percent'] = float(args.recover_max_pain_percent)
     param['tp_min_threshold_mode'] = args.tp_min_threshold_mode
+
+    if args.build_volume_profile:
+        if args.build_volume_profile=='Y':
+            param['build_volume_profile'] = True
+        else:
+            param['build_volume_profile'] = False
+    else:
+        param['build_volume_profile'] = False
 
     if args.one_shot_only:
         if args.one_shot_only=='Y':
@@ -1296,6 +1308,38 @@ async def main():
                                 idx_level_below += 1
                         idx_level_above = idx_level_below +1
                         level_above = adjacent_levels[idx_level_above]
+
+                    if (
+                        param['build_volume_profile']
+                        and (loop_counter%100==0) # VAH/L and PoC don't need updated too freq, recalc only every hundred iterations is fine
+                    ):
+                        hi_volume_profile = compute_volume_profile(
+                            pd_candles = pd_hi_candles_w_ta,
+                            level_granularity = 0.1, # i.e. 10%
+                            ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
+                        )
+
+                        lo_volume_profile = compute_volume_profile(
+                            pd_candles = pd_lo_candles_w_ta,
+                            level_granularity = 0.1, # i.e. 10%
+                            ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
+                        )
+
+                        for x in hi_volume_profile:
+                            bucket_key = x['bucket_key']
+                            volume = x['volume']
+                            local_maxima = x['local_maxima']
+                            if local_maxima:
+                                point_of_control = f'hi_volume_profile, {bucket_key} volume: {int(volume):,}'
+                                log(point_of_control)
+
+                        for x in lo_volume_profile:
+                            bucket_key = x['bucket_key']
+                            volume = x['volume']
+                            local_maxima = x['local_maxima']
+                            if local_maxima:
+                                point_of_control = f'lo_volume_profile, {bucket_key} volume: {int(volume):,}'
+                                log(point_of_control)
 
                     pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                     pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
