@@ -698,6 +698,10 @@ async def execute_one_position(
 
                         if not canellation_failed:
                             position.get_execution(order_id)['status'] = 'canceled'
+
+                            canceled_execution = executions[order_id] # You'd have an update thru ws upon cancel_order!
+                            position.executions[order_id] = canceled_execution # Update position.executions!
+
                             log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
                             rounded_slice_amount_in_base_ccy = float(remaining_amount)
                             if remaining_amount>min_amount:
