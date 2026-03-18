@@ -249,7 +249,7 @@ class DivisiblePosition(Order):
             corresponding_slice = self.dispatched_slices[slice_id]
 
             status = execution['status']
-            if status and status.strip().lower()=='closed':
+            if status and status.strip().lower() in [ 'closed', 'canceled' ]:
                 if 'average' in execution:
                     if not execution['average']:
                         if 'price' in execution and execution['price']:
@@ -267,7 +267,10 @@ class DivisiblePosition(Order):
 
                 if 'amount' in execution:
                     if not execution['amount']:
-                        execution['patch']['amount'] = corresponding_slice.dispatched_amount
+                        if 'filled' in execution and execution['filled']:
+                            execution['patch']['amount'] = execution['filled']
+                        else:
+                            execution['patch']['amount'] = corresponding_slice.dispatched_amount
                     else:
                         execution['patch']['amount'] = execution['amount']
         
