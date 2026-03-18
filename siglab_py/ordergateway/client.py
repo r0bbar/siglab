@@ -277,29 +277,22 @@ class DivisiblePosition(Order):
     def get_filled_amount(self) -> float:
         # filled_amount is in base ccy
         filled_amount = sum(
-                    [ 
-                        (
-                            self.executions[order_id]['filled'] 
-                            if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
-                            else self.executions[order_id]['patch']['amount']
-                        )  * self.multiplier 
-                        for order_id in self.executions 
-                    ]
-                )
+                            [ 
+                                (
+                                    self.executions[order_id]['filled'] 
+                                    if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
+                                    else self.executions[order_id]['patch']['amount']
+                                )  * self.multiplier 
+                                for order_id in self.executions 
+                                if self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
+                            ]
+                        )
         if self.side=='sell':
             filled_amount = -1 * filled_amount
         return filled_amount
 
     def get_average_cost(self) -> float:
-        total_amount : float = sum(
-            [ 
-                self.executions[order_id]['amount'] 
-                if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
-                else self.executions[order_id]['patch']['amount']
-                for order_id in self.executions 
-                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower()=='closed'
-            ]
-        )
+        total_amount : float = self.get_filled_amount()
         
         average_cost = sum(
             [ 
@@ -313,12 +306,12 @@ class DivisiblePosition(Order):
                     )
                 ) * 
                 (
-                    self.executions[order_id]['amount'] 
-                    if 'amount' in self.executions[order_id] and self.executions[order_id]['amount'] 
-                    else self.executions[order_id]['patch']['amount']
+                    self.executions[order_id]['filled'] 
+                    if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
+                    else self.executions[order_id]['patch']['filled']
                 )
                 for order_id in self.executions 
-                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower()=='closed'
+                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
             ]
         )
         average_cost = average_cost / total_amount if total_amount!=0 else 0
@@ -327,7 +320,7 @@ class DivisiblePosition(Order):
     def get_fees(self) -> float:
         fees : float = 0
         if self.fees_ccy:
-            fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0)  for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
+            fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0) for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
         return fees
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
