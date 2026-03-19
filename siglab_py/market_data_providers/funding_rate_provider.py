@@ -35,7 +35,7 @@ if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 param : Dict = {
-    "loop_freq_ms" : 60000 * 60,
+    "loop_freq_ms" : 60000 * 60, 
 
     'current_filename' : current_filename,
     'current_dir' : parent_dir,
@@ -109,7 +109,7 @@ def parse_args():
 
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
     parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
-    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Remember funding rates generally updated every 8 hours, so no need fast.", default=60000 * 60)
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
