@@ -292,7 +292,7 @@ class DivisiblePosition(Order):
         return filled_amount
 
     def get_average_cost(self) -> float:
-        total_amount : float = self.get_filled_amount() # filled_amount is in base ccy
+        total_amount : float = abs(self.get_filled_amount()) # filled_amount is in base ccy, also a negative number of it's a short. So we need take 'abs' value here.
         
         average_cost = sum(
             [ 
