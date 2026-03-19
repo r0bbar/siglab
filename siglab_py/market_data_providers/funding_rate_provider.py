@@ -1,0 +1,209 @@
+import os
+import sys
+import traceback
+import logging
+from dotenv import load_dotenv
+import argparse
+from typing import List, Dict, Any, Union, Callable
+from datetime import datetime, timedelta, timezone
+import time
+import arrow
+from zoneinfo import ZoneInfo
+from tabulate import tabulate
+from pprint import pformat
+import plotext as plt
+import asyncio
+import pandas as pd
+
+from redis import StrictRedis
+
+from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.util.market_data_util import instantiate_exchange
+from siglab_py.util.market_data_util import fetch_funding_rate
+from siglab_py.util.notification_util import dispatch_notification
+from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel
+
+current_filename = os.path.basename(__file__)
+current_dir : str = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+
+'''
+Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
+Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+'''
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+param : Dict = {
+    "loop_freq_ms" : 60000 * 60,
+
+    'current_filename' : current_filename,
+    'current_dir' : parent_dir,
+    'cache_filename' : "funding_history_$BASE_CCY$.csv",
+
+    'notification' : {
+        'footer' : None,
+
+        # slack webhook url's for notifications
+        'slack' : {
+            'info' : { 'webhook_url' : None },
+            'critical' : { 'webhook_url' : None },
+            'alert' : { 'webhook_url' : None },
+        }
+    },
+
+    'mds' : {
+        'redis' : {
+            'host' : 'localhost',
+            'port' : 6379,
+            'db' : 0,
+            'ttl_ms' : 1000*60*15 # 15 min?
+        }
+    }
+}
+
+
+logging.Formatter.converter = time.gmtime
+logger = logging.getLogger()
+log_level = logging.INFO # DEBUG --> INFO --> WARNING --> ERROR
+logger.setLevel(log_level)
+format_str = '%(asctime)s %(message)s'
+formatter = logging.Formatter(format_str)
+sh = logging.StreamHandler()
+sh.setLevel(log_level)
+sh.setFormatter(formatter)
+logger.addHandler(sh)
+
+
+def log(message : str, log_level : LogLevel = LogLevel.INFO):
+    if log_level.value<LogLevel.WARNING.value:
+        logger.info(message)
+
+    elif log_level.value==LogLevel.WARNING.value:
+        logger.warning(message)
+
+    elif log_level.value==LogLevel.ERROR.value:
+        logger.error(message)
+
+def init_redis_client() -> StrictRedis:
+    redis_client : StrictRedis = StrictRedis(
+                    host = param['mds']['redis']['host'],
+                    port = param['mds']['redis']['port'],
+                    db = 0,
+                    ssl = False
+                )
+    try:
+        redis_client.keys()
+    except ConnectionError as redis_conn_error:
+        err_msg = f"Failed to connect to redis: {param['mds']['redis']['host']}, port: {param['mds']['redis']['port']}"
+        raise ConnectionError(err_msg)
+    
+    return redis_client
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--exchange_name", help="Exchange name", default='binance')
+    parser.add_argument("--tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
+    parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
+
+    parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
+    parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
+
+    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
+    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
+    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+
+    args, additional_args = parser.parse_known_args()
+
+    param['exchange_name'] = args.exchange_name
+    param['tickers'] = args.tickers.split(',')
+    param['default_type'] = args.default_type
+
+    param['rate_limit_ms'] = int(args.rate_limit_ms)
+
+    if args.verbose:
+        if args.verbose=='Y':
+            param['verbose'] = True
+        else:
+            param['verbose'] = False
+    else:
+        param['verbose'] = False
+
+    param['loop_freq_ms'] = int(args.loop_freq_ms)
+
+    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
+    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
+    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+
+    param['notification']['footer'] = f"From {param['current_filename']} {param['exchange_name']}"
+
+async def main():
+    parse_args()
+
+    redis_client : StrictRedis = init_redis_client()
+
+    notification_params : Dict[str, Any] = param['notification']
+
+    exchange : Union[AnyExchange, None] = instantiate_exchange(
+        exchange_name=param['exchange_name'],
+        api_key=None,
+        secret=None,
+        passphrase=None,
+        default_type=param['default_type'],
+        rate_limit_ms=param['rate_limit_ms'],
+    )
+    if exchange:
+        loop_counter = 0
+        while True:
+            try:
+                end_date = datetime.now()
+                start_date = end_date + timedelta(days=-90)
+
+                markets = exchange.load_markets() 
+                for ticker in param['tickers']:
+                    if ticker in markets:
+                        base_ccy = ticker.split('/')[0]
+                        market = markets[ticker]
+
+                        cache_filename : str = param['cache_filename'].replace("$BASE_CCY$", base_ccy)
+
+                        if os.path.exists(cache_filename):
+                            pd_old_funding_history = pd.read_csv(cache_filename)
+                            pd_old_funding_history['timestamp_ms'] = pd_old_funding_history['timestamp_ms'].astype('Int64')
+                        else:
+                            pd_old_funding_history = pd.DataFrame()
+
+                        results = fetch_funding_rate(
+                            exchange=exchange,
+                            normalized_symbols = [ ticker ],
+                            start_ts=start_date.timestamp(),
+                            end_ts=end_date.timestamp(),
+                            limit=1000
+                        )
+                        pd_funding_history = results[ticker]
+
+                        pd_funding_history = (
+                            pd.concat([pd_funding_history, pd_old_funding_history])
+                            .drop_duplicates(subset=['timestamp_ms'], keep='first')
+                            .sort_values('timestamp_ms', ascending=False)
+                            .reset_index(drop=True)
+                        )
+
+                        pd_funding_history.to_csv(cache_filename, index=False)
+
+                        log(f"[{loop_counter}] {ticker} #rows: {pd_funding_history.shape[0]} written to {cache_filename}")
+            except Exception as loop_err:
+                err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+                log(err_msg, log_level=LogLevel.ERROR)
+                dispatch_notification(title=f"{param['current_filename']} {param['exchange_name']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                
+            finally:
+                time.sleep(int(param['loop_freq_ms']/1000))
+
+                loop_counter += 1
+
+asyncio.run(
+    main()
+)
