@@ -292,7 +292,7 @@ class DivisiblePosition(Order):
         return filled_amount
 
     def get_average_cost(self) -> float:
-        total_amount : float = self.get_filled_amount()
+        total_amount : float = self.get_filled_amount() # filled_amount is in base ccy
         
         average_cost = sum(
             [ 
@@ -309,7 +309,7 @@ class DivisiblePosition(Order):
                     self.executions[order_id]['filled'] 
                     if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
                     else 0
-                )
+                ) * self.multiplier # get_filled_amount returns filled amount in base ccy, so here you need multiplier correspondingly
                 for order_id in self.executions 
                 if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
             ]
