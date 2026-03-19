@@ -885,6 +885,28 @@ def fetch_deribit_btc_option_expiries(
         'by_expiry_and_strike' : expiry_data_breakdown_by_strike
     }
 
+def fetch_funding_rate(
+    exchange,
+    normalized_symbols : List[str],
+    start_ts : int, # in sec
+    end_ts : int, # in sec
+    limit : int = 100
+) -> Dict[str, pd.DataFrame]:
+    results : Dict = {}
+    since = int(start_ts * 1000) # in ms
+    for ticker in normalized_symbols:
+        funding_history = exchange.fetchFundingRateHistory(ticker, since=since, limit=limit)
+        funding_history = [{
+            'datetime_utc': datetime.fromtimestamp(int(entry['timestamp']/1000), tz=timezone.utc),
+            'timestamp_ms': entry['timestamp'],
+            'funding_rate_interval': round(entry['fundingRate'] * 100, 2),
+            'funding_rate_annualized': round(entry['fundingRate'] * 100 * 3 * 365, 2),
+        } for entry in funding_history]
+        pd_funding_history = pd.DataFrame(funding_history)
+        pd_funding_history['datetime_utc'] = pd_funding_history['datetime_utc'].dt.tz_convert(None)
+        results[ticker] = pd_funding_history
+    return results
+
 def build_pair_candles(
     pd_candles1 : pd.DataFrame,
     pd_candles2 : pd.DataFrame,
@@ -961,3 +983,4 @@ def get_ticker_map(
             return mapping
     
     return None
+
