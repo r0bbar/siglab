@@ -308,7 +308,7 @@ class DivisiblePosition(Order):
                 (
                     self.executions[order_id]['filled'] 
                     if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
-                    else self.executions[order_id]['patch']['filled']
+                    else 0
                 )
                 for order_id in self.executions 
                 if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
