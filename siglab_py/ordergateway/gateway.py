@@ -700,6 +700,7 @@ async def execute_one_position(
                             position.get_execution(order_id)['status'] = 'canceled'
 
                             canceled_execution = executions[order_id] # You'd have an update thru ws upon cancel_order!
+                            canceled_execution['slice_id'] = i
                             position.executions[order_id] = canceled_execution # Update position.executions!
 
                             log(f"Canceled unfilled/partial filled order: {order_id}. Resending remaining_amount: {remaining_amount} as market order.", log_level=LogLevel.INFO)
@@ -724,6 +725,7 @@ async def execute_one_position(
                                 order_status = executed_resent_order['status']
                                 executed_resent_order['multiplier'] = multiplier
                                 position.append_execution(order_id, executed_resent_order)
+                                order_update = executed_resent_order # Some orders get filled right away, in this case won't go thru the waiting loop below.
 
                                 log(f"Resent market order {order_id}. status: {order_status}, average_price: {average_price}, rounded_limit_price: {rounded_limit_price}. {json.dumps(executed_resent_order, indent=4)}")
                                 
