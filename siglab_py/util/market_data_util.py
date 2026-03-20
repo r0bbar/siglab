@@ -888,20 +888,40 @@ def fetch_deribit_btc_option_expiries(
 def fetch_funding_rate(
     exchange,
     normalized_symbols : List[str],
-    start_ts : int, # in sec
-    end_ts : int, # in sec
+    start_ts : int,
+    end_ts : int,
     limit : int = 100
 ) -> Dict[str, pd.DataFrame]:
     results : Dict = {}
-    since = int(start_ts * 1000) # in ms
+    markets = exchange.load_markets()
     for ticker in normalized_symbols:
-        funding_history = exchange.fetchFundingRateHistory(ticker, since=since, limit=limit)
+        market = exchange.markets[ticker] if ticker in markets else None
+        this_ticker_start_ts = start_ts
+        if market and market['created']:
+            this_ticker_start_ts = max(this_ticker_start_ts, int(market['created']/1000))
+        all_funding = []
+        params = {}
+        this_cutoff = this_ticker_start_ts
+        while this_cutoff < end_ts:
+            @retry(num_attempts=3, pause_between_retries_ms=1000, logger=None)
+            def _fetch_funding_rate_history(exchange, symbol, since, limit, params):
+                return exchange.fetchFundingRateHistory(symbol=symbol, since=since, limit=limit, params=params)
+            funding = _fetch_funding_rate_history(exchange=exchange, symbol=ticker, since=int(this_cutoff * 1000), limit=limit, params=params)
+            if funding and len(funding)>0:
+                all_funding = all_funding + funding
+                record_ts = max([int(entry['timestamp']) for entry in funding])
+                record_ts_str : str = str(record_ts)
+                if len(record_ts_str)==13:
+                    record_ts = int(record_ts / 1000)
+                this_cutoff = record_ts + 1
+            else:
+                break
         funding_history = [{
             'datetime_utc': datetime.fromtimestamp(int(entry['timestamp']/1000), tz=timezone.utc),
             'timestamp_ms': entry['timestamp'],
             'funding_rate_interval': round(entry['fundingRate'] * 100, 2),
             'funding_rate_annualized': round(entry['fundingRate'] * 100 * 3 * 365, 2),
-        } for entry in funding_history]
+        } for entry in all_funding]
         pd_funding_history = pd.DataFrame(funding_history)
         pd_funding_history['datetime_utc'] = pd_funding_history['datetime_utc'].dt.tz_convert(None)
         results[ticker] = pd_funding_history

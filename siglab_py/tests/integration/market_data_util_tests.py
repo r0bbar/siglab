@@ -193,8 +193,9 @@ class MarketDataUtilTests(unittest.TestCase):
         assert(num_rows_with_15min_gaps/total_num_rows <= 0.4) # Why not 100% match? minute bars may have gaps (Also depends on what ticker)
 
     def test_fetch_funding_rates(self):
+        NUM_DAYS : int = 365
         end_date : datetime = datetime.today()
-        start_date : datetime = end_date + timedelta(days=-90)
+        start_date : datetime = end_date + timedelta(days=-NUM_DAYS)
         param = {
             'apiKey' : None,
             'secret' : None,
@@ -217,7 +218,7 @@ class MarketDataUtilTests(unittest.TestCase):
         for ticker in normalized_symbols:
             assert(ticker in results)
             assert(isinstance(results[ticker], pd.DataFrame))
-            assert(results[ticker].shape[0]>=100)
+            assert(results[ticker].shape[0]>=NUM_DAYS*3)
 
     def test_fetch_candles_futubull(self):
         # You need Futu OpenD running and you need entitlements
