@@ -216,27 +216,28 @@ async def main():
                         top_bucket_avg_funding_rate_annualized = round(float(top['avg_funding_rate_annualized']), 2)
                         top_bucket_dominance_percent = round(top_bucket_count/total_interval_count *100, 2)
 
-                        tickers_summary.append(
-                            {
+                        summary = {
                                 'ticker' : ticker,
                                 'funding_rate_annualized_bucket' : funding_rate_annualized_bucket,
                                 'top_bucket_avg_funding_rate_annualized' : top_bucket_avg_funding_rate_annualized,
                                 'top_bucket_count' : top_bucket_count,
                                 'total_interval_count' : total_interval_count,
                                 'top_bucket_dominance_percent' : top_bucket_dominance_percent,
+                                'score' :  round(top_bucket_dominance_percent * top_bucket_avg_funding_rate_annualized,  2)
                             }
-                        )
+                        tickers_summary.append(summary)
                         
                         pd_funding_history.to_csv(raw_funding_rate_cache_filename, index=False)
                         pd_bucketed_funding_history.to_csv(bucketed_funding_rate_cache_filename, index=False)
                         
                         log(f"[{loop_counter}] {ticker} #rows: {pd_funding_history.shape[0]} written to {raw_funding_rate_cache_filename}")
                         log(f"bucketed summary written to {bucketed_funding_rate_cache_filename}")
+                        log(f"{pformat(summary, indent=2, width=100)}")
 
                 pd_summary = pd.DataFrame(tickers_summary)
                 pd_summary.sort_values(
-                    by=['top_bucket_dominance_percent', 'top_bucket_avg_funding_rate_annualized'],
-                    ascending=[False, False],
+                    by=['score'],
+                    ascending=[False],
                     inplace=True
                 )
                 pd_summary.reset_index(drop=True, inplace=True)
