@@ -894,6 +894,19 @@ def fetch_funding_rate(
 ) -> Dict[str, pd.DataFrame]:
     results : Dict = {}
     markets = exchange.load_markets()
+
+    funding_rate_annualized_buckets = {
+        '< -15' : (float('-inf'), -15),
+        '-15 - -10' : (-15, -10),
+        '-10 - -8' : (-10, -8),
+        '-8 - -5' : (-8, 5),
+        '-5 - 0' : (-5, 0),
+        '0 - 5' : (0, 5),
+        '5 - 8' : (5, 8), 
+        '8 - 10' : (8, 10),
+        '10  - 15' : (10, 15),
+        '> 15' : (15, float('inf'))
+    }
     for ticker in normalized_symbols:
         market = exchange.markets[ticker] if ticker in markets else None
         this_ticker_start_ts = start_ts
@@ -923,6 +936,7 @@ def fetch_funding_rate(
             'funding_rate_annualized': round(entry['fundingRate'] * 100 * 3 * 365, 2),
         } for entry in all_funding]
         pd_funding_history = pd.DataFrame(funding_history)
+        pd_funding_history['funding_rate_annualized_bucket'] = pd_funding_history['funding_rate_annualized'].apply(lambda x: next((k for k, (lo, hi) in funding_rate_annualized_buckets.items() if lo <= x < hi), None))
         pd_funding_history['datetime_utc'] = pd_funding_history['datetime_utc'].dt.tz_convert(None)
         results[ticker] = pd_funding_history
     return results
