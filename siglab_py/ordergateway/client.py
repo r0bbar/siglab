@@ -281,7 +281,15 @@ class DivisiblePosition(Order):
                                 (
                                     self.executions[order_id]['filled'] 
                                     if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
-                                    else 0
+                                    else ( # This chunk of code is nasty, however necessary. Sometimes exchanges order closed and [fully] filled. But CCTX set 'filled' to Zero here.
+                                        self.executions[order_id]['amount'] 
+                                        if (self.executions[order_id]['amount'] and status.strip().lower()=='closed')
+                                        else (
+                                            self.executions[order_id]['patch']['filled'] # Approximate with slice's dispatched_amount
+                                            if status.strip().lower()=='closed'
+                                            else 0
+                                        ) 
+                                    )
                                 )  * self.multiplier 
                                 for order_id in self.executions 
                                 if self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
