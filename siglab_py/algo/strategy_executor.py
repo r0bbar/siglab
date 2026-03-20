@@ -1555,7 +1555,10 @@ async def main():
 
                             assert(not(allow_entry_initial_long and allow_entry_initial_short))
                             
-                            allow_entry = allow_entry_initial_long or allow_entry_initial_short
+                            allow_entry = (
+                                (allow_entry_initial_long and param['long_short'] in [ 'long_short', 'long_only' ])
+                                or (allow_entry_initial_short and param['long_short'] in [ 'long_short', 'short_only' ])
+                            )
                             allow_entry = allow_entry and pos_status!=PositionStatus.OPEN.name
                             if allow_entry and not block_entries:
                                 kwargs = {k: v for k, v in locals().items() if k in allow_entry_final_func_params}
