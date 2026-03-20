@@ -35,11 +35,14 @@ if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 param : Dict = {
+    "num_days" : 365 *3,
     "loop_freq_ms" : 60000 * 60, 
 
     'current_filename' : current_filename,
     'current_dir' : parent_dir,
-    'cache_filename' : "funding_history_$BASE_CCY$.csv",
+    'raw_funding_rate_cache_filename' : "funding_history_$BASE_CCY$.csv",
+    'bucketed_funding_rate_cache_filename' : "bucketed_funding_history_$BASE_CCY$.csv",
+    'tickers_summary' : "tickers_summary.csv",
 
     'notification' : {
         'footer' : None,
@@ -161,16 +164,20 @@ async def main():
                 end_date = datetime.now()
                 start_date = end_date + timedelta(days=-90)
 
+                tickers_summary : List[Dict[str, Union[str, float]]] = []
+
                 markets = exchange.load_markets() 
+                log(f"# tickers: {len(param['tickers'])}")
                 for ticker in param['tickers']:
                     if ticker in markets:
                         base_ccy = ticker.split('/')[0]
                         market = markets[ticker]
 
-                        cache_filename : str = param['cache_filename'].replace("$BASE_CCY$", base_ccy)
+                        raw_funding_rate_cache_filename : str = param['raw_funding_rate_cache_filename'].replace("$BASE_CCY$", base_ccy)
+                        bucketed_funding_rate_cache_filename : str = param['bucketed_funding_rate_cache_filename'].replace("$BASE_CCY$", base_ccy)
 
-                        if os.path.exists(cache_filename):
-                            pd_old_funding_history = pd.read_csv(cache_filename)
+                        if os.path.exists(raw_funding_rate_cache_filename):
+                            pd_old_funding_history = pd.read_csv(raw_funding_rate_cache_filename)
                             pd_old_funding_history['timestamp_ms'] = pd_old_funding_history['timestamp_ms'].astype('Int64')
                         else:
                             pd_old_funding_history = pd.DataFrame()
@@ -180,9 +187,9 @@ async def main():
                             normalized_symbols = [ ticker ],
                             start_ts=start_date.timestamp(),
                             end_ts=end_date.timestamp(),
-                            limit=1000
+                            limit=param['num_days']
                         )
-                        pd_funding_history = results[ticker]
+                        pd_funding_history = results[ ticker ]
 
                         pd_funding_history = (
                             pd.concat([pd_funding_history, pd_old_funding_history])
@@ -191,9 +198,51 @@ async def main():
                             .reset_index(drop=True)
                         )
 
-                        pd_funding_history.to_csv(cache_filename, index=False)
+                        pd_bucketed_funding_history = (
+                            pd_funding_history
+                            .groupby('funding_rate_annualized_bucket')
+                            .agg(
+                                count=('funding_rate_annualized', 'count'),
+                                avg_funding_rate_annualized=('funding_rate_annualized', 'mean')
+                            )
+                            .reset_index()
+                            .sort_values('count', ascending=False)
+                        )
 
-                        log(f"[{loop_counter}] {ticker} #rows: {pd_funding_history.shape[0]} written to {cache_filename}")
+                        total_interval_count = int(pd_bucketed_funding_history['count'].sum())
+                        top = pd_bucketed_funding_history.iloc[0]
+                        funding_rate_annualized_bucket = top['funding_rate_annualized_bucket']
+                        top_bucket_count = int(top['count'])
+                        top_bucket_avg_funding_rate_annualized = round(float(top['avg_funding_rate_annualized']), 2)
+                        top_bucket_dominance_percent = round(top_bucket_count/total_interval_count *100, 2)
+
+                        tickers_summary.append(
+                            {
+                                'ticker' : ticker,
+                                'funding_rate_annualized_bucket' : funding_rate_annualized_bucket,
+                                'top_bucket_avg_funding_rate_annualized' : top_bucket_avg_funding_rate_annualized,
+                                'top_bucket_count' : top_bucket_count,
+                                'total_interval_count' : total_interval_count,
+                                'top_bucket_dominance_percent' : top_bucket_dominance_percent,
+                            }
+                        )
+                        
+                        pd_funding_history.to_csv(raw_funding_rate_cache_filename, index=False)
+                        pd_bucketed_funding_history.to_csv(bucketed_funding_rate_cache_filename, index=False)
+                        
+                        log(f"[{loop_counter}] {ticker} #rows: {pd_funding_history.shape[0]} written to {raw_funding_rate_cache_filename}")
+                        log(f"bucketed summary written to {bucketed_funding_rate_cache_filename}")
+
+                pd_summary = pd.DataFrame(tickers_summary)
+                pd_summary.sort_values(
+                    by=['top_bucket_dominance_percent', 'top_bucket_avg_funding_rate_annualized'],
+                    ascending=[False, False],
+                    inplace=True
+                )
+                pd_summary.reset_index(drop=True, inplace=True)
+                pd_summary.to_csv(param['tickers_summary'])
+                log(f"tickers summary written to {param['tickers_summary']}")
+
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
