@@ -42,7 +42,7 @@ param : Dict = {
     'current_dir' : parent_dir,
     'raw_funding_rate_cache_filename' : "funding_history_$BASE_CCY$.csv",
     'bucketed_funding_rate_cache_filename' : "bucketed_funding_history_$BASE_CCY$.csv",
-    'tickers_summary' : "tickers_summary.csv",
+    'tickers_summary' : "tickers_summary_$EXCHANGE_NAME$.csv",
 
     'notification' : {
         'footer' : None,
@@ -235,7 +235,7 @@ async def main():
                         log(f"{pformat(summary, indent=2, width=100)}")
                     else:
                         log(f"{ticker} not in markets, skipping.")
-                        
+
                 pd_summary = pd.DataFrame(tickers_summary)
                 pd_summary.sort_values(
                     by=['score'],
@@ -243,8 +243,9 @@ async def main():
                     inplace=True
                 )
                 pd_summary.reset_index(drop=True, inplace=True)
-                pd_summary.to_csv(param['tickers_summary'])
-                log(f"tickers summary written to {param['tickers_summary']}")
+                ticker_summary_filename = param['tickers_summary'].replace("$EXCHANGE_NAME$", param['exchange_name'])
+                pd_summary.to_csv(ticker_summary_filename)
+                log(f"tickers summary written to {ticker_summary_filename}")
 
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
