@@ -233,7 +233,9 @@ async def main():
                         log(f"[{loop_counter}] {ticker} #rows: {pd_funding_history.shape[0]} written to {raw_funding_rate_cache_filename}")
                         log(f"bucketed summary written to {bucketed_funding_rate_cache_filename}")
                         log(f"{pformat(summary, indent=2, width=100)}")
-
+                    else:
+                        log(f"{ticker} not in markets, skipping.")
+                        
                 pd_summary = pd.DataFrame(tickers_summary)
                 pd_summary.sort_values(
                     by=['score'],
