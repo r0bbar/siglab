@@ -1,12 +1,16 @@
-
+import sys
+import traceback
 from typing import List, Dict, Any, Union
 import json
 from  datetime import datetime
 import time
+import logging
 from redis import StrictRedis
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.constants import JSON_SERIALIZABLE_TYPES
+
+logger = logging.getLogger()
 
 '''
 Example,
@@ -275,62 +279,80 @@ class DivisiblePosition(Order):
                         execution['patch']['amount'] = execution['amount']
         
     def get_filled_amount(self) -> float:
-        # filled_amount is in base ccy
-        filled_amount = sum(
-                            [ 
-                                (
-                                    self.executions[order_id]['filled'] 
-                                    if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
-                                    else ( # This chunk of code is nasty, however necessary. Sometimes exchanges order closed and [fully] filled. But CCTX set 'filled' to Zero here.
-                                        self.executions[order_id]['amount'] 
-                                        if (self.executions[order_id]['amount'] and self.executions[order_id]['status'].strip().lower()=='closed')
-                                        else (
-                                            self.executions[order_id]['patch']['filled'] # Approximate with slice's dispatched_amount
-                                            if self.executions[order_id]['status'].strip().lower()=='closed'
-                                            else 0
-                                        ) 
-                                    )
-                                )  * self.multiplier 
-                                for order_id in self.executions 
-                                if self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
-                            ]
-                        )
-        if self.side=='sell':
-            filled_amount = -1 * filled_amount
+        filled_amount : float = 0
+
+        try:
+            # filled_amount is in base ccy
+            filled_amount = sum(
+                                [ 
+                                    (
+                                        self.executions[order_id]['filled'] 
+                                        if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
+                                        else ( # This chunk of code is nasty, however necessary. Sometimes exchanges order closed and [fully] filled. But CCTX set 'filled' to Zero here.
+                                            self.executions[order_id]['amount'] 
+                                            if (self.executions[order_id]['amount'] and self.executions[order_id]['status'].strip().lower()=='closed')
+                                            else (
+                                                self.executions[order_id]['patch']['filled'] # Approximate with slice's dispatched_amount
+                                                if self.executions[order_id]['status'].strip().lower()=='closed'
+                                                else 0
+                                            ) 
+                                        )
+                                    )  * self.multiplier 
+                                    for order_id in self.executions 
+                                    if self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
+                                ]
+                            )
+            if self.side=='sell':
+                filled_amount = -1 * filled_amount
+
+        except Exception as e:
+            logger.error(f"get_filled_amount blew up! {e} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+            logger.error(f"{pformat(self.executions, indent=2, width=100)}")
+            raise e
+
         return filled_amount
 
     def get_average_cost(self) -> float:
-        total_amount : float = abs(self.get_filled_amount()) # filled_amount is in base ccy, also a negative number of it's a short. So we need take 'abs' value here.
-        
-        average_cost = sum(
-            [ 
-                (
-                    self.executions[order_id]['average'] 
-                    if 'average' in self.executions[order_id] and self.executions[order_id]['average'] 
-                    else (
-                        self.executions[order_id]['price'] 
-                        if self.executions[order_id]['price'] 
-                        else self.executions[order_id]['patch']['average']
-                    )
-                ) * 
-                (
-                    self.executions[order_id]['filled'] 
-                    if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
-                    else ( # This chunk of code is nasty, however necessary. Sometimes exchanges order closed and [fully] filled. But CCTX set 'filled' to Zero here.
-                        self.executions[order_id]['amount'] 
-                        if (self.executions[order_id]['amount'] and self.executions[order_id]['status'].strip().lower()=='closed')
+        average_cost : float = 0
+
+        try:
+            total_amount : float = abs(self.get_filled_amount()) # filled_amount is in base ccy, also a negative number of it's a short. So we need take 'abs' value here.
+            
+            average_cost = sum(
+                [ 
+                    (
+                        self.executions[order_id]['average'] 
+                        if 'average' in self.executions[order_id] and self.executions[order_id]['average'] 
                         else (
-                            self.executions[order_id]['patch']['filled'] # Approximate with slice's dispatched_amount
-                            if self.executions[order_id]['status'].strip().lower()=='closed'
-                            else 0
-                        ) 
-                    )
-                ) * self.multiplier # get_filled_amount returns filled amount in base ccy, so here you need multiplier correspondingly
-                for order_id in self.executions 
-                if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
-            ]
-        )
-        average_cost = average_cost / total_amount if total_amount!=0 else 0
+                            self.executions[order_id]['price'] 
+                            if self.executions[order_id]['price'] 
+                            else self.executions[order_id]['patch']['average']
+                        )
+                    ) * 
+                    (
+                        self.executions[order_id]['filled'] 
+                        if 'filled' in self.executions[order_id] and self.executions[order_id]['filled'] 
+                        else ( # This chunk of code is nasty, however necessary. Sometimes exchanges order closed and [fully] filled. But CCTX set 'filled' to Zero here.
+                            self.executions[order_id]['amount'] 
+                            if (self.executions[order_id]['amount'] and self.executions[order_id]['status'].strip().lower()=='closed')
+                            else (
+                                self.executions[order_id]['patch']['filled'] # Approximate with slice's dispatched_amount
+                                if self.executions[order_id]['status'].strip().lower()=='closed'
+                                else 0
+                            ) 
+                        )
+                    ) * self.multiplier # get_filled_amount returns filled amount in base ccy, so here you need multiplier correspondingly
+                    for order_id in self.executions 
+                    if self.executions[order_id]['status'] and self.executions[order_id]['status'].strip().lower() in [ 'closed', 'canceled' ]
+                ]
+            )
+            average_cost = average_cost / total_amount if total_amount!=0 else 0
+
+        except Exception as e:
+            logger.error(f"get_average_cost blew up! {e} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
+            logger.error(f"{pformat(self.executions, indent=2, width=100)}")
+            raise e
+
         return average_cost
 
     def get_fees(self) -> float:
