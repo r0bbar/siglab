@@ -24,7 +24,7 @@ from pprint import pformat
 import ccxt.pro as ccxtpro
 
 from siglab_py.util.retry_util import retry
-from util.simple_str import classify_ticker
+from siglab_py.util.simple_str import classify_ticker
 from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import async_instantiate_exchange
