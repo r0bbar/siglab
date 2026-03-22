@@ -21,11 +21,11 @@ def classify_ticker(ticker: str) -> str:
     """
     ticker = ticker.strip().upper()
 
-    # 1. Crypto spot — requires exactly one / and nothing else suspicious
+    # 1. Crypto spot (example BTC/USDT) or tradfi FX (example EUR/USD, AUD/NZD) — requires exactly one / and nothing else suspicious
     if '/' in ticker and ':' not in ticker and '-' not in ticker and ticker.count('/') == 1:
         base, quote = ticker.split('/')
         if base.isalnum() and quote.isalnum():
-            return 'crypto.spot'
+            return 'spot'
 
     # 2. Crypto perpetual
     if ':' in ticker:

@@ -11,10 +11,12 @@ class SimpleStrTests(unittest.TestCase):
     def test_classify_ticker(self):
         cases = [
             # Crypto spot
-            ("BTC/USDT",                "crypto.spot"),
-            ("ETH/BTC",                 "crypto.spot"),
-            ("1000PEPE/USDT",           "crypto.spot"),
-            ("NVDA/USDC",               "crypto.spot"),
+            ("BTC/USDT",                "spot"),
+            ("ETH/BTC",                 "spot"),
+            ("1000PEPE/USDT",           "spot"),
+            ("NVDA/USDC",               "spot"),
+            ("EUR/JPY",                 "spot"),
+            ("AUD/NZD",                 "spot"),
 
             # Crypto perpetual
             ("BTC/USDT:USDT",           "crypto.perpetual"),
