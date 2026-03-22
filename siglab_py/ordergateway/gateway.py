@@ -473,7 +473,7 @@ async def execute_one_position(
             order_update = await exchange.fetch_order(order_id, ticker)
             return order_update
         
-        ticker_class : str = classify_ticker(ticker)
+        ticker_class : str = classify_ticker(position.ticker)
 
         randomized_order_amount : float = 0
         last_randomized_order_amount : float = 0
