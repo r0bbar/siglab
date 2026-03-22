@@ -24,6 +24,7 @@ from pprint import pformat
 import ccxt.pro as ccxtpro
 
 from siglab_py.util.retry_util import retry
+from util.simple_str import classify_ticker
 from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import async_instantiate_exchange
@@ -472,6 +473,8 @@ async def execute_one_position(
             order_update = await exchange.fetch_order(order_id, ticker)
             return order_update
         
+        ticker_class : str = classify_ticker(ticker)
+
         randomized_order_amount : float = 0
         last_randomized_order_amount : float = 0
         apply_last_randomized_amount : bool = False # False: Apply new variance, True: Apply -1 * last_randomized_order_amount
@@ -801,20 +804,19 @@ async def execute_one_position(
         for dispatched_slice in position.dispatched_slices:
             log(f"{json.dumps(dispatched_slice.to_dict(), indent=4)}")
 
-        position_from_exchange = await exchange.fetch_position(position.ticker)
-        log(f"position update:")
-        log(f"{json.dumps(position_from_exchange, indent=4)}")
-
         position.filled_amount = position.get_filled_amount()
         position.average_cost = position.get_average_cost()
         position.fees = position.get_fees()
-
-        balances = await exchange.fetch_balance()
-        if param['default_type']!='spot':
+        
+        if ticker_class!='spot':
             updated_position = await exchange.fetch_position(symbol=position.ticker)
+            log(f"position update:")
+            log(f"{json.dumps(updated_position, indent=4)}")
+
             # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
             amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
         else:
+            balances = await exchange.fetch_balance()
             base_ccy : str = position.ticker.split("/")[0]
             amount = balances[base_ccy]['total']
         position.pos = amount
