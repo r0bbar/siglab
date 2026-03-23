@@ -533,7 +533,7 @@ async def execute_one_position(
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
                 
-                order_params = { 'reduceOnly': slice.reduce_only } | position.non_uniformed_params 
+                order_params = { 'reduceOnly': slice.reduce_only } | position.non_unified_params 
                 log(f"order_params: {json.dumps(order_params, indent=4)}", log_level=LogLevel.INFO)
 
                 if position.order_type=='limit':
@@ -896,7 +896,7 @@ async def work(
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms'] if order['wait_fill_threshold_ms']>0 else param['wait_fill_threshold_ms'],
-                                        non_uniformed_params=order['non_uniformed_params']
+                                        non_unified_params=order['non_unified_params']
                                     )
                                     for order in orders
                                 ]

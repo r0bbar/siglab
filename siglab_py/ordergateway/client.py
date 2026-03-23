@@ -39,7 +39,7 @@ class Order:
         leg_room_bps : float = 0,
         reduce_only : bool = False,
         fees_ccy : Union[str, None] = None,
-        non_uniformed_params : Dict[str, Union[str, float, bool]] = {}
+        non_unified_params : Dict[str, Union[str, float, bool]] = {}
     ) -> None:
         if amount<=0:
             raise ValueError(f"amount must be >0!")
@@ -51,7 +51,7 @@ class Order:
         self.leg_room_bps = leg_room_bps
         self.reduce_only = reduce_only
         self.fees_ccy = fees_ccy
-        self.non_uniformed_params = non_uniformed_params
+        self.non_unified_params = non_unified_params
 
         self.dispatched_amount : float = 0 # This is amount in base ccy, with rounding + multiplier applied (So for contracts with multiplier!=1, this is no longer amount in base ccy.)
         self.dispatched_price : Union[None, float] = None
@@ -70,7 +70,7 @@ class Order:
             "dispatched_amount" : self.dispatched_amount,
             "dispatched_price" : self.dispatched_price,
             "timestamp_ms" : self.timestamp_ms,
-            "non_uniformed_params" : self.non_uniformed_params
+            "non_unified_params" : self.non_unified_params
         }
 
 '''
@@ -89,7 +89,7 @@ class DivisiblePosition(Order):
         fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1,
-        non_uniformed_params : Dict[str, Union[str, float, bool]] = {}
+        non_unified_params : Dict[str, Union[str, float, bool]] = {}
     ) -> None:
         if amount<=0:
             raise ValueError(f"amount must be >0!")
@@ -102,7 +102,7 @@ class DivisiblePosition(Order):
         self.average_cost : Union[float, None] = None
         self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
-        self.non_uniformed_params = non_uniformed_params
+        self.non_unified_params = non_unified_params
 
         self.done : bool = False
         self.execution_err : str = ""
@@ -129,7 +129,7 @@ class DivisiblePosition(Order):
                         reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type,
-                        non_uniformed_params=self.non_uniformed_params
+                        non_unified_params=self.non_unified_params
                         )
                     
                 else:
@@ -142,7 +142,7 @@ class DivisiblePosition(Order):
                         reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type,
-                        non_uniformed_params=self.non_uniformed_params
+                        non_unified_params=self.non_unified_params
                     )
 
                 slices.append(slice)
@@ -383,7 +383,7 @@ class DivisiblePosition(Order):
         rv['execution_err'] = self.execution_err
         rv['timestamp_ms'] = self.timestamp_ms
         rv['done_timestamp_ms'] = self.done_timestamp_ms
-        rv['non_uniformed_params'] = self.non_uniformed_params
+        rv['non_unified_params'] = self.non_unified_params
         return rv
 
 def execute_positions(
