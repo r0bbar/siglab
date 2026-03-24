@@ -40,6 +40,7 @@ from siglab_py.constants import INVALID, JSON_SERIALIZABLE_TYPES, LogLevel, Posi
 current_filename = os.path.basename(__file__)
 current_dir : str = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+startup_scripts_dir_path = f"{parent_dir}\\bat"
 
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
@@ -112,6 +113,7 @@ Debug from VSCode, launch.json:
                 "program": "${file}",
                 "console": "integratedTerminal",
                 "args" : [
+                        "--env" , "dev",
                         "--target_strategy_name", "YourStrategyClassName",
 
                         "--gateway_id", "hyperliquid_01",
@@ -199,6 +201,7 @@ param : Dict = {
 
     'current_filename' : current_filename,
     'current_dir' : parent_dir,
+    'startup_scripts_dir_path' : startup_scripts_dir_path,
 
     'housekeep_filename_regex_list' : [ 
         "lo_candles_entry_.*\.csv",
@@ -301,6 +304,9 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
 def parse_args():
     parser = argparse.ArgumentParser() 
 
+    parser.add_argument("--env", help="Environment: dev, prod (default).", default='prod')
+    parser.add_argument("--params_config_file", help="Put more complex config here (One's thats not easy to feed thru command line args). Default: None", default=None)
+
     parser.add_argument(
         '--target_strategy_name',
         type=str,
@@ -378,6 +384,14 @@ def parse_args():
     parser.add_argument("--orderbook_topic", help="lo_candles TA redis topic. Example orderbooks_SOL/USDT:USDT_hyperliquid, this is for strategy_executor source orderbooks from redis.", default=None)
 
     args, additional_args = parser.parse_known_args()
+
+    param['env'] = args.env
+    param['params_config_file'] = args.params_config_file
+    params_config_file : str = f"{param['startup_scripts_dir_path']}\\{param['env']}\\{args.params_config_file}"
+    param['params_config'] = None
+    if os.path.exists(params_config_file):
+        with open(params_config_file, 'r', encoding='utf-8') as f:
+                param['params_config'] = json.load(f)
 
     param['target_strategy_name'] = args.target_strategy_name
 
