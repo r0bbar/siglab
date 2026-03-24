@@ -212,7 +212,10 @@ async def main() -> None:
             pd_headlines['published_timestamp_ms'] = pd_headlines['published_timestamp_ms'].fillna(0)
             pd_headlines = pd_headlines.sort_values(by=['published_timestamp_ms', 'created_timestamp_ms'], ascending=False)
 
-            pd_headlines.to_csv(param['headlines_cache_filename'])
+            try:
+                pd_headlines.to_csv(param['headlines_cache_filename'])
+            except Exception as writecsv_err:
+                logger.error(f"If you want to update {param['headlines_cache_filename']}, don't lock it.")
 
             filtered_headlines = pd_headlines[pd_headlines['title'].str.contains('|'.join(param['focus_keywords']), case=False, na=False)]
 
@@ -234,7 +237,7 @@ async def main() -> None:
                     logger.info(f"Failed to publish to Redis: {str(e)}")
 
         except Exception as fetch_err:
-            logger.info(f'Oops {fetch_err}')
+            logger.error(f'Oops {fetch_err}')
         finally:
             await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
 
