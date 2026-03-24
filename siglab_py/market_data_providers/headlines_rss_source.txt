@@ -1,0 +1,15 @@
+realdonaldtrump|https://trumpstruth.org/feed
+bloomberg|https://feeds.bloomberg.com/markets/news.rss
+bbc|http://feeds.bbci.co.uk/news/rss.xml
+cnn|http://rss.cnn.com/rss/edition.rss
+al_jazeera|https://www.aljazeera.com/xml/rss/all.xml
+cnbc|https://www.cnbc.com/id/100003114/device/rss/rss.html
+yahoo_finance|https://finance.yahoo.com/news/rssindex
+wall_street_journal|https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml
+new_york_times_business|https://rss.nytimes.com/services/xml/rss/nyt/Business.xml
+new_york_times_economy|https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml
+investing.com|https://www.investing.com/rss/news_1063.rss
+investing.com_forex|https://www.investing.com/rss/news_14.rss
+seeking_alpha|https://seekingalpha.com/feed.xml
+coindesk|https://www.coindesk.com/arc/outboundfeeds/rss/
+cointelegraph|https://cointelegraph.com/rss
