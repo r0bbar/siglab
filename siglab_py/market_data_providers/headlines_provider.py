@@ -110,7 +110,7 @@ def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
     parser.add_argument("--urls_list_filename", help="API key", default=None)
     parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords", default=None)
-    parser.add_argument("--headlines_cache_filename", help="Export headers to csv file?", default=None)
+    parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default=None)
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
