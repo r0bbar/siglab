@@ -533,7 +533,10 @@ async def execute_one_position(
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
                 
-                order_params = { 'reduceOnly': slice.reduce_only } | position.non_unified_params 
+                order_params = { 'reduceOnly': slice.reduce_only }
+                if position.non_unified_params:
+                    # Sometimes client side not passing in non_unified_params!
+                    order_params = order_params | position.non_unified_params
                 log(f"order_params: {json.dumps(order_params, indent=4)}", log_level=LogLevel.INFO)
 
                 if position.order_type=='limit':
