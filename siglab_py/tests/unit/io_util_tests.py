@@ -3,10 +3,54 @@ import os
 import time
 from typing import List
 
-from util.io_util import purge_old_file
+from util.io_util import classify_path, purge_old_file
 
 # @unittest.skip("Skip all integration tests.")
 class IOUtilTests(unittest.TestCase):
+    def test_classify_path(self):
+        # Linux generally uses forward slash: /usr/mary/tmp
+        # Windows uses back slash C:\Users\Mary\OneDrive\Documents
+        os_type = classify_path(r"/tmp/cache")
+        assert(os_type=='*nux')
+        
+        os_type = classify_path(r"/tmp\cache")
+        assert(os_type=='*nux')
+        
+        os_type = classify_path(r"\tmp/cache")
+        assert(os_type=='*nux')
+
+        os_type = classify_path(r"/tmp/cache/broken.log")
+        assert(os_type=='*nux')
+
+        os_type = classify_path(r"/tmp/cache\broken.log")
+        assert(os_type=='*nux')
+
+        os_type = classify_path(r"/tmp/cache/some_file")
+        assert(os_type=='*nux')
+
+        os_type = classify_path(r"\tmp\cache\some_file")
+        assert(os_type=='*nux')
+
+        os_type = classify_path(r"C:\Windows\tmp")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"C:\Windows/tmp")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"C:/Windows\tmp")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"C://Windows//tmp")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"C:\Windows\tmp\broken.log")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"C:\Windows\tmp\some_file")
+        assert(os_type=='win')
+
+        os_type = classify_path(r"TrumpIsNotADirectory")
+        assert(not os_type)
 
     def test_purge_old_file(self):
         test_files : List[str] = []

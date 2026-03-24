@@ -4,6 +4,31 @@ import time
 import re
 from typing import List
 
+def classify_path(s: str) -> str:
+    # Linux generally uses forward slash: /usr/mary/tmp
+    # Windows uses back slash C:\Users\Mary\OneDrive\Documents
+    os_type : str = None
+    unix_pattern = re.compile(r'^/|^\./|^\.\./|^~')
+    windows_pattern = re.compile(r'^[a-zA-Z]:\\|^[a-zA-Z]:/')
+    
+    _s : Union[None, str] = None
+    if '/' in s or '\\' in s:
+        last_slash_idx = max(
+            s.rfind('/'),
+            s.rfind('\\')
+        )
+        _s = s[:last_slash_idx]
+
+    s_win = s.replace('/', '\\')
+    s_nix = s.replace('\\','/')
+
+    if windows_pattern.search(s) or (_s and windows_pattern.search(_s)) or (s_win and windows_pattern.search(s_win)):
+        os_type = "win"
+    elif unix_pattern.search(s) or (_s and unix_pattern.search(_s)) or (s_nix and unix_pattern.search(s_nix)):
+        os_type = "*nux"
+
+    return os_type
+
 def purge_old_file(
     dir : str,
     filename_regex_list : List[str],
