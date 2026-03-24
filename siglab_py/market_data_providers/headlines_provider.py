@@ -49,7 +49,7 @@ Events which may move asset prices.
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --focus_keywords war, oil, trump, israel, tehran, iran, kharg, military, strike, sanctions
+    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --focus_keywords "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium"
 
 launch.json for Debugging from VSCode:
     {
@@ -64,7 +64,7 @@ launch.json for Debugging from VSCode:
                 "justMyCode": false,
                 "args" : [
                         "--urls_list_filename", "headlines_rss_source.txt",
-                        "--focus_keywords", "war, oil, trump, israel, tehran, iran, kharg, military, strike, sanctions"
+                        "--focus_keywords", "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium"
                     ],
             }
         ]
