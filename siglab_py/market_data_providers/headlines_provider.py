@@ -173,6 +173,7 @@ async def main() -> None:
             pd_old_headlines = pd.DataFrame(columns=[ 'source', 'title', 'published_timestamp_ms', 'published_utc_dt', 'published_local_dt', 'created_timestamp_ms', 'url' ])
             if os.path.exists(param['headlines_cache_filename']):
                 pd_old_headlines = pd.read_csv(param['headlines_cache_filename'], parse_dates=['published_utc_dt', 'published_local_dt'])
+                pd_old_headlines.drop(pd_old_headlines.columns[pd_old_headlines.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
                 pd_old_headlines['published_timestamp_ms'] = pd_old_headlines['published_timestamp_ms'].astype(float).astype('Int64')
                 if not pd_old_headlines.empty:
                     headlines_data = pd_old_headlines.to_dict('records')
