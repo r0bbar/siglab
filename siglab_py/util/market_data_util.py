@@ -1054,8 +1054,7 @@ def fetch_headlines_from_rss(
                 }
                 if (
                         not ((pd_old_headlines['source'] == new_fetch_row['source']) & 
-                        (pd_old_headlines['title'] == new_fetch_row['title']) & 
-                        (pd_old_headlines['published_timestamp_ms'] == new_fetch_row['published_timestamp_ms'])).any()
+                        (pd_old_headlines['title'] == new_fetch_row['title'])).any()
                 ):
                     # Try not append duplicates
                     new_headlines.append(new_fetch_row)
