@@ -152,7 +152,7 @@ def parse_args():
     param['notification']['footer'] = f"From {param['current_filename']}"
 
     logger.info(f"Startup args: {args}") # Dont use logger, not yet setup yet.
-    logger.info(f"param: {logger.info(json.dumps(param, indent=2))}")
+    logger.info(f"param: {json.dumps(param, indent=2)}")
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(
@@ -201,12 +201,13 @@ async def main() -> None:
             for new_headline in new_headlines:
                 try:
                     logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
-                    if len(headlines_data)>0: # Don't send flood of slacks in first iteration
+                    if loop_counter>0: # Don't send flood of slacks in first iteration
                         dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 except Exception as notification_err:
                     pass # Just swallow
-
-            logger.info(f"# new_headlines: {len(new_headlines)}, # old headlines: {headlines_data}")
+            
+            num_new_headlines = len(new_headlines)
+            num_old_headlines = len(headlines_data)
             headlines_data = headlines_data + new_headlines
 
             pd_headlines = pd.DataFrame(headlines_data)
@@ -236,7 +237,7 @@ async def main() -> None:
                     logger.info(f"Failed to publish to Redis: {str(e)}")
 
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
-            logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] {pd_headlines.shape[0]} rows headlines exported to {param['headlines_cache_filename']}")
+            logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] {pd_headlines.shape[0]} rows headlines exported to {param['headlines_cache_filename']}. # new_headlines: {num_new_headlines}, # old headlines: {num_old_headlines}")
 
         except Exception as loop_err:
             err_msg = f'loop error {loop_err}'
