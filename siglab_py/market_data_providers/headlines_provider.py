@@ -57,7 +57,9 @@ Events which may move asset prices.
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --focus_keywords "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium"
+    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --focus_keywords "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium" --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+
+    --slack_info_url/slack_critial_url/slack_alert_url are optional (If you want to receive slack notifications upon arrival of new headlines)
 
 launch.json for Debugging from VSCode:
     {
