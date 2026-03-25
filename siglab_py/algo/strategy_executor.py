@@ -95,7 +95,9 @@ Usage:
         L24: long intervals 24
         S12: short intervals 12
 
-        slack url's (slack_info_url/slack_critial_url/slack_alert_url): Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
+        slack_info_url/slack_critial_url/slack_alert_url: How to get Slack webhook urls? 
+            Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
+            https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
     Step 6. Start order gateway
         Top of the script for instructions
