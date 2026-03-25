@@ -15,9 +15,12 @@ from pprint import pformat
 from tabulate import tabulate
 from redis import StrictRedis
 
+from util.market_data_util import fetch_headlines_from_rss
 from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
+current_dir : str = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 
 class LogLevel(Enum):
     CRITICAL = 50
@@ -111,7 +114,7 @@ param : Dict = {
 
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
-    parser.add_argument("--urls_list_filename", help="API key", default=None)
+    parser.add_argument("--urls_list_filename", help="File containing list of RSS url's", default=None)
     parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords", default=None)
     parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default=None)
 
@@ -121,6 +124,8 @@ def parse_args():
 
     args = parser.parse_args()
     
+    urls_list_filename : str = f"{parent_dir}\\{args.urls_list_filename}"
+    print(f"Trying to read RSS url list from: {urls_list_filename}")
     with open(args.urls_list_filename, 'r') as urls_list:
         for line in urls_list:
             source = line.rstrip('\n').split('|')[0]
@@ -184,37 +189,13 @@ async def main() -> None:
                 if not pd_old_headlines.empty:
                     headlines_data = pd_old_headlines.to_dict('records')
                     logger.info(f"Loaded {len(headlines_data)} existing headlines from cache")
-                    
-            for source, feed_url in rss_feeds.items():
-                try:
-                    feed = feedparser.parse(feed_url)
-                    for entry in feed.entries[:20]:
-                        try:
-                            published_dt = parser.parse(entry.get('published'))
-                        except Exception as dateparse_err:
-                            published_dt = None
-                            logger.info(f"Date parse error for {entry.title}: {dateparse_err}")
+            
+            new_headlines = fetch_headlines_from_rss(rss_feeds, pd_old_headlines)
+            for new_headline in new_headlines:
+                logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}") # @todo: Send slack notification?
 
-                        new_fetch_row = {
-                            'source': source,
-                            'title': entry.title,
-                            'published_utc_dt': published_dt,
-                            'published_local_dt': published_dt.astimezone() if published_dt else None,
-                            'published_timestamp_ms': int(published_dt.timestamp() * 1000) if published_dt else None,
-                            'created_timestamp_ms' : int(datetime.now().timestamp() * 1000),
-                            'url': entry.link,
-                        }
-                        if (
-                                not ((pd_old_headlines['source'] == new_fetch_row['source']) & 
-                                (pd_old_headlines['title'] == new_fetch_row['title']) & 
-                                (pd_old_headlines['published_timestamp_ms'] == new_fetch_row['published_timestamp_ms'])).any()
-                        ):
-                            headlines_data.append(new_fetch_row)
-                            logger.info(f"new row appended: {pformat(new_fetch_row, indent=2, width=100)}")
-
-                    logger.info(f"{source}: {len(feed.entries)} headlines found")
-                except Exception as e:
-                    logger.info(f"{source}: Error - {str(e)}")
+            logger.info(f"# new_headlines: {len(new_headlines)}, # old headlines: {headlines_data}")
+            headlines_data = headlines_data + new_headlines
 
             pd_headlines = pd.DataFrame(headlines_data)
             pd_headlines['published_timestamp_ms'] = pd_headlines['published_timestamp_ms'].fillna(0)
@@ -243,7 +224,7 @@ async def main() -> None:
                     logger.info(f"Failed to publish to Redis: {str(e)}")
 
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
-            logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] Headlines exported to {param['headlines_cache_filename']}")
+            logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] {pd_headlines.shape[0]} rows headlines exported to {param['headlines_cache_filename']}")
 
         except Exception as fetch_err:
             logger.error(f'Oops {fetch_err}')
