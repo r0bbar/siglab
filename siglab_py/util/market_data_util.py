@@ -3,6 +3,7 @@ import incremental
 import tzlocal
 from datetime import datetime, timezone
 import time
+from dateutil import parser
 from typing import List, Dict, Union, NoReturn, Any, Tuple
 from types import MethodType
 from pathlib import Path
@@ -13,6 +14,7 @@ import asyncio
 from tabulate import tabulate
 import inspect
 
+import feedparser # RSS feed parser
 from ccxt.base.exchange import Exchange as CcxtExchange
 import ccxt
 import ccxt.pro as ccxtpro
@@ -1018,3 +1020,47 @@ def get_ticker_map(
     
     return None
 
+def fetch_headlines_from_rss(
+    rss_feeds : Dict[str, str],
+    pd_old_headlines : pd.DataFrame, # For purpose of de-duplication
+    top_lines : int = 20 # For each feed, we'd only go thru top number of lines
+) -> List[Dict[str, Union[str, datetime, int]]]:
+    logger: logging.Logger = logging.getLogger()
+
+    new_headlines : List[Dict[str, Union[str, datetime, int]]] = []
+    for source, feed_url in rss_feeds.items():
+        try:
+            feed = feedparser.parse(feed_url)
+            logger.info(f"{source}: {len(feed.entries)} headlines found, we're going thru top {top_lines}")
+
+            for entry in feed.entries[:top_lines]:
+                try:
+                    published_dt = None
+                    published = entry.get('published')
+                    if published:
+                        published_dt = parser.parse(entry.get('published'))
+                except Exception as dateparse_err:
+                    published_dt = None
+                    logger.info(f"{source} {entry.title}: Date parse error {dateparse_err}")
+
+                new_fetch_row = {
+                    'source': source,
+                    'title': entry.title,
+                    'published_utc_dt': published_dt,
+                    'published_local_dt': published_dt.astimezone() if published_dt else None,
+                    'published_timestamp_ms': int(published_dt.timestamp() * 1000) if published_dt else None,
+                    'created_timestamp_ms' : int(datetime.now().timestamp() * 1000),
+                    'url': entry.link,
+                }
+                if (
+                        not ((pd_old_headlines['source'] == new_fetch_row['source']) & 
+                        (pd_old_headlines['title'] == new_fetch_row['title']) & 
+                        (pd_old_headlines['published_timestamp_ms'] == new_fetch_row['published_timestamp_ms'])).any()
+                ):
+                    # Try not append duplicates
+                    new_headlines.append(new_fetch_row)
+            
+        except Exception as e:
+            logger.info(f"{source}: feedparser error {e}")
+        
+    return new_headlines
