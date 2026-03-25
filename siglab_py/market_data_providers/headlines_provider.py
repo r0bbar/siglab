@@ -88,7 +88,7 @@ launch.json for Debugging from VSCode:
 rss_feeds = {}
 
 param : Dict = {
-    'headlines_cache_filename' : f"headlines.csv",
+    'headlines_cache_filename' : None,
     'loop_freq_ms' : 1000*60, 
     'current_filename' : current_filename,
 
@@ -120,7 +120,7 @@ def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
     parser.add_argument("--urls_list_filename", help="File containing list of RSS url's", default=None)
     parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords", default=None)
-    parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default=None)
+    parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default='rss_headlines.csv')
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
@@ -139,8 +139,9 @@ def parse_args():
     if args.focus_keywords:
         param['focus_keywords'] = [ keyword.strip().lower() for keyword in args.focus_keywords.split(',') ]
 
-    if args.headlines_cache_filename:
-        param['headlines_cache_filename'] = args.headlines_cache_filename
+    headlines_cache_filename : str = f"{parent_dir}\\{args.headlines_cache_filename}"
+    param['headlines_cache_filename'] = headlines_cache_filename
+    print(f"headlines cache here: {headlines_cache_filename}")
 
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
