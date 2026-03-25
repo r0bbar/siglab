@@ -74,6 +74,8 @@ launch.json for Debugging from VSCode:
     bloomberg|https://feeds.bloomberg.com/markets/news.rss
     bbc|http://feeds.bbci.co.uk/news/rss.xml
     cnn|http://rss.cnn.com/rss/edition.rss
+
+"headlines_provider.py" put headlines from RSS in DataFrame, then publish to redis (optionally). Algo's or sentiment analysis can pick up from there and react to the head lines.
 '''
 rss_feeds = {}
 
