@@ -171,8 +171,11 @@ async def main() -> None:
 
     headlines_data = []
 
+    loop_counter : int = 0
     while True:
         try:
+            start_ts_sec = time.time()
+
             pd_old_headlines = pd.DataFrame(columns=[ 'source', 'title', 'published_timestamp_ms', 'published_utc_dt', 'published_local_dt', 'created_timestamp_ms', 'url' ])
             if os.path.exists(param['headlines_cache_filename']):
                 pd_old_headlines = pd.read_csv(param['headlines_cache_filename'], parse_dates=['published_utc_dt', 'published_local_dt'])
@@ -224,8 +227,6 @@ async def main() -> None:
 
             filtered_headlines = pd_headlines[pd_headlines['title'].str.contains('|'.join(param['focus_keywords']), case=False, na=False)]
 
-            logger.info(f"Headlines exported to {param['headlines_cache_filename']}")
-
             if not filtered_headlines.empty:
                 logger.info(f"{tabulate(filtered_headlines.loc[:, 'source':'created_timestamp_ms'], headers='keys', tablefmt='psql')}")
 
@@ -241,10 +242,15 @@ async def main() -> None:
                 except Exception as e:
                     logger.info(f"Failed to publish to Redis: {str(e)}")
 
+            elapsed_ms = int((time.time() - start_ts_sec) *1000)
+            logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] Headlines exported to {param['headlines_cache_filename']}")
+
         except Exception as fetch_err:
             logger.error(f'Oops {fetch_err}')
         finally:
             await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
+
+            loop_counter += 1
 
 if __name__ == '__main__':
     try:
