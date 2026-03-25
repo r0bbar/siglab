@@ -15,5 +15,4 @@ investing.com_forex|https://www.investing.com/rss/news_14.rss
 seeking_alpha|https://seekingalpha.com/feed.xml
 coindesk|https://www.coindesk.com/arc/outboundfeeds/rss/
 cointelegraph|https://cointelegraph.com/rss
-northmantrader|https://northmantrader.substack.com/feed
 themacrocompass|https://themacrocompass.substack.com/feed
