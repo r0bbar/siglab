@@ -15,7 +15,7 @@ from pprint import pformat
 from tabulate import tabulate
 from redis import StrictRedis
 
-from util.market_data_util import fetch_headlines_from_rss
+from siglab_py.util.market_data_util import fetch_headlines_from_rss
 from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
@@ -126,7 +126,7 @@ def parse_args():
     
     urls_list_filename : str = f"{parent_dir}\\{args.urls_list_filename}"
     print(f"Trying to read RSS url list from: {urls_list_filename}")
-    with open(args.urls_list_filename, 'r') as urls_list:
+    with open(urls_list_filename, 'r') as urls_list:
         for line in urls_list:
             source = line.rstrip('\n').split('|')[0]
             url = line.rstrip('\n').split('|')[1]
@@ -192,7 +192,12 @@ async def main() -> None:
             
             new_headlines = fetch_headlines_from_rss(rss_feeds, pd_old_headlines)
             for new_headline in new_headlines:
-                logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}") # @todo: Send slack notification?
+                try:
+                    logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
+                    if len(headlines_data)>0: # Don't send flood of slacks in first iteration
+                        dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                except Exception as notification_err:
+                    pass # Just swallow
 
             logger.info(f"# new_headlines: {len(new_headlines)}, # old headlines: {headlines_data}")
             headlines_data = headlines_data + new_headlines
@@ -226,8 +231,11 @@ async def main() -> None:
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] {pd_headlines.shape[0]} rows headlines exported to {param['headlines_cache_filename']}")
 
-        except Exception as fetch_err:
-            logger.error(f'Oops {fetch_err}')
+        except Exception as loop_err:
+            err_msg = f'loop error {loop_err}'
+            logger.error(err_msg)
+            dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                
         finally:
             await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
 
