@@ -11,6 +11,7 @@ import json
 from enum import Enum
 import feedparser
 import pandas as pd
+from pprint import pformat
 from tabulate import tabulate
 from redis import StrictRedis
 
@@ -206,6 +207,7 @@ async def main() -> None:
                                 (pd_old_headlines['published_timestamp_ms'] == new_fetch_row['published_timestamp_ms'])).any()
                         ):
                             headlines_data.append(new_fetch_row)
+                            logger.info(f"new row appended: {pformat(new_fetch_row, indent=2, width=100)}")
 
                     logger.info(f"{source}: {len(feed.entries)} headlines found")
                 except Exception as e:
