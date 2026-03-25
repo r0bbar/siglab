@@ -95,6 +95,8 @@ Usage:
         L24: long intervals 24
         S12: short intervals 12
 
+        slack url's (slack_info_url/slack_critial_url/slack_alert_url): Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
+
     Step 6. Start order gateway
         Top of the script for instructions
         https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py
