@@ -1,4 +1,6 @@
 realdonaldtrump|https://trumpstruth.org/feed
+kobeissiletter|https://nitter.net/KobeissiLetter/rss
+zerohedge|https://feeds.feedburner.com/zerohedge/feed
 bloomberg|https://feeds.bloomberg.com/markets/news.rss
 bbc|http://feeds.bbci.co.uk/news/rss.xml
 cnn|http://rss.cnn.com/rss/edition.rss
@@ -13,3 +15,5 @@ investing.com_forex|https://www.investing.com/rss/news_14.rss
 seeking_alpha|https://seekingalpha.com/feed.xml
 coindesk|https://www.coindesk.com/arc/outboundfeeds/rss/
 cointelegraph|https://cointelegraph.com/rss
+northmantrader|https://northmantrader.substack.com/feed
+themacrocompass|https://themacrocompass.substack.com/feed
