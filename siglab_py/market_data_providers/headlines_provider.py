@@ -40,6 +40,10 @@ sh: logging.StreamHandler = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
+fh = logging.FileHandler(f"rss_headlines_provider.log")
+fh.setLevel(log_level)
+fh.setFormatter(formatter)     
+logger.addHandler(fh)
 
 '''
 RSS feeds to fetch Financial and Geopolitical headlines:
