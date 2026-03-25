@@ -62,7 +62,7 @@ Usage:
     --slack_info_url/slack_critial_url/slack_alert_url are optional
 
     You'd receive notification upon arrival of new headlines if:
-    * slack url's provided
+    * slack url's provided: Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
     * focus_keywords matches headline's title
 
 launch.json for Debugging from VSCode:
