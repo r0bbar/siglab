@@ -10,6 +10,7 @@ boto3
 web3
 ccxt
 ccxtpro
+feedparser
 futu-api
 plotext
 yfinance
