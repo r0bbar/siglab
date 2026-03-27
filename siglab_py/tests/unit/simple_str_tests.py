@@ -10,24 +10,7 @@ from util.simple_str import keywords_match, classify_ticker
 class SimpleStrTests(unittest.TestCase):
     
     def test_keywords_match(self):
-        '''
-        Folder structure:
-            \ siglab
-                \ siglab_py	<-- python project root
-                    \ sigab_py
-                        __init__.py
-                        \ util
-                            __init__.py
-                            market_data_util.py
-                        \ tests
-                            \ unit
-                                __init__.py
-                                analytic_util_tests.py <-- Tests here
-                            
-                \ siglab_rs <-- Rust project root
-                \ data	 <-- Data files here!
-        '''
-        data_dir = Path(__file__).parent.parent.parent.parent / "data"
+        data_dir = Path(__file__).parent.parent.parent
         with open(f"{data_dir}\\market_impact_keywords.json", 'r') as f:
             keywords_cache = json.load(f)
         fuzzy_threshold = 80
