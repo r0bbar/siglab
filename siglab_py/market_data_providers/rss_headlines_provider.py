@@ -16,6 +16,7 @@ from tabulate import tabulate
 from redis import StrictRedis
 
 from siglab_py.util.market_data_util import fetch_headlines_from_rss
+from siglab_py.util.simple_str import keywords_match
 from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
@@ -125,6 +126,7 @@ param : Dict = {
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
     parser.add_argument("--urls_list_filename", help="File containing list of RSS url's", default=None)
+    parser.add_argument("--keywords_filename", help="File containing keywords in format in format compliant to simple_str.keywords_match", default=None)
     parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords", default=None)
     parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default='rss_headlines.csv')
 
@@ -143,8 +145,14 @@ def parse_args():
             url = line.rstrip('\n').split('|')[1]
             rss_feeds[source] = url
 
-    if args.focus_keywords:
-        param['focus_keywords'] = [ keyword.strip().lower() for keyword in args.focus_keywords.split(',') ]
+    param['keywords_filename'] = None
+    param['keywords_cache']  = None
+    if args.keywords_filename:
+        param['keywords_filename'] = args.keywords_filename
+        keywords_filename : str = f"{parent_dir}\\{param['keywords_filename']}"
+        print(f"Trying to load keywords_cache from: {keywords_filename}")
+        with open(keywords_filename, 'r') as f:
+            param['keywords_cache'] = json.load(f)
 
     headlines_cache_filename : str = f"{parent_dir}\\{args.headlines_cache_filename}"
     param['headlines_cache_filename'] = headlines_cache_filename
