@@ -1,0 +1,113 @@
+{
+  "nouns": [
+    {
+      "sub_type": "political_figures",
+      "keywords": ["trump", "@realDonaldTrump", "biden", "netanyahu", "putin", "zelensky", "khamenei"],
+      "market_impacted": ["cash_equities.stocks.AMER.all", "fixed_income.treasuries", "commodities", "metals"]
+    },
+    {
+      "sub_type": "countries",
+      "keywords": ["israel", "iran", "ukraine", "russia", "china", "usa", "eu", "nato", "gaza", "westbank", "tehran", "kharg"],
+      "market_impacted": ["cash_equities.stocks.EMEA.defense", "cash_equities.stocks.AMER.energy", "commodities", "metals"]
+    },
+    {
+      "sub_type": "financial_institutions",
+      "keywords": ["federal reserve", "fed", "ecb", "boj", "blackrock", "vanguard", "citadel"],
+      "market_impacted": ["fixed_income.treasuries", "cash_equities.stocks.AMER.all"]
+    },
+    {
+      "sub_type": "crypto.cex",
+      "keywords": ["binance", "coinbase", "okx", "deribit", "kraken", "ftx"],
+      "market_impacted": ["crypto"]
+    },
+    {
+      "sub_type": "crypto.dex",
+      "keywords": ["hyperliquid", "lighter", "aster", "uniswap", "dydx"],
+      "market_impacted": ["crypto"]
+    },
+    {
+      "sub_type": "crypto.assets",
+      "keywords": ["bitcoin", "btc", "ethereum", "eth", "stablecoin", "usdc", "usdt", "altcoin", "token unlock", "supply"],
+      "market_impacted": ["crypto"]
+    },
+    {
+      "sub_type": "tech_companies",
+      "keywords": ["meta", "microsoft", "google", "apple", "amazon", "netflix", "tesla", "nvidia", "openai", "anthropic"],
+      "market_impacted": ["cash_equities.stocks.AMER.technology"]
+    },
+    {
+      "sub_type": "transportation",
+      "keywords": ["tsa", "airport", "airlines", "united airlines", "american airlines", "delta", "travel", "flights"],
+      "market_impacted": ["cash_equities.stocks.AMER.airlines", "cash_equities.stocks.AMER.transportation"]
+    },
+    {
+      "sub_type": "regulatory_bodies",
+      "keywords": ["sec", "cftc", "doj", "ftc"],
+      "market_impacted": ["cash_equities.stocks.AMER.financials", "crypto"]
+    },
+    {
+      "sub_type": "commodities",
+      "keywords": ["oil", "brent", "wti", "gold", "silver", "copper", "natural gas", "uranium"],
+      "market_impacted": ["commodities", "metals", "cash_equities.stocks.AMER.energy"]
+    },
+    {
+      "sub_type": "conflicts",
+      "keywords": ["military", "idf", "irgc", "houthi", "pentagon", "nato", "hamas", "hezbollah"],
+      "market_impacted": ["cash_equities.stocks.AMER.defense", "commodities", "metals"]
+    },
+    {
+      "sub_type": "infrastructure",
+      "keywords": ["kharg island", "strait of hormuz", "suez canal", "pipeline", "refinery"],
+      "market_impacted": ["commodities", "cash_equities.stocks.EMEA.transport"]
+    }
+  ],
+  "actions": [
+    {
+      "sub_type": "diplomacy",
+      "keywords": ["negotiate", "negotiation", "talks", "ceasefire", "deal", "agreement", "summit"],
+      "market_impacted": ["commodities", "cash_equities.stocks.AMER.all", "fixed_income.treasuries"]
+    },
+    {
+      "sub_type": "attack",
+      "keywords": ["attack", "strike", "bomb", "explode", "missile", "drone", "raid", "invade", "retaliate"],
+      "market_impacted": ["commodities", "metals", "cash_equities.stocks.AMER.defense"]
+    },
+    {
+      "sub_type": "cyber",
+      "keywords": ["hack", "breach", "leak", "ransomware", "cyberattack", "exploit", "stolen"],
+      "market_impacted": ["crypto", "cash_equities.stocks.AMER.technology"]
+    },
+    {
+      "sub_type": "economic_policy",
+      "keywords": ["cut", "hike", "raise", "lower", "inject", "bailout", "sanction", "embargo", "tariff"],
+      "market_impacted": ["fixed_income.treasuries", "cash_equities.stocks.AMER.all", "commodities"]
+    },
+    {
+      "sub_type": "market_movement",
+      "keywords": ["surge", "plunge", "rally", "crash", "spike", "drop", "rebound", "volatile"],
+      "market_impacted": ["cash_equities.stocks.ALL.all", "crypto", "fixed_income.treasuries", "commodities"]
+    }
+  ],
+  "adjectives": [
+    {
+      "sub_type": "security_breach",
+      "keywords": ["breached", "compromised", "hacked", "infiltrated", "exposed"],
+      "market_impacted": ["crypto", "cash_equities.stocks.AMER.technology"]
+    },
+    {
+      "sub_type": "geopolitical",
+      "keywords": ["escalated", "de-escalated", "tense", "volatile", "critical", "imminent"],
+      "market_impacted": ["commodities", "metals", "cash_equities.stocks.EMEA.all"]
+    },
+    {
+      "sub_type": "economic",
+      "keywords": ["inflationary", "deflationary", "recessionary", "hawkish", "dovish", "unexpected"],
+      "market_impacted": ["fixed_income.treasuries", "cash_equities.stocks.ALL.all"]
+    },
+    {
+      "sub_type": "market_state",
+      "keywords": ["overbought", "oversold", "bullish", "bearish", "liquidated", "margin call"],
+      "market_impacted": ["cash_equities.stocks.ALL.all", "crypto", "fixed_income.treasuries"]
+    }
+  ]
+}
