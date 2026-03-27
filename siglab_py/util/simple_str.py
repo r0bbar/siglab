@@ -1,4 +1,6 @@
+from typing import List, Dict, Any, Union
 import re
+import rapidfuzz.fuzz as fuzz
 
 def is_int_string(s: str) -> bool:
     if not s:
@@ -13,6 +15,82 @@ def is_float_string(s: str) -> bool:
         return True
     except ValueError:
         return False
+
+def keywords_match(
+    sentence : str, 
+    keywords_cache : Dict[str, Dict[str, Union[str, List[str]]]], 
+    fuzzy=False, 
+    fuzzy_threshold=30
+) -> Dict[str, Union[None, float, Dict[str, Any]]]:
+    sentence_clean = sentence.strip()
+    sentence_lower = sentence_clean.lower()
+    word_count = len(sentence_clean.split())
+    result = {
+        "num_matches": 0,
+        "word_count": word_count,
+        "matches_percent": 0.0,
+        "nouns": {},
+        "actions": {},
+        "adjectives": {}
+    }
+
+    def exact_match(keyword, text):
+        """Exact substring match after cleaning."""
+        kw_clean = keyword.strip().lower()
+        return kw_clean and kw_clean in text
+
+    def fuzzy_match(keyword, text, threshold):
+        """Return True if keyword approximately appears in text."""
+        kw_lower = keyword.lower().strip()
+        if not kw_lower:
+            return False
+        # Exact match first (fast path)
+        if kw_lower in text:
+            return True
+        text_words = text.split()
+        kw_words = kw_lower.split()
+        # Single word: compare with each word in text
+        if len(kw_words) == 1:
+            for word in text_words:
+                if fuzz.ratio(word, kw_lower) >= threshold:
+                    return True
+        # Multi-word: sliding window of equal length, average ratio
+        else:
+            for i in range(len(text_words) - len(kw_words) + 1):
+                phrase = text_words[i:i + len(kw_words)]
+                avg_score = sum(fuzz.ratio(phrase[j], kw_words[j]) for j in range(len(kw_words))) / len(kw_words)
+                if avg_score >= threshold:
+                    return True
+        return False
+
+    def process_category(category_list):
+        category_result = {}
+        total_in_category = 0
+        for item in category_list:
+            sub_type = item["sub_type"]
+            matched_keywords = []
+            for kw in item["keywords"]:
+                if fuzzy:
+                    if fuzzy_match(kw, sentence_lower, fuzzy_threshold):
+                        matched_keywords.append(kw)
+                        total_in_category += 1
+                else:
+                    if exact_match(kw, sentence_lower):
+                        matched_keywords.append(kw)
+                        total_in_category += 1
+            if matched_keywords:
+                category_result[sub_type] = matched_keywords
+        return category_result, total_in_category
+
+    for cat in ["nouns", "actions", "adjectives"]:
+        cat_result, cat_total = process_category(keywords_cache[cat])
+        result[cat] = cat_result
+        result["num_matches"] += cat_total
+
+    if result["word_count"] > 0:
+        result["matches_percent"] = round((result["num_matches"] / result["word_count"]) * 100, 2)
+
+    return result
 
 def classify_ticker(ticker: str) -> str:
     """

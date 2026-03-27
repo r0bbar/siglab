@@ -1,12 +1,69 @@
 import unittest
 from typing import List, Dict, Union
 import time
-
+import json
 from numpy import equal
+from pathlib import Path
 
-from util.simple_str import classify_ticker
+from util.simple_str import keywords_match, classify_ticker
 
 class SimpleStrTests(unittest.TestCase):
+    
+    def test_keywords_match(self):
+        '''
+        Folder structure:
+            \ siglab
+                \ siglab_py	<-- python project root
+                    \ sigab_py
+                        __init__.py
+                        \ util
+                            __init__.py
+                            market_data_util.py
+                        \ tests
+                            \ unit
+                                __init__.py
+                                analytic_util_tests.py <-- Tests here
+                            
+                \ siglab_rs <-- Rust project root
+                \ data	 <-- Data files here!
+        '''
+        data_dir = Path(__file__).parent.parent.parent.parent / "data"
+        with open(f"{data_dir}\\market_impact_keywords.json", 'r') as f:
+            keywords_cache = json.load(f)
+        fuzzy_threshold = 80
+        # Note: Israel -> Isreel
+        example = "Iran and Isreel are in tense negotiations. Oil prices surged after a missile strike near the Strait of Hormuz. The Fed might pause rates cuts."
+        matches = keywords_match(
+            sentence=example, 
+            keywords_cache=keywords_cache, 
+            fuzzy=True, 
+            fuzzy_threshold=fuzzy_threshold
+        )
+        print(json.dumps(matches, indent=2))
+
+        assert('num_matches' in matches)
+        assert('word_count' in matches)
+        assert('matches_percent' in matches)
+        assert(matches['num_matches']>=0)
+        assert(matches['word_count']>0)
+        assert(matches['matches_percent']<=100)
+        assert('nouns' in matches)
+        assert('actions' in matches)
+        assert('adjectives' in matches)
+
+        assert(matches['matches_percent']>40)
+
+        assert(matches['nouns']['countries']==['israel', 'iran'])
+        assert(matches['nouns']['financial_institutions']==['fed'])
+        assert(matches['nouns']['infrastructure']==['strait of hormuz'])
+        assert(matches['nouns']['commodities']==['oil'])
+
+        assert(matches['actions']['diplomacy']==['negotiation'])
+        assert(matches['actions']['attack']==['strike', 'missile'])
+        assert(matches['actions']['economic_policy']==['cut'])
+        assert(matches['actions']['market_movement']==['surge'])
+
+        assert(matches['adjectives']['geopolitical']==['tense'])
 
     def test_classify_ticker(self):
         cases = [
