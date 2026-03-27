@@ -1,5 +1,7 @@
 import asyncio
 import os
+import sys
+import traceback
 import logging
 from typing import Dict, Optional
 from datetime import datetime
@@ -262,7 +264,7 @@ async def main() -> None:
             logger.info(f"[loop# {loop_counter} (elapsed_ms: {elapsed_ms:,})] {pd_headlines.shape[0]} rows headlines exported to {param['headlines_cache_filename']}. # new_headlines: {num_new_headlines}, # old headlines: {num_old_headlines}")
 
         except Exception as loop_err:
-            err_msg = f'loop error {loop_err}'
+            err_msg = f'loop error {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}'
             logger.error(err_msg)
             dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
