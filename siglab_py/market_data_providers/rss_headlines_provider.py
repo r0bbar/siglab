@@ -147,6 +147,9 @@ def parse_args():
             url = line.rstrip('\n').split('|')[1]
             rss_feeds[source] = url
 
+    if args.focus_keywords:
+        param['focus_keywords'] = [ keyword.strip().lower() for keyword in args.focus_keywords.split(',') ]
+        
     param['keywords_filename'] = None
     param['keywords_cache']  = None
     if args.keywords_filename:
