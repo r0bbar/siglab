@@ -131,6 +131,7 @@ def parse_args():
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--enable_notification", help="Enable notification on new headline arrival? Y or N (default).", default='N')
 
     args = parser.parse_args()
     
@@ -152,6 +153,14 @@ def parse_args():
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
     param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+
+    if args.enable_notification:
+        if args.enable_notification=='Y':
+            param['enable_notification'] = True
+        else:
+            param['enable_notification'] = False
+    else:
+        param['enable_notification'] = False
 
     param['notification']['footer'] = f"From {param['current_filename']}"
 
@@ -206,7 +215,7 @@ async def main() -> None:
                 try:
                     logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
                     new_head_line_title_words = [ x.lower().strip() for x in new_headline['title'].split(' ')]
-                    if loop_counter>0 and (any([ keyword for keyword in param['focus_keywords'] if keyword.lower().strip() in new_head_line_title_words ])): # Don't send flood of slacks in first iteration
+                    if param['enable_notification'] and loop_counter>0 and (any([ keyword for keyword in param['focus_keywords'] if keyword.lower().strip() in new_head_line_title_words ])): # Don't send flood of slacks in first iteration
                         dispatch_notification(title=f"#headline [{new_headline['source']}] {new_headline['title']} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 except Exception as notification_err:
                     pass # Just swallow
