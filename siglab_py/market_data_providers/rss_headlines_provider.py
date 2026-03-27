@@ -207,7 +207,7 @@ async def main() -> None:
                     logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
                     new_head_line_title_words = [ x.lower().strip() for x in new_headline['title'].split(' ')]
                     if loop_counter>0 and (any([ keyword for keyword in param['focus_keywords'] if keyword.lower().strip() in new_head_line_title_words ])): # Don't send flood of slacks in first iteration
-                        dispatch_notification(title=f"New headline arrived {new_headline['title'][:30]} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                        dispatch_notification(title=f"#headline [{new_headline['source']}] {new_headline['title']} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 except Exception as notification_err:
                     pass # Just swallow
             
