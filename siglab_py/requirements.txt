@@ -16,6 +16,7 @@ plotext
 yfinance
 yahoofinancials
 hurst
+rapidfuzz
 redis
 redis-py-cluster
 kafka-python
