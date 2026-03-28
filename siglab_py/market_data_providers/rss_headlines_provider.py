@@ -60,9 +60,14 @@ Events which may move asset prices.
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --focus_keywords "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium" --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+    python headlines_provider.py --urls_list_filename headlines_rss_source.txt --keywords_filename market_impact_keywords.json --fuzzy_word_match_threshold 80 --focus_keywords "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium" --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
 
-    --slack_info_url/slack_critial_url/slack_alert_url are optional
+    --focus_keywords: simple comma separated list of keywords which decides if slack notifications dispatched
+      rss_headlines_provider will dump all lines to headlines_cache_filename (csv) regardless of focus_keywords
+    --keywords_filename: keywords used for tagging
+    --fuzzy_word_match_threshold: File containing keywords in format in format compliant to simple_str.keywords_match: contains 'nouns', 'actions' and 'adjectives'. This is for tagging only.", default=None)
+    parser.add_argument("--fuzzy_word_match_threshold", help="Words in headlines don't need match exactly: Israel vs Isreel for example. Used in combination with --keywords_filename.
+    --slack_info_url/slack_critial_url/slack_alert_url: optional
 
     You'd receive notification upon arrival of new headlines if:
     * slack url's provided: Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
@@ -80,8 +85,14 @@ launch.json for Debugging from VSCode:
                 "console": "integratedTerminal",
                 "justMyCode": false,
                 "args" : [
-                        "--urls_list_filename", "headlines_rss_source.txt",
-                        "--focus_keywords", "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium"
+                        "--urls_list_filename" , "headlines_rss_source.txt",
+                        "--keywords_filename", "market_impact_keywords.json",
+                        "--focus_keywords" , "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium",
+                        "--headlines_cache_filename", "rss_headlines.csv",
+                        
+                "--slack_info_url", "https://hooks.slack.com/services/xxx",
+                "--slack_critial_url", "https://hooks.slack.com/services/xxx",
+                "--slack_alert_url", "https://hooks.slack.com/services/xxx",
                     ],
             }
         ]
@@ -128,8 +139,9 @@ param : Dict = {
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
     parser.add_argument("--urls_list_filename", help="File containing list of RSS url's", default=None)
-    parser.add_argument("--keywords_filename", help="File containing keywords in format in format compliant to simple_str.keywords_match", default=None)
-    parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords", default=None)
+    parser.add_argument("--keywords_filename", help="File containing keywords in format in format compliant to simple_str.keywords_match: contains 'nouns', 'actions' and 'adjectives'. This is for tagging only.", default=None)
+    parser.add_argument("--fuzzy_word_match_threshold", help="Words in headlines don't need match exactly: Israel vs Isreel for example. Used in combination with --keywords_filename.", default=80)
+    parser.add_argument("--focus_keywords", help="Comma separated list of focused keywords, which decides if slack notifications will be sent. ", default=None)
     parser.add_argument("--headlines_cache_filename", help="Export headers to csv file? Export don't filter by focus_keywords, whole data set is dumped to csv.", default='rss_headlines.csv')
 
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
@@ -149,7 +161,7 @@ def parse_args():
 
     if args.focus_keywords:
         param['focus_keywords'] = [ keyword.strip().lower() for keyword in args.focus_keywords.split(',') ]
-        
+
     param['keywords_filename'] = None
     param['keywords_cache']  = None
     if args.keywords_filename:
@@ -158,6 +170,8 @@ def parse_args():
         print(f"Trying to load keywords_cache from: {keywords_filename}")
         with open(keywords_filename, 'r') as f:
             param['keywords_cache'] = json.load(f)
+
+    param['fuzzy_word_match_threshold'] = args.fuzzy_word_match_threshold
 
     headlines_cache_filename : str = f"{parent_dir}\\{args.headlines_cache_filename}"
     param['headlines_cache_filename'] = headlines_cache_filename
@@ -226,12 +240,35 @@ async def main() -> None:
             new_headlines = fetch_headlines_from_rss(rss_feeds, pd_old_headlines)
             for new_headline in new_headlines:
                 try:
+                    matches = keywords_match(
+                        sentence=new_headline['title'], 
+                        keywords_cache=param['keywords_cache'], 
+                        fuzzy=True, 
+                        fuzzy_threshold=param['fuzzy_word_match_threshold']
+                    )
+
+                    tags = []
+                    for noun in matches['nouns']:
+                        for x in matches['nouns'][noun]:
+                            tags.append(f"#{x.replace(' ','_')}")
+                    for action in matches['actions']:
+                        for x in matches['actions'][action]:
+                            tags.append(f"#{x.replace(' ','_')}")
+                    for adjective in matches['adjectives']:
+                        for x in matches['adjectives'][adjective]:
+                            tags.append(f"#{x.replace(' ','_')}")
+
+                    new_headline['matches_percent'] = matches['matches_percent']
+                    new_headline['tags'] = ' '.join(tags) if tags else None
+
                     logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
                     new_head_line_title_words = [ x.lower().strip() for x in new_headline['title'].split(' ')]
                     if param['enable_notification'] and loop_counter>0 and (any([ keyword for keyword in param['focus_keywords'] if keyword.lower().strip() in new_head_line_title_words ])): # Don't send flood of slacks in first iteration
                         dispatch_notification(title=f"#headline [{new_headline['source']}] {new_headline['title']} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 except Exception as notification_err:
-                    pass # Just swallow
+                    err_msg = f"error processing [{new_headline['title'][:25]}] {headline_level_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+                    logger.error(err_msg)
+                    dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
             
             num_new_headlines = len(new_headlines)
             num_old_headlines = len(headlines_data)

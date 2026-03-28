@@ -52,7 +52,7 @@
     },
     {
       "sub_type": "conflicts",
-      "keywords": ["military", "idf", "irgc", "houthi", "pentagon", "nato", "hamas", "hezbollah"],
+      "keywords": ["war", "military", "idf", "irgc", "houthi", "pentagon", "nato", "hamas", "hezbollah"],
       "market_impacted": ["cash_equities.stocks.AMER.defense", "commodities", "metals"]
     },
     {
