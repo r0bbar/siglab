@@ -6,6 +6,12 @@ bbc|http://feeds.bbci.co.uk/news/rss.xml
 cnn|http://rss.cnn.com/rss/edition.rss
 al_jazeera|https://www.aljazeera.com/xml/rss/all.xml
 cnbc|https://www.cnbc.com/id/100003114/device/rss/rss.html
+google_cashequities|https://news.google.com/rss/search?q=stock%20market%20OR%20S%26P%20500%20OR%20Nasdaq%20OR%20Dow%20Jones&hl=en-US&gl=US&ceid=US:en
+google_credits|	https://news.google.com/rss/search?q=bonds%20OR%20treasuries%20OR%20%22Federal%20Reserve%22%20%22interest%20rates%22%20OR%20yields&hl=en-US&gl=US&ceid=US:en
+google_fx|https://news.google.com/rss/search?q=forex%20OR%20foreign%20exchange%20OR%20%22central%20bank%22%20%22interest%20rates%22%20OR%20USD%20OR%20EUR%20OR%20JPY&hl=en-US&gl=US&ceid=US:en
+google_crypto|https://news.google.com/rss/search?q=bitcoin%20OR%20ethereum%20OR%20cryptocurrency%20OR%20%22crypto%20market%22&hl=en-US&gl=US&ceid=US:en
+google_commodities|https://news.google.com/rss/search?q=oil%20OR%20natural%20gas%20OR%20wheat%20OR%20corn%20OR%20commodities&hl=en-US&gl=US&ceid=US:en
+google_metals|https://news.google.com/rss/search?q=gold%20OR%20silver%20OR%20copper%20OR%20precious%20metals&hl=en-US&gl=US&ceid=US:en
 yahoo_finance|https://finance.yahoo.com/news/rssindex
 wall_street_journal|https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml
 new_york_times_business|https://rss.nytimes.com/services/xml/rss/nyt/Business.xml
