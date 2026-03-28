@@ -274,7 +274,8 @@ async def main() -> None:
                             logger.info(f"fuzzy: focus_keyword matched identified: {keyword} vs {new_headline['title']} fuzz_match_ratio: {fuzz_match_ratio}")
                             break
                     if param['enable_notification'] and loop_counter>0 and focus_keyword_match:
-                        dispatch_notification(title=f"#headline [{new_headline['source']}] {new_headline['title']} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                        notification_title = f"#headline [{new_headline['source']}] {new_headline['title']} ..."
+                        dispatch_notification(title=notification_title, message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.INFO, logger=logger)
                 except Exception as notification_err:
                     err_msg = f"error processing [{new_headline['title'][:25]}] {headline_level_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                     logger.error(err_msg)
