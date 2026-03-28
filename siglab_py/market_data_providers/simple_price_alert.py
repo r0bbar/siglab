@@ -53,7 +53,7 @@ Usage:
     python simple_price_alert.py --tickers "BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC" --exchange_name lighter --candle_size 5m --how_many_candles 288 --num_std 3  --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
     
     --tickers: comma separated list of tickers you want to monitor
-    --exchange_name: defaults to Lighter
+    --exchange_name: defaults to Lighter (https://app.lighter.xyz/trade)
     --candle_size: For example 1m, 5m, 15m, 1h ...
     --how_many_candles: how many candles to fetch. For example a day's worth of 5m candles = 12 5m candles per hr x 24 hours per day = 288 
     --num_std: Default to 3 - this is the threshold before slack notifications dispatched
