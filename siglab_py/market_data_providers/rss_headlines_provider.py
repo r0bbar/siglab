@@ -12,6 +12,7 @@ import argparse
 import json
 from enum import Enum
 import feedparser
+import rapidfuzz.fuzz as fuzz
 import pandas as pd
 from pprint import pformat
 from tabulate import tabulate
@@ -65,8 +66,8 @@ Usage:
     --focus_keywords: simple comma separated list of keywords which decides if slack notifications dispatched
       rss_headlines_provider will dump all lines to headlines_cache_filename (csv) regardless of focus_keywords
     --keywords_filename: keywords used for tagging
-    --fuzzy_word_match_threshold: File containing keywords in format in format compliant to simple_str.keywords_match: contains 'nouns', 'actions' and 'adjectives'. This is for tagging only.", default=None)
-    parser.add_argument("--fuzzy_word_match_threshold", help="Words in headlines don't need match exactly: Israel vs Isreel for example. Used in combination with --keywords_filename.
+        keywords_filename containing keywords in format in format compliant to simple_str.keywords_match: contains 'nouns', 'actions' and 'adjectives'. 
+    --fuzzy_word_match_threshold: keyword matching no need exact. For example Israel vs Isreel. Default 80%
     --slack_info_url/slack_critial_url/slack_alert_url: optional
 
     You'd receive notification upon arrival of new headlines if:
@@ -88,6 +89,7 @@ launch.json for Debugging from VSCode:
                         "--urls_list_filename" , "headlines_rss_source.txt",
                         "--keywords_filename", "market_impact_keywords.json",
                         "--focus_keywords" , "war, oil, trump, israel, tehran, iran, kharg, military, strike, explode, explosion, negotiate, negotiation, sanctions, nuclear, uranium",
+                        "--fuzzy_word_match_threshold", "80",
                         "--headlines_cache_filename", "rss_headlines.csv",
                         
                 "--slack_info_url", "https://hooks.slack.com/services/xxx",
@@ -263,7 +265,15 @@ async def main() -> None:
 
                     logger.info(f"new row appended: {pformat(new_headline, indent=2, width=100)}")
                     new_head_line_title_words = [ x.lower().strip() for x in new_headline['title'].split(' ')]
-                    if param['enable_notification'] and loop_counter>0 and (any([ keyword for keyword in param['focus_keywords'] if keyword.lower().strip() in new_head_line_title_words ])): # Don't send flood of slacks in first iteration
+
+                    focus_keyword_match = False
+                    for keyword in param['focus_keywords']:
+                        fuzz_match_ratio = round(fuzz.ratio(keyword.lower().strip(), new_headline['title']), 2)
+                        if fuzz_match_ratio>param['fuzzy_word_match_threshold']:
+                            focus_keyword_match = True
+                            logger.info(f"fuzzy: focus_keyword matched identified: {keyword} vs {new_headline['title']} fuzz_match_ratio: {fuzz_match_ratio}")
+                            break
+                    if param['enable_notification'] and loop_counter>0 and focus_keyword_match:
                         dispatch_notification(title=f"#headline [{new_headline['source']}] {new_headline['title']} ...", message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                 except Exception as notification_err:
                     err_msg = f"error processing [{new_headline['title'][:25]}] {headline_level_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
