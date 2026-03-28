@@ -270,11 +270,12 @@ async def main() -> None:
 
                     focus_keyword_match = False
                     for keyword in param['focus_keywords']:
-                        fuzz_match_ratio = round(fuzz.ratio(keyword.lower().strip(), new_headline['title']), 2)
-                        if fuzz_match_ratio>param['fuzzy_word_match_threshold']:
-                            focus_keyword_match = True
-                            logger.info(f"fuzzy: focus_keyword matched identified: {keyword} vs {new_headline['title']} fuzz_match_ratio: {fuzz_match_ratio}")
-                            break
+                        for title_word in new_headline['title'].split(' '):
+                            fuzz_match_ratio = round(fuzz.ratio(keyword.lower().strip(), title_word), 2)
+                            if fuzz_match_ratio>param['fuzzy_word_match_threshold']:
+                                focus_keyword_match = True
+                                logger.info(f"fuzzy: focus_keyword matched identified: {keyword} vs {title_word} in {new_headline['title']} fuzz_match_ratio: {fuzz_match_ratio}")
+                                break
                     if param['enable_notification'] and loop_counter>0 and focus_keyword_match:
                         notification_title = f"#headline [{new_headline['source']}] {new_headline['title']} ..."
                         dispatch_notification(title=notification_title, message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.INFO, logger=logger)
