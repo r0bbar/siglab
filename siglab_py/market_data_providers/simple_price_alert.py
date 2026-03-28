@@ -274,7 +274,8 @@ async def main() -> None:
                 }
                 logger.info(f"{pformat(ticker_price_movement_info, indent=2, width=100)}")
                 if abs(move)>=(param['num_std'] * candle_height_std):
-                    dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    if param['enable_notification']:
+                        dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     if redis_client:
                         try:
