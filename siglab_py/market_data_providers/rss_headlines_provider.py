@@ -173,7 +173,7 @@ def parse_args():
         with open(keywords_filename, 'r') as f:
             param['keywords_cache'] = json.load(f)
 
-    param['fuzzy_word_match_threshold'] = args.fuzzy_word_match_threshold
+    param['fuzzy_word_match_threshold'] = float(args.fuzzy_word_match_threshold)
 
     headlines_cache_filename : str = f"{parent_dir}\\{args.headlines_cache_filename}"
     param['headlines_cache_filename'] = headlines_cache_filename
@@ -223,6 +223,8 @@ async def main() -> None:
         redis_client = None
         logger.info(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
 
+    dispatch_notification(title=f"{param['current_filename']} starting.", message="RSS news feed starting ...", footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.INFO, logger=logger)
+    
     headlines_data = []
 
     loop_counter : int = 0
@@ -276,10 +278,10 @@ async def main() -> None:
                     if param['enable_notification'] and loop_counter>0 and focus_keyword_match:
                         notification_title = f"#headline [{new_headline['source']}] {new_headline['title']} ..."
                         dispatch_notification(title=notification_title, message=new_headline, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.INFO, logger=logger)
-                except Exception as notification_err:
+                except Exception as headline_level_err:
                     err_msg = f"error processing [{new_headline['title'][:25]}] {headline_level_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                     logger.error(err_msg)
-                    dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                    dispatch_notification(title=f"{param['current_filename']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
             
             num_new_headlines = len(new_headlines)
             num_old_headlines = len(headlines_data)
