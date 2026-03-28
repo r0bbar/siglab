@@ -102,6 +102,18 @@ def instantiate_exchange(
             patch_create_order_response,
             exchange
         )  
+    elif exchange_name=='lighter':
+        '''
+        @todo
+            lighter = ccxt.lighter({
+                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
+                'options': {
+                    'apiKeyIndex': 5,        # Integer (0–254) corresponding to the specific API key you created.
+                    'accountIndex': 715085,  # Integer identifying your Lighter internal account (master or sub-account).
+                }
+            })
+        '''
+        exchange = ccxt.lighter()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}.")
 
@@ -235,6 +247,18 @@ async def async_instantiate_exchange(
             patch_create_order_response,
             exchange
         )
+    elif exchange_name=='lighter':
+        '''
+        @todo
+            lighter = ccxt.lighter({
+                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
+                'options': {
+                    'apiKeyIndex': 5,        # Integer (0–254) corresponding to the specific API key you created.
+                    'accountIndex': 715085,  # Integer identifying your Lighter internal account (master or sub-account).
+                }
+            })
+        '''
+        exchange = ccxtpro.lighter()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
