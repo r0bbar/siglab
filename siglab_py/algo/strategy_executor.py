@@ -1377,10 +1377,10 @@ async def main():
                         pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
                         pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
-                        unrealized_pnl_optimistic, unrealized_pnl_pessimistic = mid, mid
-
                         if pos_side == OrderSide.BUY:
                             unreal_live = round_to_sigfigs((mid - entry_px) * pos, sigfigs=6)
+                            unrealized_pnl_optimistic, unrealized_pnl_pessimistic = unreal_live, unreal_live
+
                             if lo_candles_valid:
                                 unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * pos, sigfigs=6)
                                 unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * pos, sigfigs=6)
@@ -1404,6 +1404,8 @@ async def main():
                                 unrealized_pnl_open = (trailing_candles[-1]['open'] - entry_px) * pos
                         elif pos_side == OrderSide.SELL:
                             unreal_live = round_to_sigfigs((entry_px - mid) * abs(pos), sigfigs=6)
+                            unrealized_pnl_optimistic, unrealized_pnl_pessimistic = unreal_live, unreal_live
+                            
                             if lo_candles_valid:
                                 unrealized_pnl_optimistic = round_to_sigfigs((entry_px - trailing_candles[-1]['low']) * abs(pos), sigfigs=6)
                                 unrealized_pnl_pessimistic = round_to_sigfigs((entry_px - trailing_candles[-1]['high']) * abs(pos), sigfigs=6)
