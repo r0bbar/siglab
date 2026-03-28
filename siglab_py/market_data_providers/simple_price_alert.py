@@ -276,23 +276,22 @@ async def main() -> None:
                 if abs(move)>=(param['num_std'] * candle_height_std):
                     dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
+                    if redis_client:
+                        try:
+                            json_str = json.dumps(ticker_price_movement_info)
+
+                            publish_topic = param['mds']['topics']['price_alert']
+                            redis_client.publish(publish_topic, json_str)
+                            redis_client.setex(publish_topic, param['mds']['redis']['ttl_ms'] // 1000, json_str)
+                            logger.info(f"Published filtered price_alert to Redis topic {publish_topic}")
+
+                        except Exception as e:
+                            logger.info(f"Failed to publish to Redis: {str(e)}")
+                            
                     if param['alert_wav_path'] and sys.platform == 'win32' and os.path.exists(param['alert_wav_path']):
                         import winsound
                         for _ in range(param['num_shouts']):
                             winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
-                            log(f"Incoming! {message_data}")
-
-                if redis_client:
-                    try:
-                        json_str = json.dumps(ticker_price_movement_info)
-
-                        publish_topic = param['mds']['topics']['price_alert']
-                        redis_client.publish(publish_topic, json_str)
-                        redis_client.setex(publish_topic, param['mds']['redis']['ttl_ms'] // 1000, json_str)
-                        logger.info(f"Published filtered price_alert to Redis topic {publish_topic}")
-
-                    except Exception as e:
-                        logger.info(f"Failed to publish to Redis: {str(e)}")
 
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] end to end elapsed_ms: {elapsed_ms:,}")
