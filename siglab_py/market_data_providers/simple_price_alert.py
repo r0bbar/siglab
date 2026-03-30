@@ -224,6 +224,7 @@ async def main() -> None:
 
     cutoff_ts = int(start_date.timestamp()) # in seconds
 
+    dedup_cache : Dict[str, int] = {}
     loop_counter : int = 0
     while True:
         try:
@@ -239,6 +240,9 @@ async def main() -> None:
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] candles fetch elapsed_ms: {elapsed_ms:,}")
             for ticker in param['tickers']:
+                if ticker not in dedup_cache:
+                    dedup_cache[ticker] = 0
+
                 pd_candles = candles[ticker]
 
                 current_candle = pd_candles.iloc[-1]
@@ -281,25 +285,30 @@ async def main() -> None:
                 }
                 logger.info(f"{pformat(ticker_price_movement_info, indent=2, width=100)}")
                 if abs(move)>=(param['num_std'] * candle_height_std):
-                    if param['enable_notification']:
-                        dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    logger.info(f"[{ticker}] #abnormal_price_move {pformat(ticker_price_movement_info, indent=2, width=100)}")
 
-                    if redis_client:
-                        try:
-                            json_str = json.dumps(ticker_price_movement_info)
+                    if dedup_cache[ticker]<timestamp_ms:
+                        dedup_cache[ticker]=timestamp_ms
+                        
+                        if param['enable_notification']:
+                            dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                            publish_topic = param['mds']['topics']['price_alert']
-                            redis_client.publish(publish_topic, json_str)
-                            redis_client.setex(publish_topic, param['mds']['redis']['ttl_ms'] // 1000, json_str)
-                            logger.info(f"Published filtered price_alert to Redis topic {publish_topic}")
+                        if redis_client:
+                            try:
+                                json_str = json.dumps(ticker_price_movement_info)
 
-                        except Exception as e:
-                            logger.info(f"Failed to publish to Redis: {str(e)}")
-                            
-                    if param['alert_wav_path'] and sys.platform == 'win32' and os.path.exists(param['alert_wav_path']):
-                        import winsound
-                        for _ in range(param['num_shouts']):
-                            winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
+                                publish_topic = param['mds']['topics']['price_alert']
+                                redis_client.publish(publish_topic, json_str)
+                                redis_client.setex(publish_topic, param['mds']['redis']['ttl_ms'] // 1000, json_str)
+                                logger.info(f"Published filtered price_alert to Redis topic {publish_topic}")
+
+                            except Exception as e:
+                                logger.info(f"Failed to publish to Redis: {str(e)}")
+                                
+                        if param['alert_wav_path'] and sys.platform == 'win32' and os.path.exists(param['alert_wav_path']):
+                            import winsound
+                            for _ in range(param['num_shouts']):
+                                winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
 
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] end to end elapsed_ms: {elapsed_ms:,}")
