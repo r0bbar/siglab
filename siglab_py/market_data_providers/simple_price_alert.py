@@ -87,7 +87,7 @@ launch.json for Debugging from VSCode:
         ]
 '''
 param : Dict = {
-    'loop_freq_ms' : 1000*60, 
+    'loop_freq_ms' : 1000, 
     'current_filename' : current_filename,
 
     'alert_wav_path' : r"d:\sounds\terrible.wav",
@@ -247,7 +247,13 @@ async def main() -> None:
                 timestamp_ms = int(current_candle['timestamp_ms'])
                 open = float(current_candle['open'])
                 close = float(current_candle['close'])
-                move = close - open
+
+                ob = exchange.fetch_order_book(ticker, limit=1)
+                best_bid = ob['bids'][0][0]
+                best_ask = ob['asks'][0][0]
+                mid = (best_bid + best_ask)/2
+
+                move = mid - open
                 move_bps = round(move/open * 1_00_00, 2)
 
                 pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
@@ -264,6 +270,7 @@ async def main() -> None:
                     'candle_timestamp_ms' : timestamp_ms,
                     'dt_local' : datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     'timestamp_ms' : int(datetime.now().timestamp()),
+                    'mid' : mid,
                     'open' : open,
                     'close' : close,
                     'move' : move,
