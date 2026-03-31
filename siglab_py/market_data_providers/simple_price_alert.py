@@ -259,6 +259,7 @@ async def main() -> None:
 
                 move = mid - open
                 move_bps = round(move/open * 1_00_00, 2)
+                direction  = "UP" if move>0 else "DOWN"
 
                 pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
                 pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open']
@@ -277,6 +278,7 @@ async def main() -> None:
                     'mid' : mid,
                     'open' : open,
                     'close' : close,
+                    'direction' : direction,
                     'move' : move,
                     'move_bps' : move_bps,
                     'candle_height_std' : candle_height_std,
@@ -285,13 +287,14 @@ async def main() -> None:
                 }
                 logger.info(f"{pformat(ticker_price_movement_info, indent=2, width=100)}")
                 if abs(move)>=(param['num_std'] * candle_height_std):
-                    logger.info(f"[{ticker}] #abnormal_price_move {pformat(ticker_price_movement_info, indent=2, width=100)}")
+                    summary = f"{ticker} {direction} {move_bps} bps"
+                    logger.info(f"[{ticker}] #abnormal_price_move {summary} {pformat(ticker_price_movement_info, indent=2, width=100)}")
 
                     if dedup_cache[ticker]<timestamp_ms:
                         dedup_cache[ticker]=timestamp_ms
                         
                         if param['enable_notification']:
-                            dispatch_notification(title=f'#abnormal_price_move {ticker}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                            dispatch_notification(title=f'#abnormal_price_move {summary}', message=ticker_price_movement_info, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                         if redis_client:
                             try:
