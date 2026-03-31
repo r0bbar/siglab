@@ -55,7 +55,7 @@ TAs computed (This is an expanding list):
 
 + [Levels (Simple rounded numbers, not Volume Profiles)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/simple_math_tests.py)
 
-+ [Volume Profiles (analytic_util.compute_volume_profile)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
++ [Volume Profiles and Value Area (analytic_util.compute_volume_profile and compute_value_area)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
 
 [**aggregated_orderbook_provider.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
 
