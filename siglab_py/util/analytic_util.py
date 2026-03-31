@@ -171,6 +171,64 @@ def compute_volume_profile(
         
     return volume_profile
     
+def compute_value_area(
+    volume_profile: List[Dict[str, Any]],
+    value_area_pct: float = 0.70
+) -> Dict[str, Union[float, str, None]]:
+    if not volume_profile:
+        return {'vah': None, 'val': None, 'va_mid': None}
+    
+    total_volume = sum(b['volume'] for b in volume_profile)
+    target_volume = total_volume * value_area_pct
+    
+    local_maxima_buckets = [b for b in volume_profile if b.get('local_maxima', False)]
+    
+    if local_maxima_buckets:
+        poc_bucket = max(local_maxima_buckets, key=lambda b: (b['volume'], b.get('max', 0)))
+    else:
+        poc_bucket = max(volume_profile, key=lambda b: b['volume'])
+    
+    poc_bucket_key = poc_bucket['bucket_key']
+    current_volume = poc_bucket['volume']
+    
+    buckets = volume_profile
+    try:
+        poc_idx = buckets.index(poc_bucket)
+    except ValueError:
+        return {'vah': None, 'val': None, 'va_mid': poc_bucket_key}
+    
+    low_idx = high_idx = poc_idx
+    included = {poc_idx}
+    
+    while current_volume < target_volume and (low_idx > 0 or high_idx < len(buckets) - 1):
+        vol_above = buckets[high_idx + 1]['volume'] if high_idx + 1 < len(buckets) else -1
+        vol_below = buckets[low_idx - 1]['volume'] if low_idx - 1 >= 0 else -1
+        
+        if vol_above >= vol_below and high_idx + 1 < len(buckets):
+            high_idx += 1
+            current_volume += buckets[high_idx]['volume']
+            included.add(high_idx)
+        elif low_idx - 1 >= 0:
+            low_idx -= 1
+            current_volume += buckets[low_idx]['volume']
+            included.add(low_idx)
+        else:
+            break
+    
+    included_buckets = [buckets[i] for i in included]
+    
+    vah_candidates = [b['max'] for b in included_buckets if b['max'] != float('inf')]
+    vah = max(vah_candidates) if vah_candidates else max((b['max'] for b in included_buckets), default=None)
+    
+    val_candidates = [b['min'] for b in included_buckets if b['min'] != float('-inf')]
+    val = min(val_candidates) if val_candidates else min((b['min'] for b in included_buckets), default=None)
+    
+    return {
+        'vah': vah,
+        'val': val,
+        'va_mid': poc_bucket_key
+    }
+
 '''
 compute_candles_stats will calculate typical/basic technical indicators using in many trading strategies:
     a. Basic SMA/EMAs (And slopes)

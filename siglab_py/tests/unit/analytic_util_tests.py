@@ -2,7 +2,7 @@ import unittest
 from typing import List
 from pathlib import Path
 
-from util.analytic_util import compute_volume_profile, compute_candles_stats, lookup_fib_target
+from util.analytic_util import compute_volume_profile, compute_value_area, compute_candles_stats, lookup_fib_target
 
 import pandas as pd
 
@@ -42,7 +42,34 @@ class AnalyticUtilTests(unittest.TestCase):
             ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
         )
 
+        for bucket in volume_profile:
+            assert('min' in bucket)
+            assert('max' in bucket)
+            assert('up_volume' in bucket)
+            assert('down_volume' in bucket)
+            assert('volume' in bucket)
+            assert('bucket_key' in bucket)
+            assert('local_maxima' in bucket)
+            assert('local_minima' in bucket)
+
         # See also: https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/volume_profiles.ipynb
+
+    def test_compute_value_area(self):
+        data_dir = Path(__file__).parent.parent.parent.parent / "data"
+        csv_path = data_dir / "sample_btc_candles.csv"
+        pd_candles : pd.DataFrame = pd.read_csv(csv_path)
+
+        level_granularity = 0.1
+        volume_profile = compute_volume_profile(
+            pd_candles = pd_candles,
+            level_granularity = 0.1, # i.e. 10%
+            ohlc = 'close' # Compute volume profile from 'close' prices? Permissible values: open, high, low, close
+        )
+
+        va = compute_value_area(volume_profile, value_area_pct=0.70)
+        assert('vah' in va)
+        assert('val' in va)
+        assert('va_mid' in va)
 
     def test_compute_candle_stats(self):
         '''
