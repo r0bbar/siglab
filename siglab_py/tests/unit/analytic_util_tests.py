@@ -70,6 +70,8 @@ class AnalyticUtilTests(unittest.TestCase):
         assert('vah' in va)
         assert('val' in va)
         assert('va_mid' in va)
+        assert('vah_bucket' in va)
+        assert('val_bucket' in va)
 
     def test_compute_candle_stats(self):
         '''
