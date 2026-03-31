@@ -171,8 +171,6 @@ def compute_volume_profile(
         
     return volume_profile
     
-from typing import Dict, List, Union, Any
-
 def compute_value_area(
     volume_profile: List[Dict[str, Any]],
     value_area_pct: float = 0.70,
