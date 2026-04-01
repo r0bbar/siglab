@@ -191,7 +191,13 @@ def compute_value_area(
                 else:
                     poc_prices.append(float(b['bucket_key'].split()[-1]))
             avg_poc_price = sum(poc_prices) / len(poc_prices)
-            poc_bucket_key = f"Avg POC ~ {avg_poc_price:.2f}"
+
+            assert(volume_profile[0]['min'] < volume_profile[-1]['min']) # Following depends on sort order
+            poc_bucket_key = None
+            for level in volume_profile:
+                if level['min']<=avg_poc_price and level['max']>=avg_poc_price:
+                    poc_bucket_key = level['bucket_key']
+
             poc_bucket = local_maxima_buckets[0]
         else:
             poc_bucket = max(local_maxima_buckets, key=lambda b: (b['volume'], b.get('max', 0)))
