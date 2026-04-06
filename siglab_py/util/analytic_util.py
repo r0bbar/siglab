@@ -467,8 +467,11 @@ def compute_candles_stats(
     pd_candles.loc[:,'atr_avg_long_periods_bps'] = pd_candles['atr_avg_long_periods']/pd_candles['ema_close'] *10000
 
     # Choppiness Index is simply normalized "sum(ATR) relative to range of a sliding window".
-    pd_candles.loc[:,'choppiness_index'] = math.log(pd_candles['atr'].rolling(window=int(sliding_window_how_many_candles)).sum())/math.log(sliding_window_how_many_candles * (pd_candles['high'].rolling(window=int(sliding_window_how_many_candles)).max() - pd_candles['low'].rolling(window=int(sliding_window_how_many_candles)).min()))
-    pd_candles.loc[:,'choppiness_index'] = round(pd_candles.loc[:,'choppiness_index'] * 100,  2)
+    tr_sum = pd_candles['tr'].rolling(window=int(sliding_window_how_many_candles)).sum()
+    max_high = pd_candles['high'].rolling(window=int(sliding_window_how_many_candles)).max()
+    min_low = pd_candles['low'].rolling(window=int(sliding_window_how_many_candles)).min()
+    price_range = max_high - min_low
+    pd_candles.loc[:,'choppiness_index'] = round(100 * (np.log10(tr_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
 
     '''
     @hardcode @todo
