@@ -319,7 +319,7 @@ async def main() -> None:
         except Exception as loop_err:
             err_msg = f'loop error {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}'
             logger.error(err_msg)
-            dispatch_notification(title=f"{param['current_filename']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+            dispatch_notification(title=f"{param['current_filename']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
         finally:
             await asyncio.sleep(int(param['loop_freq_ms'] / 1000))
