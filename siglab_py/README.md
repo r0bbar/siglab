@@ -127,6 +127,7 @@ expected_columns : List[str] = [
             'trend_from_highs_long_periods', 'trend_from_lows_long_periods', 'trend_from_highs_short_periods', 'trend_from_lows_short_periods',
             'h_l', 'h_pc', 'l_pc', 'tr', 
             'atr', 'atr_avg_short_periods', 'atr_avg_long_periods', 'atr_bps', 'atr_avg_short_periods_bps', 'atr_avg_long_periods_bps',
+            'choppiness_index',
             'hurst_exp', 
             'boillenger_upper', 'boillenger_lower', 'boillenger_channel_height', 'boillenger_upper_agg', 'boillenger_lower_agg', 'boillenger_channel_height_agg', 
             'aggressive_up', 'aggressive_up_index', 'aggressive_up_candle_height', 'aggressive_up_candle_high', 'aggressive_up_candle_low', 'aggressive_down', 'aggressive_down_index', 'aggressive_down_candle_height', 'aggressive_down_candle_high', 'aggressive_down_candle_low', 
