@@ -486,6 +486,9 @@ def compute_candles_stats(
     pd_candles.loc[:,'choppiness_index'] = round(100 * (np.log10(tr_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
     pd_candles.loc[:,'choppiness_index_up'] = round(100 * (np.log10(r_up_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
     pd_candles.loc[:,'choppiness_index_down'] = round(100 * (np.log10(r_down_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
+    pd_candles.loc[:,'ema_choppiness_index'] = pd_candles['choppiness_index'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    pd_candles.loc[:,'ema_choppiness_index_up'] = pd_candles['choppiness_index_up'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    pd_candles.loc[:,'ema_choppiness_index_down'] = pd_candles['choppiness_index_down'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
 
     '''
     @hardcode @todo
