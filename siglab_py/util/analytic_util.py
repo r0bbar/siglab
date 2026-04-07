@@ -466,12 +466,26 @@ def compute_candles_stats(
     pd_candles.loc[:,'atr_avg_short_periods_bps'] = pd_candles['atr_avg_short_periods']/pd_candles['ema_close'] *10000
     pd_candles.loc[:,'atr_avg_long_periods_bps'] = pd_candles['atr_avg_long_periods']/pd_candles['ema_close'] *10000
 
+    pd_candles.loc[:,'r_up'] = abs(pd_candles['high'] - pd_candles['close'].shift(1))
+    pd_candles.loc[:,'r_down'] = abs(pd_candles['close'].shift(1) - pd_candles['low'])
+    pd_candles.loc[:,'r_up'] = pd_candles['r_up'].clip(lower=0)
+    pd_candles.loc[:,'r_down'] = pd_candles['r_down'].clip(lower=0)
+    pd_candles.loc[:,'atr_up'] = pd_candles['r_up'].rolling(window=sliding_window_how_many_candles).mean()
+    pd_candles.loc[:,'atr_down'] = pd_candles['r_down'].rolling(window=sliding_window_how_many_candles).mean()
+    pd_candles.loc[:,'atr_up_bps'] = pd_candles['atr_up']/pd_candles['ema_close'] *10000
+    pd_candles.loc[:,'atr_down_bps'] = pd_candles['atr_down']/pd_candles['ema_close'] *10000
+
     # Choppiness Index is simply normalized "sum(ATR) relative to range of a sliding window".
     tr_sum = pd_candles['tr'].rolling(window=int(sliding_window_how_many_candles)).sum()
+    r_up_sum = pd_candles['r_up'].rolling(window=int(sliding_window_how_many_candles)).sum()
+    r_down_sum = pd_candles['r_down'].rolling(window=int(sliding_window_how_many_candles)).sum()
     max_high = pd_candles['high'].rolling(window=int(sliding_window_how_many_candles)).max()
     min_low = pd_candles['low'].rolling(window=int(sliding_window_how_many_candles)).min()
     price_range = max_high - min_low
+
     pd_candles.loc[:,'choppiness_index'] = round(100 * (np.log10(tr_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
+    pd_candles.loc[:,'choppiness_index_up'] = round(100 * (np.log10(r_up_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
+    pd_candles.loc[:,'choppiness_index_down'] = round(100 * (np.log10(r_down_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
 
     '''
     @hardcode @todo
