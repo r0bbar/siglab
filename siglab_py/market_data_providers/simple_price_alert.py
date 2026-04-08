@@ -15,6 +15,7 @@ import feedparser
 import pandas as pd
 from pprint import pformat
 from redis import StrictRedis
+from requests.exceptions import HTTPError
 
 from siglab_py.util.market_data_util import instantiate_exchange
 from siglab_py.util.market_data_util import fetch_candles
@@ -119,11 +120,18 @@ param : Dict = {
 
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
-    parser.add_argument("--tickers", help="Comma seperated list, example: BTC/USDC:USDC,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC")
     
     parser.add_argument("--exchange_name", help="Exchange to monitor, default is Lighter DEX", default='lighter')
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
     parser.add_argument("--default_sub_type", help="default_sub_type", default=None)
+    
+    parser.add_argument("--backup_exchange_name", help="Exchange to monitor, default is Aster DEX", default='aster')
+    parser.add_argument("--backup_default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
+    parser.add_argument("--backup_default_sub_type", help="default_sub_type", default=None)
+
+    parser.add_argument("--tickers", help="Comma seperated list, example: BTC/USDC:USDC,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC")
+    parser.add_argument("--backup_tickers", help="Comma seperated list, example: BTC/USDC:USDC,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC")
+    
     parser.add_argument("--rate_limit_ms", help="rate_limit_ms: Check your exchange rules", default=100)
 
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
@@ -137,11 +145,17 @@ def parse_args():
 
     args = parser.parse_args()
     
-    param['tickers'] = args.tickers.split(',')
-
     param['exchange_name'] = args.exchange_name
     param['default_type'] = args.default_type
     param['default_sub_type'] = args.default_sub_type
+
+    param['backup_exchange_name'] = args.backup_exchange_name
+    param['backup_default_type'] = args.backup_default_type
+    param['backup_default_sub_type'] = args.backup_default_sub_type
+
+    param['tickers'] = args.tickers.split(',')
+    param['backup_tickers'] = args.backup_tickers.split(',') if args.backup_tickers else None
+
     param['rate_limit_ms'] = int(args.rate_limit_ms)
 
     param['candle_size'] = args.candle_size
@@ -202,6 +216,16 @@ async def main() -> None:
     )
     markets = exchange.load_markets()
 
+    backup_exchange : Union[AnyExchange, None] = instantiate_exchange(
+        exchange_name=param['backup_exchange_name'],
+        api_key=None,
+        secret=None,
+        passphrase=None,
+        default_type=param['default_type'],
+        rate_limit_ms=param['rate_limit_ms'],
+    )
+    backup_markets = backup_exchange.load_markets
+
     candle_size = param['candle_size']
     interval = candle_size[-1]
     num_intervals_per_candle = int(candle_size.replace(interval,""))
@@ -229,14 +253,26 @@ async def main() -> None:
     while True:
         try:
             start_ts_sec = time.time()
-            candles = fetch_candles(
-                                                start_ts=cutoff_ts, 
-                                                end_ts=int(end_date.timestamp()), 
-                                                exchange=exchange, normalized_symbols=param['tickers'], 
-                                                candle_size = candle_size, 
-                                                num_candles_limit = 100,
-                                                logger = None
-                                            )
+
+            try:
+                candles = fetch_candles(
+                                                    start_ts=cutoff_ts, 
+                                                    end_ts=int(end_date.timestamp()), 
+                                                    exchange=exchange, normalized_symbols=param['tickers'], 
+                                                    candle_size = candle_size, 
+                                                    num_candles_limit = 100,
+                                                    logger = None
+                                                )
+
+            except HTTPError as fetch_err:
+                err_msg = f'[{exchange.name}] fetch error, swap with backup [{backup_exchange.name}] {fetch_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}'
+                logger.error(err_msg)
+                
+                # Swap with backup
+                _exchange = exchange
+                exchange = backup_exchange
+                backup_exchange = _exchange
+
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] candles fetch elapsed_ms: {elapsed_ms:,}")
             for ticker in param['tickers']:
@@ -252,7 +288,17 @@ async def main() -> None:
                 open = float(current_candle['open'])
                 close = float(current_candle['close'])
 
-                ob = exchange.fetch_order_book(ticker, limit=10)
+                try:
+                    ob = exchange.fetch_order_book(ticker, limit=10)
+                except HTTPError as fetch_err:
+                    err_msg = f'[{exchange.name}] fetch error, swap with backup [{backup_exchange.name}] {fetch_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}'
+                    logger.error(err_msg)
+                    
+                    # Swap with backup
+                    _exchange = exchange
+                    exchange = backup_exchange
+                    backup_exchange = _exchange
+
                 best_bid = ob['bids'][0][0]
                 best_ask = ob['asks'][0][0]
                 mid = (best_bid + best_ask)/2
