@@ -252,7 +252,7 @@ async def main() -> None:
                 open = float(current_candle['open'])
                 close = float(current_candle['close'])
 
-                ob = exchange.fetch_order_book(ticker, limit=1)
+                ob = exchange.fetch_order_book(ticker, limit=10)
                 best_bid = ob['bids'][0][0]
                 best_ask = ob['asks'][0][0]
                 mid = (best_bid + best_ask)/2
