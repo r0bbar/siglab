@@ -104,7 +104,7 @@ def instantiate_exchange(
         )  
     elif exchange_name=='lighter':
         '''
-        @todo
+        @todo how to pass apikey/secret to lighter constructor
             lighter = ccxt.lighter({
                 'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
                 'options': {
@@ -114,6 +114,11 @@ def instantiate_exchange(
             })
         '''
         exchange = ccxt.lighter()
+    elif exchange_name=='aster':
+        '''
+        @todo how to pass apikey/secret to aster constructor 
+        '''
+        exchange = ccxt.aster()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}.")
 
@@ -249,7 +254,7 @@ async def async_instantiate_exchange(
         )
     elif exchange_name=='lighter':
         '''
-        @todo
+        @todo how to pass apikey/secret to lighter constructor
             lighter = ccxt.lighter({
                 'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
                 'options': {
@@ -259,6 +264,11 @@ async def async_instantiate_exchange(
             })
         '''
         exchange = ccxtpro.lighter()
+    elif exchange_name=='aster':
+        '''
+        @todo how to pass apikey/secret to aster constructor 
+        '''
+        exchange = ccxtpro.aster()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
