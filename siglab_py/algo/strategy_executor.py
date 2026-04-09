@@ -22,6 +22,9 @@ from tabulate import tabulate
 from pprint import pformat
 import plotext as plt
 
+from requests.exceptions import HTTPError
+from ccxt.base.errors import RequestTimeout
+
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 from siglab_py.util.datetime_util import parse_trading_window
@@ -206,6 +209,8 @@ param : Dict = {
     'current_filename' : current_filename,
     'current_dir' : parent_dir,
     'startup_scripts_dir_path' : startup_scripts_dir_path,
+
+    'max_num_connectivity_errors' : 50,
 
     'housekeep_filename_regex_list' : [ 
         "lo_candles_entry_.*\.csv",
@@ -846,6 +851,9 @@ async def main():
         lo_row_timestamp_ms : int = 0
         lo_candles_interval_rolled : bool = True
         strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
+
+        connectivity_errors = []
+
         while (not position_break):
             try:
                 if loop_counter>0:
@@ -2105,7 +2113,20 @@ async def main():
                         if any_exit and param['one_shot_only']:
                             log(f"one_shot_only: {param['one_shot_only']}, Exiting strategy.", log_level=LogLevel.INFO)
                             break
+            
+            except (RequestTimeout, HTTPError) as connectivity_error:
+                err_msg = f"#connectivity Connectivity issue? Exchange down? {connectivity_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+                if len(connectivity_errors)<param['max_num_connectivity_errors']:
+                    # Generally no need react right away. Wait how long? Depends on how fast you trade really. Adjust 'max_num_connectivity_errors' where appropriate.
+                    connectivity_errors.append(datetime.now().timestamp())
+                    log(err_msg, log_level=LogLevel.WARNING)
 
+                else:
+                    log(err_msg, log_level=LogLevel.ERROR)
+
+                    connectivity_errors.clear()
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                    
             except Exception as loop_err:
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
