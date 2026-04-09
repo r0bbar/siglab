@@ -51,13 +51,18 @@ logger.addHandler(fh)
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python simple_price_alert.py --tickers "BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC" --exchange_name lighter --candle_size 5m --how_many_candles 288 --num_std 3  --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+    python simple_price_alert.py --tickers "BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC" --backup_tickers "BTC/USDT:USDT,SOL/USDT:USDT,ETH/USDT:USDT,XAU/USDT:USDT,CL/USDT:USDT,QQQ/USDT:USDT" --exchange_name lighter --backup_exchange_name aster --candle_size 5m --how_many_candles 288 --num_std 3  --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
     
     --tickers: comma separated list of tickers you want to monitor
     --exchange_name: defaults to Lighter (https://app.lighter.xyz/trade)
+
+    --backup_tickers and --backup_exchange_name
+    "Back up" provides more resiliency, and fewer unnecessary alerts when your primary exchange is down for whatever reason (Connectivity or whatever). Why --backup_ticker? The same asset you want to monitor may have different ticker on primary exchange vs secondary (your "back up").
+    simple_price_alert will swap to your backup upon first incident of problem. Assuming things work with your backup for a couple hours, then connectivity issues comes? simple_price_alert would swap back to your primary automatically. 
+
     --candle_size: For example 1m, 5m, 15m, 1h ...
     --how_many_candles: how many candles to fetch. For example a day's worth of 5m candles = 12 5m candles per hr x 24 hours per day = 288 
-    --num_std: Default to 3 - this is the threshold before slack notifications dispatched
+    --num_std: Default to 3 - this is the threshold before notifications dispatched
     --slack_info_url/slack_critial_url/slack_alert_url: optional. Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
 
 launch.json for Debugging from VSCode:
