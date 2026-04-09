@@ -525,13 +525,13 @@ async def execute_one_position(
                     continue
 
                 orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3)
+                asks = [ ask[0] for ask in orderbook['asks'] ]
+                best_asks = min(asks)
+                bids = [ bid[0] for bid in orderbook['bids'] ]
+                best_bid = max(bids)
                 if position.side=='buy':
-                    asks = [ ask[0] for ask in orderbook['asks'] ]
-                    best_asks = min(asks)
                     limit_price : float= best_asks * (1 + position.leg_room_bps/10000)
                 else:
-                    bids = [ bid[0] for bid in orderbook['bids'] ]
-                    best_bid = max(bids)
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
                 mid = (best_bid + best_ask)/2
                     
