@@ -22,6 +22,7 @@ import asyncio
 from pprint import pformat
 
 import ccxt.pro as ccxtpro
+from ccxt.base.errors import OrderNotFound
 
 from siglab_py.util.retry_util import retry
 from siglab_py.util.simple_str import classify_ticker
@@ -532,6 +533,7 @@ async def execute_one_position(
                     bids = [ bid[0] for bid in orderbook['bids'] ]
                     best_bid = max(bids)
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
+                mid = (best_bid + best_ask)/2
                     
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
@@ -684,7 +686,50 @@ async def execute_one_position(
                 # Cancel hung limit order, resend as market
                 if order_status!='closed':
                     # If no update from websocket, do one last fetch via REST
-                    order_update = await _fetch_order(order_id, position.ticker, exchange) 
+                    try:
+                        order_update = await _fetch_order(order_id, position.ticker, exchange) 
+                    except OrderNotFound as order_not_found_err:
+                        log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}")
+                        
+                        # Some exchanges explain OrderNotFound after closure but actually position been flattened already.
+                        if not slice.reduce_only:
+                            raise
+
+                        if ticker_class!='spot':
+                            updated_position = await exchange.fetch_position(symbol=position.ticker)
+                            amount = (updated_position['contracts'] if updated_position else None)
+                            if amount:
+                                amount = amount * position.multiplier # in base ccy
+                            else:
+                                log(f"position update after order_not_found_err:")
+                                log(f"{json.dumps(updated_position, indent=4)}")
+
+                                raise
+
+                        else:
+                            balances = await exchange.fetch_balance()
+                            base_ccy : str = position.ticker.split("/")[0]
+                            amount = balances[base_ccy]['total'] if base_ccy in balances else 0
+
+                        if amount!=0:
+                            raise
+                        else:
+                            order_update = {
+                                'status' : 'closed',
+                                
+                                'average' : None, # This is an estimation!
+                                'price' : None, # This is an estimation!
+
+                                'filled' : None,
+                                'amount' : None,
+
+                                'remaining' : 0, # Clean exit, no residual
+                                'patch' : { # This is an estimation!
+                                    'average' : mid, 
+                                    'filled' : rounded_slice_amount_in_base_ccy,
+                                }
+                            }
+
                     order_update['slice_id'] = i
                     order_status = order_update['status']
                     filled_amount = order_update['filled']
