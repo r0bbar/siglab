@@ -1444,6 +1444,21 @@ async def main():
                             sl_adj_func_result = sl_adj_func(**kwargs)
                             running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
 
+                            if pos_side == OrderSide.BUY:
+                                tp_max_price = round_to_sigfigs(entry_px * (1 + tp_max_percent/100), sigfigs=6)
+                                tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
+                                sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
+                            elif pos_side == OrderSide.SELL:
+                                tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
+                                tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
+                                sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
+
+                            pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
+                            pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
+                            pd_position_cache.loc[position_cache_row.name, 'tp_max_price'] = tp_max_price
+                            pd_position_cache.loc[position_cache_row.name, 'tp_min_price'] = tp_min_price
+                            pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
+
                         else:
                             # Fallback
                             # For 'running_sl_percent_hard', simply skip updating until you have candles again.
