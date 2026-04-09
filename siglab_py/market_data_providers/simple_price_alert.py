@@ -63,6 +63,9 @@ Usage:
     --candle_size: For example 1m, 5m, 15m, 1h ...
     --how_many_candles: how many candles to fetch. For example a day's worth of 5m candles = 12 5m candles per hr x 24 hours per day = 288 
     --num_std: Default to 3 - this is the threshold before notifications dispatched
+
+    --price_alert_topic: Price alerts are be dispatched to redis, strategies (... secondary processors as well) can respond to it. Default: trading.price.abnormal_price_movement
+
     --slack_info_url/slack_critial_url/slack_alert_url: optional. Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
 
 launch.json for Debugging from VSCode:
@@ -143,6 +146,8 @@ def parse_args():
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
     parser.add_argument("--num_std", help="Number of standard deviation before sending alert? Default: 3", default=3)
 
+    parser.add_argument("--price_alert_topic", help="Price alerts are be dispatched to redis, strategies can respond to it.", default='trading.price.abnormal_price_movement')
+
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
@@ -166,6 +171,8 @@ def parse_args():
     param['candle_size'] = args.candle_size
     param['how_many_candles'] = int(args.how_many_candles)
     param['num_std'] = float(args.num_std)
+
+    param['mds']['topics']['price_alert'] = args.price_alert_topic
 
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
