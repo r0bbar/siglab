@@ -427,7 +427,7 @@ Why siglab_py backtest_core.py?
 
 + Pnl estimation errors: backtest_core.py minimize errors in pnl estimation out of the box. Very frequently, traders use candles close to mark pnl. When you have tall candles or if you’re trading lower time frames, that's very misleading.
 
-+ Do it the same way back tests vs live: 
++ Do it the same way back tests vs live
 
 Historical candles retrieval and signals calculations done in market_data_util [**fetch_candles**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) and [analytic_util.**compute_candles_stats**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/analytic_util.py) respectively. They are well packaged as simple, stateless functions. You can use them in your live trading, exactly how you did it in back tests. [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) also is provided out of the box: it’s for live trading, strategy lambda used in back tests can be specified (almost) exactly in live trading. 
 Out-of-box reference implementation of live algo: [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) (Uses Example 2.1 MACDRSICrosses15mTCStrategy - this is not Equity Curve 2.2 however). If you’re trading crypto and exchanges you trade are supported by CCXT library, you’re 90% ready to go and trade it live (Config changes, key/secrets…etc).
