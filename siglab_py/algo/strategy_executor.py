@@ -1509,16 +1509,19 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = loss_trailing
                         pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = running_sl_percent_hard
 
-                        # This is for tp_eval_func
-                        this_ticker_open_trades.append(
-                            {
-                                'ticker' : _ticker,
-                                'side' : pos_side.name.lower(), # backtests uses lower case
-                                'amount' : pos_usdt,
-                                'entry_price' : entry_px,
-                                'target_price' : tp_max_target # This is the only field needed by backtest_core generic_tp_eval
-                            }
-                        )
+                        if not this_ticker_open_trades:
+                            # Strategy lambdas may reference 'this_ticker_open_trades'. 
+                            # Also, appending here, again, why? this_ticker_open_trades would have been cleared on restarts. This is to restore the collection from position cache. Bear in mind, however, for multi-slice entries, entries are flattened into one single trade.
+                            this_ticker_open_trades.append(
+                                {
+                                    'entry_timestamp_ms' : int(pos_created.timestamp()),
+                                    'ticker' : _ticker,
+                                    'side' : pos_side.name.lower(), # backtests uses lower case
+                                    'amount' : pos_usdt,
+                                    'entry_price' : entry_px,
+                                    'target_price' : tp_max_target
+                                }
+                            )
 
                         log(f"pnl eval block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
                         
@@ -1608,11 +1611,13 @@ async def main():
                                 allow_entry_func_final_result = allow_entry_final_func(**kwargs)
                                 allow_entry_final_long = allow_entry_func_final_result['long']
                                 allow_entry_final_short = allow_entry_func_final_result['short']
-                                target_price_long, target_price_short = None, None
+                                target_price, target_price_long, target_price_short = None, None, None
                                 if allow_entry_func_final_result['target_price_long']:
                                     target_price_long = round_to_sigfigs(allow_entry_func_final_result['target_price_long'], sigfigs=6)
+                                    target_price = target_price_long
                                 if allow_entry_func_final_result['target_price_short']:
                                     target_price_short = round_to_sigfigs(allow_entry_func_final_result['target_price_short'], sigfigs=6)
+                                    target_price = target_price_short
 
                                 log(f"allow_entry_final_long: {allow_entry_final_long}, allow_entry_final_short: {allow_entry_final_short}")
 
@@ -1704,8 +1709,25 @@ async def main():
 
                                     done_timestamp_ms = executed_position['done_timestamp_ms']
                                     entry_duration_ms = round(( (done_timestamp_ms/1000) - entry_start_timestamp ) *1000, 3)
+                                                
+                                    # Strategy lambdas may reference 'this_ticker_open_trades'. Also depending on implementation, 'this_ticker_open_trades' may be referenced from other lambdas, so add upon entries. 
+                                    this_ticker_open_trades.append(
+                                        {
+                                            'entry_timestamp_ms' : done_timestamp_ms,
+                                            'ticker' : _ticker,
+                                            'side' : side,
+                                            'amount' : amount_filled_usdt,
+                                            'entry_price' : entry_px,
+                                            'target_price' : target_price
+                                        }
+                                    )
                                     
+                                    # Some strategies have sl_adj logic which works in conjunction with order_notional_adj, if you want sl_price in notification correct, you need trigger sl_adj before notification dispatched. 
+                                    kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
+                                    sl_adj_func_result = sl_adj_func(**kwargs)
+                                    running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
 
+                                    # recalculate targets, based on entry_px
                                     if side=='buy':
                                         tp_max_price = round_to_sigfigs(entry_px * (1 + tp_max_percent/100), sigfigs=6)
                                         tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
@@ -2037,7 +2059,7 @@ async def main():
                                 tp_max_percent  = param['tp_max_percent']
                                 tp_min_percent  = param['tp_min_percent']
 
-                                # This is for tp_eval_func
+                                # Strategy lambdas may reference 'this_ticker_open_trades'
                                 this_ticker_open_trades.clear()
 
                                 orderhist_cache_row = {
