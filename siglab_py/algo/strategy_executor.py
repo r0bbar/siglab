@@ -94,6 +94,13 @@ Usage:
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
         python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb --orderbooks_provider_topic mds_assign_ccc --hi_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-1h-L30-15 --lo_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-15m-L24-S12 --orderbook_topic orderbooks_SOL/USDT:USDT_hyperliquid --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
+        Any complex json that's not easy to feed thru command line args?
+            For example, exchange specific custom params you'd need to pass to create_order.
+                For long: --non_unified_params_long 
+                        { "tdMode" : "cash" }
+                For shorts, non_unified_params_1_short 
+            Define them in '--params_config_file'.
+
         What's "L" and "S" means in --hi_candles_w_ta_topic --lo_candles_w_ta_topic?
         L24: long intervals 24
         S12: short intervals 12
