@@ -1453,8 +1453,8 @@ async def main():
                                 tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                                 sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
 
-                            pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
-                            pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
+                            pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent # Update position cache only! NOT algo_param['tp_min_percent'] which has original un-adjusted setting!
+                            pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent # Update position cache only! NOT algo_param['tp_max_percent'] which has original un-adjusted setting!
                             pd_position_cache.loc[position_cache_row.name, 'tp_max_price'] = tp_max_price
                             pd_position_cache.loc[position_cache_row.name, 'tp_min_price'] = tp_min_price
                             pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
