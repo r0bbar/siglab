@@ -388,6 +388,8 @@ def parse_args():
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
 
+    parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
+
     parser.add_argument("--dump_candles", help="This is for trouble shooting only. Y or N (default).", default='N')
 
     parser.add_argument("--start_timestamp_ms", help="You want your algo to start only after what time? This is timestamp in ms. Default is None (start immediately)", default=None)
@@ -520,6 +522,14 @@ def parse_args():
     param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
+
+    if args.privacy_first:
+        if args.privacy_first=='Y':
+            param['privacy_first'] = True
+        else:
+            param['privacy_first'] = False
+    else:
+        param['privacy_first'] = True
 
     if args.dump_candles:
         if args.dump_candles=='Y':
@@ -1763,21 +1773,21 @@ async def main():
                                             'entry_px' : entry_px,
                                             'mid' : mid,
                                             'slippage_bps' : slippage_bps,
-                                            'amount_base_ccy' : executed_position['filled_amount'],
+                                            'amount_base_ccy' : executed_position['filled_amount'] if not param['privacy_first'] else "***",
                                             'tp_min_price' : tp_min_price,
                                             'tp_max_price' : tp_max_price,
                                             'sl_price' : sl_price,
                                             'pnl_potential_bps' : pnl_potential_bps, # If the trade manages to reach tp_max_percent
                                             'tp_max_percent' : tp_max_percent,
                                             'tp_min_percent' : tp_min_percent,
-                                            'tp_max_pnl_est' : tp_max_pnl_est,
-                                            'tp_min_pnl_est' : tp_min_pnl_est,
-                                            'sl_pnl_est' : sl_pnl_est,
+                                            'tp_max_pnl_est' : tp_max_pnl_est if not param['privacy_first'] else "***",
+                                            'tp_min_pnl_est' : tp_min_pnl_est if not param['privacy_first'] else "***",
+                                            'sl_pnl_est' : sl_pnl_est if not param['privacy_first'] else "***",
                                             'running_sl_percent_hard' : running_sl_percent_hard,
-                                            'filled_amount' : new_pos_from_exchange,
-                                            'pos' : pos + new_pos_from_exchange,
-                                            'pos_usdt' : pos_usdt + new_pos_usdt_from_exchange,
-                                            'fees' : fees,
+                                            'filled_amount' : new_pos_from_exchange if not param['privacy_first'] else "***",
+                                            'pos' : pos + new_pos_from_exchange if not param['privacy_first'] else "***",
+                                            'pos_usdt' : pos_usdt + new_pos_usdt_from_exchange if not param['privacy_first'] else "***",
+                                            'fees' : fees if not param['privacy_first'] else "***",
                                             'multiplier' : multiplier,
                                             'entry_duration_ms' : entry_duration_ms,
                                             'indicators' : {}
@@ -1835,7 +1845,7 @@ async def main():
                                     orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                     log(executed_position)
-                                    dispatch_notification(title=f"#entry {param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    dispatch_notification(title=f"#entry {param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt if not param['privacy_first'] else '***'}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                     if param['dump_candles']:
                                         pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
@@ -2025,12 +2035,12 @@ async def main():
                                     'exit_px' : exit_px,
                                     'mid' : mid,
                                     'slippage_bps' : slippage_bps,
-                                    'amount_base_ccy' : executed_position_close['filled_amount'],
-                                    'pnl' : closed_pnl,
+                                    'amount_base_ccy' : executed_position_close['filled_amount'] if not param['privacy_first'] else "***",
+                                    'pnl' : closed_pnl if not param['privacy_first'] else "***",
                                     'pnl_bps' : round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0,
                                     'fees' : fees,
                                     'max_unreal_live_bps' : max_unreal_live_bps,
-                                    'max_pain' : max_pain,
+                                    'max_pain' : max_pain if not param['privacy_first'] else "***",
                                     'running_sl_percent_hard' : running_sl_percent_hard,
                                     'loss_trailing' : loss_trailing,
                                     'effective_tp_trailing_percent' : effective_tp_trailing_percent,
@@ -2090,12 +2100,12 @@ async def main():
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                 log(executed_position_close)
-                                dispatch_notification(title=f"#exit {param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'} succeeded. closed_pnl: {closed_pnl}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"#exit {param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {pos_side.name} succeeded. closed_pnl: {closed_pnl if not param['privacy_first'] else '***'}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 any_exit = True
 
                             else:
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {'long' if pos_side==OrderSide.BUY else 'short'}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Exit execution failed. {_ticker} {pos_side.name}", message=executed_position_close, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                                 break
 
                     log(f"loop# {loop_counter} ({loop_elapsed_sec} sec) [{gateway_id}]", log_level=LogLevel.INFO)
