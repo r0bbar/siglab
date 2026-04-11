@@ -45,7 +45,7 @@ if sys.platform == 'win32':
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --verbose N --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/xxx --slack_alert_url=https://hooks.slack.com/services/xxx
+    python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxxx --verbose N --notification_info_url=https://hooks.slack.com/services/xxx --notification_critical_url=https://hooks.slack.com/services/xxx --notification_alert_url=https://hooks.slack.com/services/xxx
 
     --default_type defaults to linear
     --default_sub_type defaults to None (Depends on your exchange/broker, if they requires this)
@@ -54,15 +54,15 @@ Usage:
 	--passphrase is optional, this depends on the exchange.
     --verbose logging verbosity, Y or N (default)
     --gateway_id contains two parts separated by underscore. Gateway.py will parse 'hyperliquid_01' into two parts: 'hyperliquid' (Exchange name) and '01' (Use this for your sub account ID). Exchange name need be spelt exactly. Please have a look at market_data_util async_instantiate_exchange.
-    --slack_info_url, --slack_critical_url and --slack_alert_url are if you want gateway to dispatch Slack notification on events.
+    --notification_info_url, --notification_critical_url and --notification_alert_url are if you want gateway to dispatch notification on events.
     --order_amount_randomize_max_pct adds small variance to sliced order amount (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
     
-    slack_info_url/slack_critial_url/slack_alert_url: How to get Slack webhook urls? 
+    notification_info_url/notification_critical_url/notification_alert_url: How to get webhook urls? 
         Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
         https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
     Another example:
-        python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --slack_info_url=https://hooks.slack.com/services/xxx --slack_critial_url=https://hooks.slack.com/services/yyy --slack_alert_url=https://hooks.slack.com/services/zzz
+        python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --notification_info_url=https://hooks.slack.com/services/xxx --notification_critical_url=https://hooks.slack.com/services/yyy --notification_alert_url=https://hooks.slack.com/services/zzz
 
     gateway.py takes outgoing orders from redis and publish executions back to redis when done. Redis configuration in param['mds']['redis']. Start redis before starting gateway.py.
 
@@ -118,9 +118,9 @@ To debug from vscode, launch.json:
                     "--passphrase", "xxx",
                     "--verbose", "N",
 
-                    "--slack_info_url", "https://hooks.slack.com/services/xxx",
-                    "--slack_critial_url", "https://hooks.slack.com/services/xxx",
-                    "--slack_alert_url", "https://hooks.slack.com/services/xxx",
+                    "--notification_info_url", "https://hooks.slack.com/services/xxx",
+                    "--notification_critical_url", "https://hooks.slack.com/services/xxx",
+                    "--notification_alert_url", "https://hooks.slack.com/services/xxx",
                 ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -233,8 +233,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -328,9 +328,9 @@ def parse_args():
 
     parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
     param['gateway_id'] = args.gateway_id
@@ -381,9 +381,9 @@ def parse_args():
     else:
         param['privacy_first'] = True
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
 

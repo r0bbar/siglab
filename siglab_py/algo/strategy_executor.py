@@ -92,7 +92,7 @@ Usage:
 
     Step 5. Start strategy_executor
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb --orderbooks_provider_topic mds_assign_ccc --hi_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-1h-L30-15 --lo_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-15m-L24-S12 --orderbook_topic orderbooks_SOL/USDT:USDT_hyperliquid --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
+        python strategy_executor.py --target_strategy_name YourStrategyClassName --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --order_type limit --amount_base_ccy 45 --residual_pos_usdt_threshold 10 --slices 3 --fees_ccy USDT --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_hard_percent 1 --reversal_num_intervals 3 --notification_info_url https://hooks.slack.com/services/xxx --notification_critical_url https://hooks.slack.com/services/xxx --notification_alert_url https://hooks.slack.com/services/xxx --economic_calendar_source xxx --block_entry_impacting_events Y --num_intervals_current_ecoevents 96 --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb --orderbooks_provider_topic mds_assign_ccc --hi_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-1h-L30-15 --lo_candles_w_ta_topic candles_ta-SOL-USDT-SWAP-hyperliquid-15m-L24-S12 --orderbook_topic orderbooks_SOL/USDT:USDT_hyperliquid --trading_window_start Mon_00:00 --trading_window_end Fri_17:00
 
         Any complex json that's not easy to feed thru command line args?
             For example, exchange specific custom params you'd need to pass to create_order.
@@ -105,7 +105,7 @@ Usage:
         L24: long intervals 24
         S12: short intervals 12
 
-        slack_info_url/slack_critial_url/slack_alert_url: How to get Slack webhook urls? 
+        notification_info_url/notification_critical_url/notification_alert_url: How to get webhook urls? 
             Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
             https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
@@ -165,9 +165,9 @@ Debug from VSCode, launch.json:
                         "--trading_window_start", "Mon_00:00",
                         "--trading_window_end", "Fri_17:00",
 
-                        "--slack_info_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_critial_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_alert_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_info_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_critical_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_alert_url", "https://hooks.slack.com/services/xxx",
                     ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -228,8 +228,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -384,9 +384,9 @@ def parse_args():
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
 
@@ -517,9 +517,9 @@ def parse_args():
 
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
 

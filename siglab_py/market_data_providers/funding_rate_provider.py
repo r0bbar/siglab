@@ -47,8 +47,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -114,9 +114,9 @@ def parse_args():
     parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
     parser.add_argument("--loop_freq_ms", help="Loop delays. Remember funding rates generally updated every 8 hours, so no need fast.", default=60000 * 60)
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args, additional_args = parser.parse_known_args()
 
@@ -136,9 +136,9 @@ def parse_args():
 
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['exchange_name']}"
 

@@ -120,8 +120,8 @@ param: Dict[str, Any] = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -178,9 +178,9 @@ def parse_args():
     parser.add_argument("--message_keywords_filter", help="TG message_keywords_filter: Comma separated list, case-insensitive. Default: None (i.e. no keywords)", default=None)
     parser.add_argument("--start_date", help="start_date, format: yyyy-MM-dd. If left to null, cutoff date default to last message's datetime from message cache, or tm1.", default=None)
     
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
     
@@ -194,9 +194,9 @@ def parse_args():
     if args.message_keywords_filter:
         param['message_keywords_filter'] = args.message_keywords_filter.split(',')
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['channel_username'].lstrip('@')}"
 

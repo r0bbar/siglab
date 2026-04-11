@@ -16,7 +16,7 @@ def dispatch_notification(
         params : Dict[str, Any],
         log_level : LogLevel = LogLevel.INFO,
         logger = None,
-        param_webhooks_config_section : str = 'slack'
+        param_webhooks_config_section : str = 'notification'
     ):
     try:
         if isinstance(message, Dict):
@@ -45,18 +45,18 @@ def dispatch_notification(
             logger.error(message)
 
 if __name__ == '__main__':
-    param_webhooks_config_section="slack"
+    param_webhooks_config_section="notification"
 
     params : Dict[str, Any] = {
         param_webhooks_config_section : {
             "info" : {
-                "webhook_url" : "https://discord.com/api/webhooks/1489048454968905909/hsTZDGBzLZWwtqHr85vRx1kSDAKDTwnDA89AkoiLCZyrtojPz7CaOe4APXmiOIi3-p6S"
+                "webhook_url" : "https://discord.com/api/webhooks/xxx/xxx"
             },
             "critical" : {
-                "webhook_url" : "https://discord.com/api/webhooks/1489047810996310107/bDfGMtUH0d6uoy94y352eikhD6p1sOAVXVPLY7uLOTWmZ8kN1jhObsJjVXwuqTObFRR7"
+                "webhook_url" : "https://discord.com/api/webhooks/xxx/xxx"
             },
             "alert" : {
-                "webhook_url" : "https://discord.com/api/webhooks/1489048026659160164/er0WNABzP_kgtdmRYaFGUq89gP5WL8dZFWqRG2axDPQLqGNVssaBakAlAqfgwxP0E6Lr"
+                "webhook_url" : "https://discord.com/api/webhooks/xxx/xxx"
             }
       },
     }

@@ -18,7 +18,7 @@ current_filename = os.path.basename(__file__)
 
 '''
 Usage:
-    python aggressive_move_alert.py --exchange_name hyperliquid --default_type linear --tickers BTC/USDC:USDC,ETH/USDC:USDC --candle_size 1h --threshold_bps 500 --num_intervals 24 --reversal_num_intervals 2 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+    python aggressive_move_alert.py --exchange_name hyperliquid --default_type linear --tickers BTC/USDC:USDC,ETH/USDC:USDC --candle_size 1h --threshold_bps 500 --num_intervals 24 --reversal_num_intervals 2 --notification_info_url https://hooks.slack.com/services/xxx --notification_critical_url https://hooks.slack.com/services/xxx --notification_alert_url https://hooks.slack.com/services/xxx
 
     exchange_name: where you source market data from?
     default_type: default_type: spot, linear, inverse, futures ...etc. The convention comes from CCXT https://docs.ccxt.com/en/latest/manual.html#instantiation
@@ -28,7 +28,7 @@ Usage:
     num_intervals: Number of intervals. If num_intervals=24 and candle_size=1h, then sliding window size is 1 day.
     reversal_num_intervals: Say reversal_num_intervals=2. If two reversal candles is detected, it'd fire off another alert.
 
-    slack_info_url, slack_critial_url, slack_alert_url: How to get Slack webhook Urls? Please refer to slack_dispatch_notification.py.
+    notification_info_url, notification_critical_url, notification_alert_url: How to get webhook Urls? Please refer to discord_dispatch_notification.py.
 
     This script is pypy compatible.
 
@@ -54,9 +54,9 @@ Debug from VSCode, launch.json:
                         "--num_intervals", "24",
                         "--reversal_num_intervals" : , "2",
 
-                        "--slack_info_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_critial_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_alert_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_info_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_critical_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_alert_url", "https://hooks.slack.com/services/xxx",
                     ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -73,8 +73,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -118,9 +118,9 @@ def parse_args():
 
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=500)
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
 
@@ -136,9 +136,9 @@ def parse_args():
 
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['exchange_name']}"
 

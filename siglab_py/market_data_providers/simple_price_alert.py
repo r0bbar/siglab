@@ -105,8 +105,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -148,9 +148,9 @@ def parse_args():
 
     parser.add_argument("--price_alert_topic", help="Price alerts are be dispatched to redis, strategies can respond to it.", default='trading.price.abnormal_price_movement')
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
     parser.add_argument("--enable_notification", help="Enable notification on new headline arrival? Y or N (default).", default='Y')
 
     args = parser.parse_args()
@@ -174,9 +174,9 @@ def parse_args():
 
     param['mds']['topics']['price_alert'] = args.price_alert_topic
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     if args.enable_notification:
         if args.enable_notification=='Y':

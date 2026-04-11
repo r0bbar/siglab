@@ -62,7 +62,7 @@ Why would you do that? Imagine if trader want to intervene and close out positio
 
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 2 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache N
+    python tp_algo.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --encrypt_decrypt_with_aws_kms Y --aws_kms_key_id xxx --apikey xxx --secret xxx --ticker SUSHI/USDC:USDC --side sell --order_type limit --amount_base_ccy 45 --slices 3 --wait_fill_threshold_ms 15000 --leg_room_bps 5 --tp_min_percent 1.5 --tp_max_percent 2.5 --sl_percent_trailing 50 --sl_percent 1 --reversal_num_intervals 2 --notification_info_url https://hooks.slack.com/services/xxx --notification_critical_url https://hooks.slack.com/services/xxx --notification_alert_url https://hooks.slack.com/services/xxx --load_entry_from_cache N
 
 Debug from VSCode, launch.json:
     {
@@ -98,9 +98,9 @@ Debug from VSCode, launch.json:
 
                         "--load_entry_from_cache", "N",
 
-                        "--slack_info_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_critial_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_alert_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_info_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_critical_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_alert_url", "https://hooks.slack.com/services/xxx",
                     ],
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}"
@@ -120,8 +120,8 @@ param : Dict = {
     'notification' : {
         'footer' : None,
 
-        # slack webhook url's for notifications
-        'slack' : {
+        # notification webhook url's for notifications
+        'notification' : {
             'info' : { 'webhook_url' : None },
             'critical' : { 'webhook_url' : None },
             'alert' : { 'webhook_url' : None },
@@ -196,9 +196,9 @@ def parse_args():
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
-    parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
-    parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
-    parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
+    parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
+    parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
+    parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
 
@@ -246,9 +246,9 @@ def parse_args():
     
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
-    param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
-    param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
-    param['notification']['slack']['alert']['webhook_url'] = args.slack_alert_url
+    param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
+    param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
+    param['notification']['notification']['alert']['webhook_url'] = args.notification_alert_url
 
     param['notification']['footer'] = f"From {param['current_filename']} {param['gateway_id']}"
 
