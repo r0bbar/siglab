@@ -326,6 +326,8 @@ def parse_args():
     parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
     parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
 
+    parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
+
     parser.add_argument("--slack_info_url", help="Slack webhook url for INFO", default=None)
     parser.add_argument("--slack_critial_url", help="Slack webhook url for CRITICAL", default=None)
     parser.add_argument("--slack_alert_url", help="Slack webhook url for ALERT", default=None)
@@ -370,6 +372,14 @@ def parse_args():
             param['verbose'] = False
     else:
         param['verbose'] = False
+
+    if args.privacy_first:
+        if args.privacy_first=='Y':
+            param['privacy_first'] = True
+        else:
+            param['privacy_first'] = False
+    else:
+        param['privacy_first'] = True
 
     param['notification']['slack']['info']['webhook_url'] = args.slack_info_url
     param['notification']['slack']['critical']['webhook_url'] = args.slack_critial_url
@@ -1054,7 +1064,7 @@ async def main():
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance()
         log(f"{param['gateway_id']}: account balances {balances}")
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances['total'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances['total'] if not param['privacy_first'] else f"{param['gateway_id']} started", footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
         await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)
 
