@@ -2017,6 +2017,8 @@ async def main():
                                 fees = executed_position_close['fees']
                                 done_timestamp_ms = executed_position_close['done_timestamp_ms']
 
+                                pnl_bps = round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0
+
                                 # To make it more bullet proof: For whatever reason average_cost is zero?
                                 slippage_bps = round( (max(exit_px, mid)/min(exit_px, mid) -1) * 10000, 2) if exit_px!=0 else None
                                 if pos_side==OrderSide.BUY:
@@ -2037,7 +2039,7 @@ async def main():
                                     'slippage_bps' : slippage_bps,
                                     'amount_base_ccy' : executed_position_close['filled_amount'] if not param['privacy_first'] else "---",
                                     'pnl' : closed_pnl if not param['privacy_first'] else "---",
-                                    'pnl_bps' : round(closed_pnl/abs(pos_usdt) *10000, 2) if pos_usdt!=0 else 0,
+                                    'pnl_bps' : pnl_bps,
                                     'fees' : fees if not param['privacy_first'] else "---",
                                     'max_unreal_live_bps' : max_unreal_live_bps,
                                     'max_pain' : max_pain if not param['privacy_first'] else "---",
@@ -2100,7 +2102,7 @@ async def main():
                                 orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                 log(executed_position_close)
-                                dispatch_notification(title=f"#exit {param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {pos_side.name} succeeded. closed_pnl: {closed_pnl if not param['privacy_first'] else '---'}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"#exit {param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {pos_side.name} succeeded. pnl_bps (Before fees): {pnl_bps}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 any_exit = True
 
