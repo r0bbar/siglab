@@ -893,9 +893,9 @@ async def execute_one_position(
             'ticker' : position.ticker,
             'side' : position.side,
             'num_executions' : len(position.get_executions()),
-            'filled_amount' : position.filled_amount,
+            'filled_amount' : position.filled_amount if not param['privacy_first'] else "---",
             'average_cost' : position.average_cost,
-            'pos' : position.pos,
+            'pos' : position.pos if not param['privacy_first'] else "---",
             'done' : position.done
         }
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=notification_summary, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
