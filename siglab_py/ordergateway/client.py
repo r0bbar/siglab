@@ -5,6 +5,7 @@ import json
 from  datetime import datetime
 import time
 import logging
+from pprint import pformat
 from redis import StrictRedis
 
 from siglab_py.exchanges.any_exchange import AnyExchange
@@ -364,10 +365,28 @@ class DivisiblePosition(Order):
 
         return average_cost
 
-    def get_fees(self) -> float:
+    def get_fees(
+        self,
+        fees_from_trades : bool = False,
+        ticker : str = None,
+        exchange : AnyExchange = None
+    ) -> float:
         fees : float = 0
         if self.fees_ccy:
-            fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0) for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
+            if not fees_from_trades:
+                logger.info(f"fees aggregated from orders")
+                fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0) for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
+            
+            else:
+                if exchange:
+                    logger.info(f"fees aggregated from private trades")
+                    for order_id in self.executions:
+                        trades = exchange.fetch_order_trades(order_id, ticker)
+                        for trade in trades:
+                            if trade['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper():
+                                fees += float(trade['fee']['cost'])
+                            logger.info(f"{pformat(trade, indent=2, width=100)}")
+
         return fees
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:

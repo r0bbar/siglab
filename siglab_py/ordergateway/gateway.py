@@ -326,6 +326,8 @@ def parse_args():
     parser.add_argument("--passphrase", help="Exchange passphrase", default=None)
     parser.add_argument("--verbose", help="logging verbosity, Y or N (default).", default='N')
 
+    parser.add_argument("--fees_from_trades", help="Y or N (default). If set to Y, fees aggregated from trades (as supposed to orders)", default='N')
+
     parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
 
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
@@ -372,6 +374,14 @@ def parse_args():
             param['verbose'] = False
     else:
         param['verbose'] = False
+
+    if args.fees_from_trades:
+        if args.fees_from_trades=='Y':
+            param['fees_from_trades'] = True
+        else:
+            param['fees_from_trades'] = False
+    else:
+        param['fees_from_trades'] = False
 
     if args.privacy_first:
         if args.privacy_first=='Y':
@@ -868,7 +878,11 @@ async def execute_one_position(
 
         position.filled_amount = position.get_filled_amount()
         position.average_cost = position.get_average_cost()
-        position.fees = position.get_fees()
+        position.fees = position.get_fees(
+            fees_from_trades=param['fees_from_trades'], 
+            ticker=position.ticker,
+            exchange=exchange
+        )
         
         if ticker_class!='spot':
             updated_position = await exchange.fetch_position(symbol=position.ticker)
