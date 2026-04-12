@@ -1151,7 +1151,7 @@ async def main():
                     tp_min_pnl_est = abs(pos_usdt) * algo_param['tp_min_percent']/100
                     sl_pnl_est = abs(pos_usdt) * running_sl_percent_hard/100
                     
-                    target_adj_dtails = {
+                    target_adj_details = {
                         'tp_max_percent' : algo_param['tp_max_percent'],
                         'tp_min_percent' : algo_param['tp_min_percent'],
                         'sl_hard_percent' : algo_param['sl_hard_percent'],
@@ -1160,13 +1160,13 @@ async def main():
                         'tp_max_target' : tp_max_target,
                         'sl_price'  : sl_price,
                         
-                        'tp_max_pnl_est' : tp_max_pnl_est,
-                        'tp_min_pnl_est' : tp_min_pnl_est,
-                        'sl_pnl_est' : sl_pnl_est
+                        'tp_max_pnl_est' : tp_max_pnl_est if not param['privacy_first'] else "---",
+                        'tp_min_pnl_est' : tp_min_pnl_est if not param['privacy_first'] else "---",
+                        'sl_pnl_est' : sl_pnl_est if not param['privacy_first'] else "---"
                     }
 
-                    log(f"TARGET ADJUSTMENT {pformat(target_adj_dtails, indent=2, width=100)}")
-                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_dtails, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    log(f"TARGET ADJUSTMENT {pformat(target_adj_details, indent=2, width=100)}")
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 '''
                 'fetch_position' is for perpetual. 
