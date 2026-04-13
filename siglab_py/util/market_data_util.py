@@ -75,6 +75,9 @@ def instantiate_exchange(
     elif exchange_name=='deribit':
         exchange = Deribit(exchange_params)  # type: ignore
     elif exchange_name=='hyperliquid':
+        '''
+        Discord: https://discord.com/channels/1029781241702129716/1180183595109847070
+        '''
         exchange = ccxt.hyperliquid(
             {
                 "walletAddress" : api_key, # type: ignore
