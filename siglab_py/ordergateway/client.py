@@ -381,7 +381,7 @@ class DivisiblePosition(Order):
                 if exchange:
                     logger.info(f"fees aggregated from private trades")
                     for order_id in self.executions:
-                        trades = exchange.fetch_order_trades(order_id, ticker)
+                        trades = await exchange.fetch_order_trades(order_id, ticker)
                         for trade in trades:
                             if trade['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper():
                                 fees += float(trade['fee']['cost'])
