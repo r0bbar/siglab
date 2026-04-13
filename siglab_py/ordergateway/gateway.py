@@ -881,7 +881,7 @@ async def execute_one_position(
 
         if param['fees_from_trades']:
             for order_id in position.executions:
-                order_trades = await exchange.fetch_order_trades(order_id, ticker)
+                order_trades = await exchange.fetch_order_trades(order_id, position.ticker)
                 position.executions[order_id]['order_trades'] = order_trades
                 for trade in order_trades:
                     logger.info(f"{pformat(trade, indent=2, width=100)}")
