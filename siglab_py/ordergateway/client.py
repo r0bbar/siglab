@@ -371,15 +371,17 @@ class DivisiblePosition(Order):
     ) -> float:
         fees : float = 0
         if self.fees_ccy:
-            if not order_trades:
-                logger.info(f"fees aggregated from orders")
-                fees = sum([ float(self.executions[order_id]['fee']['cost'] if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['cost'] else 0) for order_id in self.executions if self.executions[order_id]['fee'] and self.executions[order_id]['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper() ])
-            else:
-                if exchange:
+            for order_id in self.executions:
+                execution = self.executions[order_id]
+                if 'order_trades' in execution and execution['order_trades']:
                     logger.info(f"fees aggregated from private trades")
-                    for trade in order_trades:
-                        if trade['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper():
+                    for trade in execution['order_trades']:
+                        if trade['fee'] and trade['fee']['cost'] and trade['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper():
                             fees += float(trade['fee']['cost'])
+                else:
+                    logger.info(f"fees aggregated from orders")
+                    if execution['fee'] and execution['fee']['cost'] and execution['fee']['currency'].strip().upper()==self.fees_ccy.strip().upper():
+                        fees += float(execution['fee']['cost'])
         return fees
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:

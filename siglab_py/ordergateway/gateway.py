@@ -879,19 +879,13 @@ async def execute_one_position(
         position.filled_amount = position.get_filled_amount()
         position.average_cost = position.get_average_cost()
 
-        all_order_trades = []
         if param['fees_from_trades']:
-            for order_id in self.executions:
+            for order_id in position.executions:
                 order_trades = await exchange.fetch_order_trades(order_id, ticker)
+                position.executions[order_id]['order_trades'] = order_trades
                 for trade in order_trades:
                     logger.info(f"{pformat(trade, indent=2, width=100)}")
-                all_order_trades = all_order_trades + order_trades
-        position.fees = position.get_fees(
-            fees_from_trades=param['fees_from_trades'], 
-            order_trades=all_order_trades
-        )
-        all_order_trades.clear()
-        all_order_trades = None
+        position.fees = position.get_fees()
         
         if ticker_class!='spot':
             updated_position = await exchange.fetch_position(symbol=position.ticker)
