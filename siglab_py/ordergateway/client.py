@@ -366,8 +366,7 @@ class DivisiblePosition(Order):
         return average_cost
 
     def get_fees(
-        self,
-        order_trades : List[Dict[str, Any]]
+        self
     ) -> float:
         fees : float = 0
         if self.fees_ccy:
