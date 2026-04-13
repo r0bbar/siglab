@@ -1816,7 +1816,7 @@ async def main():
                                     pd_position_cache.loc[position_cache_row.name, 'pnl_open_bps'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_live_bps'] = 0
                                     pd_position_cache.loc[position_cache_row.name, 'max_unreal_open_bps'] = 0
-                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = param['sl_hard_percent']
+                                    pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = running_sl_percent_hard # We've recalculated 'running_sl_percent_hard', so use it instead of param['sl_hard_percent']
                                     pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = False
                                     pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = param['default_effective_tp_trailing_percent']
                                     pd_position_cache.loc[position_cache_row.name, 'loss_trailing'] = 0
