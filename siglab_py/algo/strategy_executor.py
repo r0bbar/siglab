@@ -23,7 +23,7 @@ from pprint import pformat
 import plotext as plt
 
 from requests.exceptions import HTTPError
-from ccxt.base.errors import RequestTimeout
+from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -2170,7 +2170,7 @@ async def main():
                             log(f"one_shot_only: {param['one_shot_only']}, Exiting strategy.", log_level=LogLevel.INFO)
                             break
             
-            except (RequestTimeout, HTTPError) as connectivity_error:
+            except (RequestTimeout, HTTPError, ExchangeNotAvailable) as connectivity_error:
                 err_msg = f"#connectivity Connectivity issue? Exchange down? {connectivity_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 if len(connectivity_errors)<param['max_num_connectivity_errors']:
                     # Generally no need react right away. Wait how long? Depends on how fast you trade really. Adjust 'max_num_connectivity_errors' where appropriate.
