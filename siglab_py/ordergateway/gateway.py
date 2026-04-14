@@ -23,6 +23,7 @@ from pprint import pformat
 
 import ccxt.pro as ccxtpro
 from ccxt.base.errors import OrderNotFound
+from ccxt.base.errors import NotSupported
 
 from siglab_py.util.retry_util import retry
 from siglab_py.util.simple_str import classify_ticker
@@ -880,11 +881,23 @@ async def execute_one_position(
         position.average_cost = position.get_average_cost()
 
         if param['fees_from_trades']:
+            bool support_fetch_order_trades : bool = True
+
             for order_id in position.executions:
-                order_trades = await exchange.fetch_order_trades(order_id, position.ticker)
-                position.executions[order_id]['order_trades'] = order_trades
-                for trade in order_trades:
-                    logger.info(f"{pformat(trade, indent=2, width=100)}")
+                try:    
+                    order_trades = await exchange.fetch_order_trades(order_id, position.ticker)
+                    
+                except NotSupported:
+                    support_fetch_order_trades = False
+
+                    private_trades = await exchange.fetch_my_trades(position.ticker)
+                    order_trades = [ trade for trade in private_trades if str(trade.get('order')) == str(order_id)]
+
+                finally:
+                    position.executions[order_id]['order_trades'] = order_trades
+                    for trade in order_trades:
+                        logger.info(f"{pformat(trade, indent=2, width=100)}")
+
         position.fees = position.get_fees()
         
         if ticker_class!='spot':
