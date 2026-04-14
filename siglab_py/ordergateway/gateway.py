@@ -928,7 +928,13 @@ async def execute_one_position(
             'pos' : position.pos if not param['privacy_first'] else "---",
             'done' : position.done
         }
-        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount}", message=notification_summary, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+        dispatch_notification(
+            title=f"{param['current_filename']} {param['gateway_id']} execute_one_position done. {position.ticker} {position.side} {position.amount if not param['privacy_first'] else '---'}", 
+            message=notification_summary, footer=param['notification']['footer'], 
+            params=notification_params, 
+            log_level=LogLevel.CRITICAL, 
+            logger=logger
+        )
 
     except Exception as position_execution_err:
         err_msg = f"{position.ticker}  Execution failed: {position_execution_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
