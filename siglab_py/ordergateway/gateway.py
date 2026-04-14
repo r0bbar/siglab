@@ -881,7 +881,7 @@ async def execute_one_position(
         position.average_cost = position.get_average_cost()
 
         if param['fees_from_trades']:
-            bool support_fetch_order_trades : bool = True
+            support_fetch_order_trades : bool = True
 
             for order_id in position.executions:
                 try:    
