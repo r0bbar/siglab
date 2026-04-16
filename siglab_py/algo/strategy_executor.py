@@ -244,6 +244,7 @@ param : Dict = {
             "hi_candles_w_ta_topic" : None,
             "lo_candles_w_ta_topic" : None,
             "orderbook_topic" : None,
+            "position_topic" : None,
             
             "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
         },
@@ -680,10 +681,15 @@ async def main():
                 _ticker = old_ticker
 
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
-    ordergateway_pending_orders_topic : str = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
+    ordergateway_pending_orders_topic = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
     
     ordergateway_executions_topic : str = "ordergateway_executions_$GATEWAY_ID$"
-    ordergateway_executions_topic : str = ordergateway_executions_topic.replace("$GATEWAY_ID$", gateway_id)
+    ordergateway_executions_topic = ordergateway_executions_topic.replace("$GATEWAY_ID$", gateway_id)
+
+    position_topic : str = "position_$STRATEGY_CLASS_NAME$_$GATEWAY_ID$_$TICKER$"
+    position_topic = position_topic.replace("$GATEWAY_ID$", gateway_id)
+    position_topic = position_topic.replace("$TICKER$", _ticker)
+    position_topic = position_topic.replace("$STRATEGY_CLASS_NAME$", param["target_strategy_name"])
 
     hi_candles_w_ta_topic : str = param['mds']['topics']['hi_candles_w_ta_topic']
     lo_candles_w_ta_topic : str = param['mds']['topics']['lo_candles_w_ta_topic']
@@ -692,7 +698,7 @@ async def main():
     hi_candles_provider_topic : str = param['mds']['topics']['hi_candles_provider_topic']
     lo_candles_provider_topic : str = param['mds']['topics']['lo_candles_provider_topic']
     orderbooks_provider_topic : str = param['mds']['topics']['orderbooks_provider_topic']
-
+    
     # economic_calendar_source
     full_economic_calendars_topic : str = param['mds']['topics']['full_economic_calendars_topic']
     full_economic_calendars_topic  = full_economic_calendars_topic.replace('$SOURCE$', param['economic_calendar_source']) if param['economic_calendar_source'] else None
@@ -704,6 +710,7 @@ async def main():
     log(f"orderbook_topic: {orderbook_topic}")
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
+    log(f"position_topic: {position_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
 
     algo_param = param # aliases
@@ -1145,6 +1152,36 @@ async def main():
                 pnl_percent_notional = pnl_open_bps/100
                 max_pain_percent_notional = max_pain / pos_usdt * 100 if pos_usdt!=0 else 0
                 max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
+
+                position_summary : Dict[str, Union[str, int, float]] = {
+                    'key' : key,
+                    'pos' : pos,
+                    'pos_usdt' : pos_usdt,
+                    'pos_side' : pos_side.name,
+                    'pos_status' : pos_status,
+                    'pos_created' : pos_created,
+                    'tp_min_percent' : tp_min_percent,
+                    'tp_max_percent' : tp_max_percent,
+                    'sl_hard_percent' : sl_hard_percent,
+                    'running_sl_percent_hard' : running_sl_percent_hard,
+                    'pos_tp_min_crossed' : pos_tp_min_crossed,
+                    'sl_trailing_min_threshold_crossed' : sl_trailing_min_threshold_crossed,
+                    'tp_max_target' : tp_max_target,
+                    'tp_min_target' : tp_min_target,
+                    'sl_price' : sl_price,
+                    'max_pnl_potential_bps' : max_pnl_potential_bps,
+                    'close_px' : close_px,
+                    'unreal_live' : unreal_live,
+                    'max_unreal_live' : max_unreal_live,
+                    'max_pain' : max_pain,
+                    'max_recovered_pnl' : max_recovered_pnl,
+                    'pnl_live_bps' : pnl_live_bps,
+                    'pnl_open_bps' : pnl_open_bps,
+                    'max_unreal_live_bps' : max_unreal_live_bps,
+                    'max_unreal_open_bps' : max_unreal_open_bps,
+                    'max_pain_percent_notional' : max_pain_percent_notional,
+                    'max_recovered_pnl_percent_notional' : max_recovered_pnl_percent_notional
+                }
 
                 if any_target_adj and pos_usdt!=0:
                     tp_max_pnl_est = abs(pos_usdt) * algo_param['tp_max_percent']/100
@@ -2146,6 +2183,8 @@ async def main():
                         if hi_candles_valid and lo_candles_valid: # Sometimes when you started strategy_executor just when lo_candles rolled
                             print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}")
                             print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
+
+                    redis_client.set(name=position_topic, value=json.dumps(position_summary).encode('utf-8'), ex=60*15)
 
                     def _safe_update_cache(
                         file_name : str,
