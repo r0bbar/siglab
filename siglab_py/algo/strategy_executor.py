@@ -688,7 +688,7 @@ async def main():
 
     position_topic : str = "position_$STRATEGY_CLASS_NAME$_$GATEWAY_ID$_$TICKER$"
     position_topic = position_topic.replace("$GATEWAY_ID$", gateway_id)
-    position_topic = position_topic.replace("$TICKER$", _ticker)
+    position_topic = position_topic.replace("$TICKER$", _ticker.replace("/","_").replace(":","_"))
     position_topic = position_topic.replace("$STRATEGY_CLASS_NAME$", param["target_strategy_name"])
 
     hi_candles_w_ta_topic : str = param['mds']['topics']['hi_candles_w_ta_topic']
