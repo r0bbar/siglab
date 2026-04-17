@@ -1159,7 +1159,7 @@ async def main():
                     'pos_usdt' : pos_usdt,
                     'pos_side' : pos_side.name,
                     'pos_status' : pos_status,
-                    'pos_created' : pos_created,
+                    'pos_created' : pos_created.strftime("%Y%m%d %H-%M-%S"),
                     'tp_min_percent' : tp_min_percent,
                     'tp_max_percent' : tp_max_percent,
                     'sl_hard_percent' : sl_hard_percent,
