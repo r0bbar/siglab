@@ -1164,7 +1164,7 @@ async def main():
                     'tp_max_percent' : tp_max_percent,
                     'sl_hard_percent' : sl_hard_percent,
                     'running_sl_percent_hard' : running_sl_percent_hard,
-                    'pos_tp_min_crossed' : pos_tp_min_crossed,
+                    'pos_tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H-%M-%S") if pos_tp_min_crossed else "---",
                     'sl_trailing_min_threshold_crossed' : sl_trailing_min_threshold_crossed,
                     'tp_max_target' : tp_max_target,
                     'tp_min_target' : tp_min_target,
