@@ -76,7 +76,7 @@ param : Dict = {
 
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
-    "selected_fields_for_notification" : [ "key", "pos_status" ],
+    "selected_fields_for_notification" : [ "gateway_id", "ticker",  "pos_side", "pos_status" ],
 
     'notification' : {
         'footer' : None,
