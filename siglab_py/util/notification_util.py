@@ -5,8 +5,7 @@ import pandas as pd
 import numpy as np
 from tabulate import tabulate
 
-from util.discord_notification_util import discord_dispatch_notification
-# from siglab_py.util.discord_notification_util import discord_dispatch_notification
+from siglab_py.util.discord_notification_util import discord_dispatch_notification
 from siglab_py.util.collection_util import recursive_clean_dict
 from siglab_py.constants import LogLevel
 
