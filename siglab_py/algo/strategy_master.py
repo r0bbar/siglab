@@ -111,6 +111,8 @@ def parse_args():
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
+
+    param['loop_freq_ms'] = int(args.loop_freq_ms)
     
     param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
     param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
@@ -150,7 +152,7 @@ async def main() -> None:
     except Exception as redis_err:
         redis_client = None
         logger.info(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
-    
+
     loop_counter : int = 0
     while True:
         try:
