@@ -1154,6 +1154,7 @@ async def main():
                 max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
 
                 position_summary : Dict[str, Union[str, int, float]] = {
+                    'gateway_id' : gateway_id,
                     'key' : key,
                     'pos' : float(pos) if pos else "---",
                     'pos_usdt' : float(pos_usdt) if pos_usdt else "---",
