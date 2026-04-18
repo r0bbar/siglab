@@ -1,14 +1,15 @@
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Union
 import json
 from  datetime import datetime,  timezone
 import requests
+import pandas as pd
 
 from siglab_py.constants import LogLevel
 
 def discord_dispatch_notification(
         title : str,
-        message : str,
+        message : Union[str, Dict, pd.DataFrame],
         footer : str,
         params : Dict[str, Any],
         log_level : LogLevel = LogLevel.INFO,
@@ -30,13 +31,35 @@ def discord_dispatch_notification(
     if not webhook_url:
         return
 
-    embed = {
-        "title": title,
-        "description": message,
-        "footer": {"text": footer},
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
+    if isinstance(message, pd.DataFrame):
+        fields = []
+        for col in message.columns:
+            values = message[col].tolist()
+            value = ""
+            for v in values:
+                value += f"{v}\n" 
+            field = {
+                "name" : col,
+                "value" : value,
+                "inline": True
+            }
+            fields.append(field)
+            
+        embed = {
+            "title": title,
+            "fields": fields,
+            "footer": {"text": footer},
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
+    else:
+        embed = {
+            "title": title,
+            "description": message,
+            "footer": {"text": footer},
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
     payload = {
         "username": "siglab_py",
         "embeds": [embed]

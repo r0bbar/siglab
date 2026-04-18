@@ -1,6 +1,6 @@
 import json
 from typing import Any, Dict, Union
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import numpy as np
 from tabulate import tabulate
@@ -23,8 +23,7 @@ def dispatch_notification(
             cleaned = recursive_clean_dict(message)
             _message = json.dumps(cleaned, indent=2, separators=(' ', ':'))
         elif isinstance(message, pd.DataFrame):
-            # _message = tabulate(message, headers='keys', tablefmt='orgtbl') # type: ignore
-            _message = message.to_markdown(index=False) # index=False removes the row numbers
+            _message = message
         else:
             _message = message
 
@@ -66,9 +65,13 @@ if __name__ == '__main__':
     title : str = "Test message"
     footer : str = "... some footer .."
 
+
+    # Test 1:
     message1 : str = "Testing 1"
     dispatch_notification(title=title, message=message1, footer=footer, params=params, log_level=log_level, param_webhooks_config_section=param_webhooks_config_section)
 
+
+    # Test 2: Send a Dict
     message2 : Dict[str, Any] = {
         'aaa' : 123,
         'bbb' : 456,
@@ -77,15 +80,28 @@ if __name__ == '__main__':
         }
     }
     dispatch_notification(title=title, message=message2, footer=footer, params=params, log_level=log_level, param_webhooks_config_section=param_webhooks_config_section)
-
-    start_date = pd.to_datetime('2024-01-01 00:00:00')
-    datetimes = pd.date_range(start=start_date, periods=20, freq='H')
     np.random.seed(42)
-    close_prices = np.random.uniform(80000, 90000, size=20).round(2)
+
+
+    # Test 3: Send DataFrame
+    NUM_SAMPLES = 5
+    end_time = datetime.now()
+    start_time = end_time - timedelta(hours=24)
+
+    rng = np.random.default_rng()
+    timestamps = rng.integers(
+        int(start_time.timestamp() * 1000),
+        int(end_time.timestamp() * 1000),
+        size=NUM_SAMPLES,
+        dtype=np.int64
+    )
+
+    close_prices = 70000 + np.random.normal(0, 50, size=NUM_SAMPLES).round(2)
+
     data : pd.DataFrame = pd.DataFrame({
-        'datetime': datetimes,
+        'timestamp_ms': timestamps,
         'close': close_prices
     })
-    data['timestamp_ms'] = data['datetime'].astype('int64')
+    data['timestamp_ms'] = data['timestamp_ms'].astype('int64')
     message3 = data
     dispatch_notification(title=title, message=message3, footer=footer, params=params, log_level=log_level, param_webhooks_config_section=param_webhooks_config_section)
