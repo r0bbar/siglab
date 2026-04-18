@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, List, Optional
 import json
 from  datetime import datetime,  timezone
 import requests
@@ -17,6 +17,7 @@ def discord_dispatch_notification(
         message : Union[str, Dict, pd.DataFrame],
         footer : str,
         params : Dict[str, Any],
+        files: Optional[List[tuple]] = None,
         log_level : LogLevel = LogLevel.INFO,
         max_message_len : int = 1800,
 
@@ -66,11 +67,22 @@ def discord_dispatch_notification(
         }
         
     payload = {
-        "username": "siglab_py",
-        "embeds": [embed]
-    }
+            "username": "siglab_py",
+            "embeds": [embed]
+        }
 
-    rsp = requests.post(webhook_url, json=payload)
+    if files:
+        payload["flags"] = 4 # Supress preview which is not nicely aligned
+        form_data = {
+            "payload_json": (None, json.dumps(payload), "application/json")
+        }
+        for i, file_tuple in enumerate(files):
+            form_data[f"files[{i}]"] = file_tuple
+
+        rsp = requests.post(webhook_url, files=form_data)
+    else:
+        rsp = requests.post(webhook_url, json=payload)
+
     if rsp.status_code != 204:
         raise Exception(rsp.status_code, rsp.text)
 

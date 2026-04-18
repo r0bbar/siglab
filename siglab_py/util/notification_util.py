@@ -1,29 +1,31 @@
 import json
-from typing import Any, Dict, Union
+from typing import Any, List, Dict, Union, Optional
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 import numpy as np
 from tabulate import tabulate
 
-from siglab_py.util.discord_notification_util import discord_dispatch_notification
+from util.discord_notification_util import discord_dispatch_notification
+# from siglab_py.util.discord_notification_util import discord_dispatch_notification
 from siglab_py.util.collection_util import recursive_clean_dict
 from siglab_py.constants import LogLevel
 
 def dispatch_notification(
-        title : str,
-        message : Union[str, Dict, pd.DataFrame],
-        footer : str,
-        params : Dict[str, Any],
-        log_level : LogLevel = LogLevel.INFO,
-        logger = None,
-        param_webhooks_config_section : str = 'notification'
-    ):
+    title: str,
+    message: Union[str, Dict, pd.DataFrame],
+    footer: str,
+    params: Dict[str, Any],
+    files: Optional[List[tuple]] = None,
+    log_level: LogLevel = LogLevel.INFO,
+    logger=None,
+    param_webhooks_config_section: str = 'notification'
+):
     try:
         if isinstance(message, Dict):
             cleaned = recursive_clean_dict(message)
             _message = json.dumps(cleaned, indent=2, separators=(' ', ':'))
         elif isinstance(message, pd.DataFrame):
-            _message = message
+            _message = message.to_markdown(index=False)
         else:
             _message = message
 
@@ -31,16 +33,18 @@ def dispatch_notification(
         footer = f"UTC {utc_time} {footer}"
 
         discord_dispatch_notification(
-            title=title, 
-            message=_message, 
-            footer=footer, 
-            params=params, 
-            log_level=log_level, 
+            title=title,
+            message=_message,
+            footer=footer,
+            params=params,
+            log_level=log_level,
+            files=files,                                 # ← pass through
             param_webhooks_config_section=param_webhooks_config_section
         )
-    except Exception as any_notification_error:
+
+    except Exception as e:
         if logger:
-            logger.error(f"Failed to dispatch notification for {str(title)}: {any_notification_error}")
+            logger.error(f"Failed to dispatch notification for {title}: {e}")
             logger.error(message)
 
 if __name__ == '__main__':
@@ -80,8 +84,7 @@ if __name__ == '__main__':
         }
     }
     dispatch_notification(title=title, message=message2, footer=footer, params=params, log_level=log_level, param_webhooks_config_section=param_webhooks_config_section)
-    np.random.seed(42)
-
+    
 
     # Test 3: Send DataFrame 
     '''
@@ -89,6 +92,7 @@ if __name__ == '__main__':
     a. When look at messages from browser from desktop: If more three columns, subsequent columns will be wrapped around.
     b. When look at messages from mobile: It's max two columns or wrapping will happenning.
     '''
+    np.random.seed(42)
     NUM_SAMPLES = 5
     end_time = datetime.now()
     start_time = end_time - timedelta(hours=24)
@@ -108,5 +112,18 @@ if __name__ == '__main__':
         'close': close_prices
     })
     data['timestamp_ms'] = data['timestamp_ms'].astype('int64')
-    message3 = data
-    dispatch_notification(title=title, message=message3, footer=footer, params=params, log_level=log_level, param_webhooks_config_section=param_webhooks_config_section)
+    data.to_csv("dummy_data.csv")
+
+    with open("dummy_data.csv", "rb") as csv:
+        message3 = data
+        dispatch_notification(
+            title=title, 
+            message=message3, 
+            files=[
+                (f"dummy_data.csv", csv)
+            ],
+            footer=footer, 
+            params=params, 
+            log_level=log_level, 
+            param_webhooks_config_section=param_webhooks_config_section
+        )
