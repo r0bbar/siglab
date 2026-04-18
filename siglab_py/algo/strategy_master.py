@@ -150,12 +150,13 @@ async def main() -> None:
     except Exception as redis_err:
         redis_client = None
         logger.info(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
-
-    position_summaries = []
+    
     loop_counter : int = 0
     while True:
         try:
             start_ts_sec = time.time()
+            
+            position_summaries = []
 
             keys = redis_client.keys()
             for key in keys:
