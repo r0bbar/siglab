@@ -188,7 +188,7 @@ async def main() -> None:
             pd_position_summaries = pd.DataFrame(position_summaries)
             pd_position_summaries.sort_values(
                     by=['gateway_id', 'ticker'],
-                    ascending=[True],
+                    ascending=[True, True],
                     inplace=True
                 )
             _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
