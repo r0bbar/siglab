@@ -191,19 +191,20 @@ async def main() -> None:
                     logger.error(f"{key_err}")
         
             pd_position_summaries = pd.DataFrame(position_summaries)
+            _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
 
             s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
             logger.info(s_position_summaries)
             
-            row_hashes = pd.util.hash_pandas_object(pd_position_summaries, index=False)
+            row_hashes = pd.util.hash_pandas_object(_pd_position_summaries, index=False)
             message_hash = hashlib.sha256(row_hashes.values).hexdigest()
             logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
             if message_hash!=prev_message_hash:
                 prev_message_hash = message_hash
-                
+
                 dispatch_notification(
                                     title=f"#position {param['current_filename']}", 
-                                    message=pd_position_summaries[param["selected_fields_for_notification"]], 
+                                    message=, 
                                     footer=param['notification']['footer'], 
                                     params=notification_params, 
                                     log_level=LogLevel.INFO, 
