@@ -76,7 +76,7 @@ param : Dict = {
 
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
-    "selected_fields_for_notification" : [ "gateway_id", "pos_side", "pos_status" ],
+    "selected_fields_for_notification" : [ "key", "pos_status" ],
 
     'notification' : {
         'footer' : None,
@@ -174,6 +174,8 @@ async def main() -> None:
                             for field in position_summary:
                                 if position_summary[field]!="---":
                                     _position_summary[field] = position_summary[field]
+
+                            _position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']} {position_summary['pos_side']}"
                             position_summaries.append(_position_summary)
 
                 except Exception as key_err:
