@@ -13,6 +13,7 @@ import argparse
 import json
 import re
 import pandas as pd
+import hashlib
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 from redis import StrictRedis
@@ -33,18 +34,22 @@ class LogLevel(Enum):
 
 logging.Formatter.converter = time.gmtime
 logger: logging.Logger = logging.getLogger()
-log_level: int = logging.DEBUG
+log_level = logging.INFO # DEBUG --> INFO --> WARNING --> ERROR
 logger.setLevel(log_level)
 format_str: str = '%(asctime)s %(message)s'
 formatter: logging.Formatter = logging.Formatter(format_str)
 sh: logging.StreamHandler = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
+fh = logging.FileHandler(f"strategy_master.log")
+fh.setLevel(log_level)
+fh.setFormatter(formatter)     
+logger.addHandler(fh)
 
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python strategy_master.py --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
+    python strategy_master.py --loop_freq_ms 1000 --slack_info_url https://hooks.slack.com/services/xxx --slack_critial_url https://hooks.slack.com/services/xxx --slack_alert_url https://hooks.slack.com/services/xxx
     
     --slack_info_url/slack_critial_url/slack_alert_url: optional. Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
 
@@ -60,6 +65,8 @@ launch.json for Debugging from VSCode:
                 "program": "${file}",
                 "console": "integratedTerminal",
                 "args": [
+                    "--loop_freq_ms", "1000",
+
                     "--slack_info_url", "https://hooks.slack.com/services/xxx",
                     "--slack_critial_url", "https://hooks.slack.com/services/xxx",
                     "--slack_alert_url", "https://hooks.slack.com/services/xxx",
@@ -71,7 +78,7 @@ launch.json for Debugging from VSCode:
         ]
 '''
 param : Dict = {
-    'loop_freq_ms' : 60000, 
+    'loop_freq_ms' : 10000, 
     'current_filename' : current_filename,
 
     # regex corresponding to position_topic.
@@ -154,11 +161,13 @@ async def main() -> None:
         logger.info(f"Failed to connect to redis. Still run but not publishing to it. {redis_err}")
 
     loop_counter : int = 0
+    prev_message_hash = None
+    position_summaries : List[Dict[str, Union[str, int, float, None]]] = []
     while True:
         try:
             start_ts_sec = time.time()
-            
-            position_summaries = []
+
+            position_summaries.clear()
 
             keys = redis_client.keys()
             for key in keys:
@@ -180,19 +189,26 @@ async def main() -> None:
 
                 except Exception as key_err:
                     logger.error(f"{key_err}")
-
+        
             pd_position_summaries = pd.DataFrame(position_summaries)
-            s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
-            print(s_position_summaries)
 
-            dispatch_notification(
-                                title=f"#position {param['current_filename']}", 
-                                message=pd_position_summaries[param["selected_fields_for_notification"]], 
-                                footer=param['notification']['footer'], 
-                                params=notification_params, 
-                                log_level=LogLevel.INFO, 
-                                logger=logger
-                            )
+            s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
+            logger.info(s_position_summaries)
+            
+            row_hashes = pd.util.hash_pandas_object(pd_position_summaries, index=False)
+            message_hash = hashlib.sha256(row_hashes.values).hexdigest()
+            logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
+            if message_hash!=prev_message_hash:
+                prev_message_hash = message_hash
+                
+                dispatch_notification(
+                                    title=f"#position {param['current_filename']}", 
+                                    message=pd_position_summaries[param["selected_fields_for_notification"]], 
+                                    footer=param['notification']['footer'], 
+                                    params=notification_params, 
+                                    log_level=LogLevel.INFO, 
+                                    logger=logger
+                                )
             
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] end to end elapsed_ms: {elapsed_ms:,}")
