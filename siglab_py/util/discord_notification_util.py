@@ -7,6 +7,11 @@ import pandas as pd
 
 from siglab_py.constants import LogLevel
 
+'''
+    For Discord, sending DataFrame is problematic:
+    a. When look at messages from browser from desktop: If more three columns, subsequent columns will be wrapped around.
+    b. When look at messages from mobile: It's max two columns or wrapping will happenning.
+'''
 def discord_dispatch_notification(
         title : str,
         message : Union[str, Dict, pd.DataFrame],

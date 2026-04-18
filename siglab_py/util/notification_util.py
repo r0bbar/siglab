@@ -83,7 +83,12 @@ if __name__ == '__main__':
     np.random.seed(42)
 
 
-    # Test 3: Send DataFrame
+    # Test 3: Send DataFrame 
+    '''
+    For Discord, sending DataFrame is problematic:
+    a. When look at messages from browser from desktop: If more three columns, subsequent columns will be wrapped around.
+    b. When look at messages from mobile: It's max two columns or wrapping will happenning.
+    '''
     NUM_SAMPLES = 5
     end_time = datetime.now()
     start_time = end_time - timedelta(hours=24)
