@@ -175,7 +175,7 @@ async def main() -> None:
                                 if position_summary[field]!="---":
                                     _position_summary[field] = position_summary[field]
 
-                            _position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']} {position_summary['pos_side']}"
+                            _position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']}"
                             position_summaries.append(_position_summary)
 
                 except Exception as key_err:
