@@ -204,7 +204,7 @@ async def main() -> None:
 
                 dispatch_notification(
                                     title=f"#position {param['current_filename']}", 
-                                    message=, 
+                                    message=_pd_position_summaries, 
                                     footer=param['notification']['footer'], 
                                     params=notification_params, 
                                     log_level=LogLevel.INFO, 
