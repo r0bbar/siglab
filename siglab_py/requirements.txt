@@ -20,3 +20,4 @@ rapidfuzz
 redis
 redis-py-cluster
 kafka-python
+discord
