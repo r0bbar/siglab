@@ -186,6 +186,11 @@ async def main() -> None:
                     logger.error(f"{key_err}")
         
             pd_position_summaries = pd.DataFrame(position_summaries)
+            pd_position_summaries.sort_values(
+                    by=['gateway_id', 'ticker'],
+                    ascending=[True],
+                    inplace=True
+                )
             _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
 
             s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
