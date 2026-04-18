@@ -179,13 +179,8 @@ async def main() -> None:
                         if message:
                             message = message.decode('utf-8')
                             position_summary = json.loads(message)
-                            _position_summary = {}
-                            for field in position_summary:
-                                if position_summary[field]!="---":
-                                    _position_summary[field] = position_summary[field]
-
-                            _position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']}"
-                            position_summaries.append(_position_summary)
+                            position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']}"
+                            position_summaries.append(position_summary)
 
                 except Exception as key_err:
                     logger.error(f"{key_err}")
