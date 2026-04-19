@@ -84,7 +84,7 @@ param : Dict = {
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
     "selected_fields_for_notification" : [ "key",  "pos_side", "pos_status" ],
-    "selected_fields_for_notification_attachment" : [ "gateway_id", "ticker", "pos_side", "pos_status", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed", "pos_created", "pos_tp_min_crossed" ],
+    "selected_fields_for_notification_attachment" : [ "gateway_id", "ticker", "pos_side", "pos_status", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed" ],
 
     'notification' : {
         'footer' : None,
