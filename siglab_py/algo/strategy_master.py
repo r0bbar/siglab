@@ -84,6 +84,7 @@ param : Dict = {
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
     "selected_fields_for_notification" : [ "key",  "pos_side", "pos_status" ],
+    "selected_fields_for_notification_attachment" : [ "gateway_id", "ticker", "pos_side", "pos_status", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed", "pos_created", "pos_tp_min_crossed" ],
 
     'notification' : {
         'footer' : None,
@@ -192,6 +193,7 @@ async def main() -> None:
                     inplace=True
                 )
             _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
+            
 
             s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
             logger.info(s_position_summaries)
@@ -210,6 +212,23 @@ async def main() -> None:
                                     log_level=LogLevel.INFO, 
                                     logger=logger
                                 )
+
+                _pd_position_summaries_attachment = pd_position_summaries[param["selected_fields_for_notification_attachment"]]
+                position_summaries_csv = "position_summaries.csv"
+                _pd_position_summaries_attachment.to_csv(position_summaries_csv)
+
+                with open(position_summaries_csv, "rb") as csv:
+                    dispatch_notification(
+                        title=f"#position {param['current_filename']}", 
+                        message=_pd_position_summaries, 
+                        files=[
+                            ("position_summaries_csv", csv)
+                        ],
+                        footer=param['notification']['footer'], 
+                        params=notification_params, 
+                        log_level=LogLevel.INFO, 
+                        logger=logger
+                    )
             
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] end to end elapsed_ms: {elapsed_ms:,}")
