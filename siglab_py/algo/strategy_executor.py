@@ -1379,6 +1379,7 @@ async def main():
                         'tp_min_target' : float(tp_min_target) if tp_min_target else "---",
                         'sl_price' : float(sl_price) if sl_price else "---",
                         'max_pnl_potential_bps' : float(max_pnl_potential_bps) if max_pnl_potential_bps else "---",
+                        'entry_px' : float(entry_px) if entry_px else "---",
                         'close_px' : float(close_px) if close_px else "---",
                         'unreal_live' : float(unreal_live) if unreal_live else "---",
                         'max_unreal_live' : float(max_unreal_live) if max_unreal_live else "---",
