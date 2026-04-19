@@ -24,7 +24,7 @@ def dispatch_notification(
             cleaned = recursive_clean_dict(message)
             _message = json.dumps(cleaned, indent=2, separators=(' ', ':'))
         elif isinstance(message, pd.DataFrame):
-            _message = message.to_markdown(index=False)
+            _message = message
         else:
             _message = message
 
@@ -111,10 +111,21 @@ if __name__ == '__main__':
         'close': close_prices
     })
     data['timestamp_ms'] = data['timestamp_ms'].astype('int64')
-    data.to_csv("dummy_data.csv")
 
+    # Send as embed without attachment
+    message3 = data
+    dispatch_notification(
+            title=title, 
+            message=message3,
+            footer=footer, 
+            params=params, 
+            log_level=log_level, 
+            param_webhooks_config_section=param_webhooks_config_section
+        )
+
+    # Send as csv attachment
+    data.to_csv("dummy_data.csv")
     with open("dummy_data.csv", "rb") as csv:
-        message3 = data
         dispatch_notification(
             title=title, 
             message=message3, 
