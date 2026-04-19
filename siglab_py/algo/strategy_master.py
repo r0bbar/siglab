@@ -223,7 +223,7 @@ async def main() -> None:
                         title=f"#position {param['current_filename']}", 
                         message=_pd_position_summaries, 
                         files=[
-                            ("position_summaries_csv", csv)
+                            ("position_summaries.csv", csv)
                         ],
                         footer=param['notification']['footer'], 
                         params=notification_params, 
