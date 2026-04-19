@@ -180,6 +180,7 @@ async def main() -> None:
                         if message:
                             message = message.decode('utf-8')
                             position_summary = json.loads(message)
+                            position_summary['ticker'] = position_summary['ticker'].replace(":","_").replace("/","_")
                             position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']}"
                             position_summaries.append(position_summary)
 
