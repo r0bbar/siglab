@@ -115,7 +115,7 @@ Usage:
 
     strategy_executor logs trades in orderhist cache (csv).
     For post trade analysis, use orderhist_cache_viewer.ipynb https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb 
-    If you are running multiple instances of strategy_executor's, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. It'd also dispatch notifications upon changes in strategies statuses.
+    If you are running multiple strategy_executor instances, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. It'd also dispatch notifications upon changes in strategies statuses.
 
 Debug from VSCode, launch.json:
     {

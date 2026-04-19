@@ -450,4 +450,4 @@ This is the live version of Example 2.1 from [backtest_core doc](https://docs.go
 + [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
 
 + [**strategy_master.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_master.py)
-If you are running multiple instances of strategy_executor's, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. It'd also dispatch notifications upon changes in strategies statuses.
+If you are running multiple strategy_executor instances, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. It'd also dispatch notifications upon changes in strategies statuses.
