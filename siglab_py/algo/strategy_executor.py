@@ -1215,22 +1215,22 @@ async def main():
                     BTC: { free: -5.2, total: -5.2 })
                 '''
                 position_from_exchange = await exchange.fetch_position(_ticker) 
-
+                position_from_exchange_base_ccy = 0
                 if exchange.options['defaultType']!='spot': 
-                    if executed_position and position_from_exchange:
+                    if position_from_exchange:
                         position_from_exchange_num_contracts = position_from_exchange['contracts']
-                        if position_from_exchange and position_from_exchange['side']=='short':
+                        if position_from_exchange['side']=='short':
                             position_from_exchange_num_contracts = position_from_exchange_num_contracts *-1 if position_from_exchange_num_contracts>0 else position_from_exchange_num_contracts
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                        if position_from_exchange_base_ccy!=pos: 
-                            position_break = True
+                    if position_from_exchange_base_ccy!=pos: 
+                        position_break = True
 
-                            err_msg = f"{_ticker}: Position break! expected: {executed_position['position']['amount_base_ccy']}, actual: {position_from_exchange_base_ccy}" 
-                            log(err_msg)
-                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-                
+                        err_msg = f"{_ticker}: Position break! expected: {pos}, actual: {position_from_exchange_base_ccy}" 
+                        log(err_msg)
+                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+            
                 if position_break:
                     log(f"Position break! Exiting execution. Did you manually close the trade?")
                     break
