@@ -710,17 +710,18 @@ async def execute_one_position(
                     try:
                         order_update = await _fetch_order(order_id, position.ticker, exchange) 
                     except OrderNotFound as order_not_found_err:
-                        log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}")
+                        log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
-                        # Some exchanges explain OrderNotFound after closure but actually position been flattened already.
-                        if not slice.reduce_only:
-                            raise
-
+                        # Best effort to auto-validate:
                         if ticker_class!='spot':
                             updated_position = await exchange.fetch_position(symbol=position.ticker)
                             amount = (updated_position['contracts'] if updated_position else None)
                             if amount:
                                 amount = amount * position.multiplier # in base ccy
+
+                                if amount != position.expected_pos_after_execution:
+                                    raises
+
                             else:
                                 log(f"position update after order_not_found_err:")
                                 log(f"{json.dumps(updated_position, indent=4)}")
@@ -732,24 +733,21 @@ async def execute_one_position(
                             base_ccy : str = position.ticker.split("/")[0]
                             amount = balances[base_ccy]['total'] if base_ccy in balances else 0
 
-                        if amount!=0:
-                            raise
-                        else:
-                            order_update = {
-                                'status' : 'closed',
-                                
-                                'average' : None, # This is an estimation!
-                                'price' : None, # This is an estimation!
+                        order_update = {
+                            'status' : 'closed',
+                            
+                            'average' : None, # This is an estimation!
+                            'price' : None, # This is an estimation!
 
-                                'filled' : None,
-                                'amount' : None,
+                            'filled' : None,
+                            'amount' : None,
 
-                                'remaining' : 0, # Clean exit, no residual
-                                'patch' : { # This is an estimation!
-                                    'average' : mid, 
-                                    'filled' : rounded_slice_amount_in_base_ccy,
-                                }
+                            'remaining' : position.expected_pos_after_execution, # In event fetch_order(order_id) failed, but trade actually executed!
+                            'patch' : { # This is an estimation!
+                                'average' : mid, 
+                                'filled' : rounded_slice_amount_in_base_ccy,
                             }
+                        }
 
                     order_update['slice_id'] = i
                     order_status = order_update['status']
