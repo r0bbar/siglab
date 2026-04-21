@@ -734,6 +734,9 @@ async def execute_one_position(
                             base_ccy : str = position.ticker.split("/")[0]
                             amount = balances[base_ccy]['total'] if base_ccy in balances else 0
 
+                            if amount != position.expected_pos_after_execution:
+                                raise
+
                         order_update = {
                             'status' : 'closed',
                             
