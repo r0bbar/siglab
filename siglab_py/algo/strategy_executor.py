@@ -1737,7 +1737,8 @@ async def main():
                                             order_type = param['order_type'],
                                             slices = param['slices'],
                                             wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
-                                            fees_ccy=param['fees_ccy']
+                                            fees_ccy=param['fees_ccy'],
+                                            expected_pos_after_execution=(pos + target_order_notional)
                                         )
                                     ]
                                     log(f"dispatching {side} orders to {gateway_id}")
@@ -2016,7 +2017,9 @@ async def main():
                                 wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
                                 fees_ccy=param['fees_ccy'],
 
-                                reduce_only=True
+                                reduce_only=True,
+
+                                expected_pos_after_execution=0 # @todo: for multi-slice exits, this may not be zero
                             )
                         ]
                         
