@@ -715,18 +715,19 @@ async def execute_one_position(
                         # Best effort to auto-validate:
                         if ticker_class!='spot':
                             updated_position = await exchange.fetch_position(symbol=position.ticker)
+
+                            log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
+                            log(f"{json.dumps(updated_position, indent=4)}")
+
                             amount = (updated_position['contracts'] if updated_position else None)
                             if amount:
                                 amount = amount * position.multiplier # in base ccy
 
                                 if amount != position.expected_pos_after_execution:
-                                    raises
-
+                                    raise
                             else:
-                                log(f"position update after order_not_found_err:")
-                                log(f"{json.dumps(updated_position, indent=4)}")
-
-                                raise
+                                if position.expected_pos_after_execution!=0:
+                                    raise
 
                         else:
                             balances = await exchange.fetch_balance()
