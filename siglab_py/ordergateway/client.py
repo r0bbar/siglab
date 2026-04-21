@@ -90,12 +90,14 @@ class DivisiblePosition(Order):
         fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1,
-        non_unified_params : Dict[str, Union[str, float, bool]] = {}
+        non_unified_params : Dict[str, Union[str, float, bool]] = {},
+        expected_pos_after_execution : float = None
     ) -> None:
         if amount<=0:
             raise ValueError(f"amount must be >0!")
 
         super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy)
+
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
         self.multiplier = 1
@@ -104,6 +106,15 @@ class DivisiblePosition(Order):
         self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
         self.non_unified_params = non_unified_params
+
+        '''
+        This is for post-trade position check, in case if fetch_order(order_id) failed.
+        'expected_pos_after_execution': specify initial position, before this trade is executed. 
+        If 'expected_pos_after_execution' is None:
+            ENTRY: reduce_only = false --> Assuming single slice entries starting flat, after trade pos should be same as 'amount' if 'expected_pos_after_execution' is None
+            EXIT: reduce_only = true --> Assuming single slice exits, after trade pos should be zero
+        '''
+        self.expected_pos_after_execution = expected_pos_after_execution if expected_pos_after_execution else (amount if not reduce_only else 0)
 
         self.done : bool = False
         self.execution_err : str = ""
@@ -397,6 +408,7 @@ class DivisiblePosition(Order):
         rv['timestamp_ms'] = self.timestamp_ms
         rv['done_timestamp_ms'] = self.done_timestamp_ms
         rv['non_unified_params'] = self.non_unified_params
+        rv['expected_pos_after_execution'] = self.expected_pos_after_execution
         return rv
 
 def execute_positions(
