@@ -109,7 +109,7 @@ class DivisiblePosition(Order):
 
         '''
         This is for post-trade position check, in case if fetch_order(order_id) failed.
-        'expected_pos_after_execution': specify initial position, before this trade is executed. 
+        'expected_pos_after_execution': specify initial position in base ccy (not # contracts), before this trade is executed. 
         If 'expected_pos_after_execution' is None:
             ENTRY: reduce_only = false --> Assuming single slice entries starting flat, after trade pos should be same as 'amount' if 'expected_pos_after_execution' is None
             EXIT: reduce_only = true --> Assuming single slice exits, after trade pos should be zero
