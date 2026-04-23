@@ -1369,6 +1369,7 @@ async def main():
                         'pos_side' : pos_side.name,
                         'pos_status' : pos_status,
                         'pos_created' : pos_created.strftime("%Y%m%d %H-%M-%S") if pos_created else "---",
+                        'pos_closed' : pos_closed.strftime("%Y%m%d %H-%M-%S") if pos_closed else "---",
                         'tp_min_percent' : float(tp_min_percent) if tp_min_percent else "---",
                         'tp_max_percent' : float(tp_max_percent) if tp_max_percent else "---",
                         'sl_hard_percent' : float(sl_hard_percent) if sl_hard_percent else "---",
