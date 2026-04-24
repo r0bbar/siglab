@@ -2193,7 +2193,8 @@ async def main():
                             print(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}")
                             print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
 
-                    redis_client.set(name=position_topic, value=json.dumps(position_summary).encode('utf-8'), ex=60*15)
+                    # https://redis.io/docs/latest/commands/set/
+                    redis_client.set(name=position_topic, value=json.dumps(position_summary).encode('utf-8'), ex=15)
 
                     def _safe_update_cache(
                         file_name : str,
