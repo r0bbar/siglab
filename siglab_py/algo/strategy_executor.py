@@ -253,7 +253,8 @@ param : Dict = {
             'host' : 'localhost',
             'port' : 6379,
             'db' : 0,
-            'ttl_ms' : 1000*60*15 # 15 min?
+            'ttl_ms' : 1000*60*15, # 15 min
+            'position_summary_ttl_ms' : 1000*30 # 30 sec
         }
     }
 }
@@ -385,6 +386,8 @@ def parse_args():
     parser.add_argument("--block_entry_impacting_events", help="Block entries if any impacting economic events 'impacting_economic_calendars'. Default N", default='N')
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
+    parser.add_argument("--ttl_ms", help="TTL (ms) when publish to redis. Default 15min.", default=1000*60*15)
+    parser.add_argument("--position_summary_ttl_ms", help="TTL (ms) when publish to redis. Default 30_000, or 30 sec.", default=1000*30)
 
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
     parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
@@ -518,6 +521,9 @@ def parse_args():
     param['mds']['topics']['orderbook_topic'] = args.orderbook_topic.strip() if args.orderbook_topic else None
 
     param['loop_freq_ms'] = int(args.loop_freq_ms)
+
+    param['mds']['redis']['ttl_ms'] = int(args.ttl_ms)
+    param['mds']['redis']['position_summary_ttl_ms'] = int(args.position_summary_ttl_ms)
 
     param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
     param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
@@ -2194,7 +2200,7 @@ async def main():
                             print(f"{tabulate(pd_position_cache.loc[:, strategy_indicators[0]:].transpose(), headers='keys', tablefmt='psql')}")
 
                     # https://redis.io/docs/latest/commands/set/
-                    redis_client.set(name=position_topic, value=json.dumps(position_summary).encode('utf-8'), ex=15)
+                    redis_client.set(name=position_topic, value=json.dumps(position_summary).encode('utf-8'), ex=int(param['mds']['redis']['position_summary_ttl_ms']/1000))
 
                     def _safe_update_cache(
                         file_name : str,
