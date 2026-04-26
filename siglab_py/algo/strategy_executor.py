@@ -359,6 +359,7 @@ def parse_args():
     parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED.", default=100)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
+    parser.add_argument("--exit_slices", help="# slices for exits. Why separate config for exit? Very often, for exits you want get done quicker. Default: max(1, slices/2) where 'slices' refers to # slices for entries.", default=None)
     parser.add_argument("--fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
     
@@ -466,6 +467,7 @@ def parse_args():
     param['residual_pos_usdt_threshold'] = float(args.residual_pos_usdt_threshold)
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
+    param['exit_slices'] = int(args.exit_slices) if args.exit_slices else max(1, int(param['slices']/2)) 
     param['fees_ccy'] = args.fees_ccy
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
 
@@ -2020,7 +2022,7 @@ async def main():
                                 amount = abs(pos),
                                 leg_room_bps = param['leg_room_bps'],
                                 order_type = param['order_type'],
-                                slices = param['slices'],
+                                slices = param['exit_slices'],
                                 wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
                                 fees_ccy=param['fees_ccy'],
 
