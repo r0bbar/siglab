@@ -29,7 +29,6 @@ from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.futubull import Futubull
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.exchanges.deribit import Deribit, DeribitAsync
-from siglab_py.exchanges.binance import Binance, BinanceAsync
 
 def instantiate_exchange(
     exchange_name : str,
@@ -67,7 +66,7 @@ def instantiate_exchange(
         exchange_params['passphrase'] = passphrase
 
     if exchange_name=='binance':
-        exchange = Binance(exchange_params)  # type: ignore
+        exchange = ccxt.binance(exchange_params)  # type: ignore
     elif exchange_name=='bybit':
         exchange = ccxt.bybit(exchange_params) # type: ignore
     elif exchange_name=='okx':
@@ -178,7 +177,7 @@ async def async_instantiate_exchange(
     if exchange_name=='binance':
         # spot, future, margin, delivery, option
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L1298
-        exchange = BinanceAsync(exchange_params)  # type: ignore
+        exchange = ccxtpro.binance(exchange_params)  # type: ignore
     elif exchange_name=='bybit':
         # spot, linear, inverse, futures
         # https://github.com/ccxt/ccxt/blob/master/python/ccxt/bybit.py#L1041
