@@ -85,7 +85,7 @@ if __name__ == '__main__':
         'subaccount' : subaccount,
         'rateLimit' : 100,                    # In ms
         'options' : {
-            'defaultType': 'swap', # 'funding', 'spot', 'margin', 'future', 'swap', 'option'
+            'defaultType': 'future', 
         }
     }
     exchange = ccxt.binance(params)
