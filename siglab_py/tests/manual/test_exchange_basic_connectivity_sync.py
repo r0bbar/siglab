@@ -74,7 +74,7 @@ def basic_exchange_connectivity_test(
 
 if __name__ == '__main__':
     apiKey : str = None
-    secret : str = None 
+    secret : str = None
     passphrase : str = None
     subaccount : str = None
     

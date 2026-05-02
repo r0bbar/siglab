@@ -76,14 +76,14 @@ async def main():
     api_key : str = None
     secret : str = None
     passphrase : str = None
-    default_type : str = "linear"
+    default_type : str = "future"
     default_sub_type : str = None
     rate_limit_ms : int = 100
     default_max_slippage_bps : int = 25
     verbose : bool = False
 
     exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
-        gateway_id='hyperliquid',
+        gateway_id='binance',
         api_key=api_key,
         secret=secret,
         passphrase=passphrase,
