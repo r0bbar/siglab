@@ -2249,7 +2249,10 @@ async def main():
                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
             finally:
-                time.sleep(int(param['loop_freq_ms']/1000))
+                if (not block_entries or pos!=0):
+                    time.sleep(int(param['loop_freq_ms']/1000))
+                else:
+                    time.sleep(10)
                 
                 if loop_counter==0 or loop_counter%1000==0:
                     try:
