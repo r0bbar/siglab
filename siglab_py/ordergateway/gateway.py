@@ -1043,7 +1043,7 @@ async def work(
 async def main():
     parse_args()
     
-    fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log")
+    fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log", encoding='utf-8')
     fh.setLevel(log_level)
     fh.setFormatter(formatter)     
     logger.addHandler(fh)
