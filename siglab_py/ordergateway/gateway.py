@@ -22,8 +22,7 @@ import asyncio
 from pprint import pformat
 
 import ccxt.pro as ccxtpro
-from ccxt.base.errors import OrderNotFound
-from ccxt.base.errors import NotSupported
+from ccxt.base.errors import OrderNotFound, NotSupported
 
 from siglab_py.util.retry_util import retry
 from siglab_py.util.simple_str import classify_ticker
@@ -903,7 +902,15 @@ async def execute_one_position(
         position.fees = position.get_fees()
         
         if ticker_class!='spot':
-            updated_position = await exchange.fetch_position(symbol=position.ticker)
+            updated_position = None
+            try:
+                updated_position = await exchange.fetch_position(symbol=position.ticker) 
+            except NotSupported:
+                positions_from_exchange = await exchange.fetch_positions()
+                if positions_from_exchange:
+                    updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
+                    if updated_position:
+                        updated_position = updated_position[-1]
             log(f"position update:")
             log(f"{json.dumps(updated_position, indent=4)}")
 
