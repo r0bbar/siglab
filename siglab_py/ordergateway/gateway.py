@@ -545,7 +545,7 @@ async def execute_one_position(
                     log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
                     continue
 
-                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=3)
+                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=5)
                 asks = [ ask[0] for ask in orderbook['asks'] ]
                 best_ask = min(asks)
                 bids = [ bid[0] for bid in orderbook['bids'] ]
