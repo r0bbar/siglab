@@ -23,7 +23,7 @@ from pprint import pformat
 import plotext as plt
 
 from requests.exceptions import HTTPError
-from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable
+from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -1222,7 +1222,15 @@ async def main():
                 For spots/margin trading, you should use 'fetch_balance' instsead. If you short you'd see:
                     BTC: { free: -5.2, total: -5.2 })
                 '''
-                position_from_exchange = await exchange.fetch_position(_ticker) 
+                position_from_exchange = None
+                try:
+                    position_from_exchange = await exchange.fetch_position(_ticker) 
+                except NotSupported:
+                    positions_from_exchange = await exchange.fetch_positions()
+                    if positions_from_exchange:
+                        position_from_exchange = [ pos for pos in positions_from_exchange if pos['symbol']==_ticker ]
+                        if position_from_exchange:
+                            position_from_exchange = position_from_exchange[-1]
                 position_from_exchange_base_ccy = 0
                 if exchange.options['defaultType']!='spot': 
                     if position_from_exchange:
