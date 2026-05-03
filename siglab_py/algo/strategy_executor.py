@@ -1254,6 +1254,7 @@ async def main():
                 else:
 
                     hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
+                    hi_candles_invalid_reason, lo_candles_invalid_reason = None, None
                     trailing_candles = []
 
                     keys = [item.decode('utf-8') for item in redis_client.keys()] 
@@ -1266,10 +1267,12 @@ async def main():
                         pd_hi_candles_w_ta['timestamp_ms'] = pd_hi_candles_w_ta['timestamp_ms'].astype('int64') // 1_000_000
                         hi_row = pd_hi_candles_w_ta.iloc[-1]
                         hi_row_tm1 = pd_hi_candles_w_ta.iloc[-2]
-                        candles_age = dt_now.timestamp() *1000 - hi_row['timestamp_ms']
+                        candles_age = int(dt_now.timestamp() *1000 - hi_row['timestamp_ms'])
                         if candles_age < hi_interval_ms:
                             hi_candles_valid = True
                         else:
+                            hi_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, hi_interval_ms: {hi_interval_ms}, timestamp_ms: {hi_row['timestamp_ms']}"
+
                             hi_candles_valid = False
                             err_msg = {
                                 'current_ts_ms' : int(dt_now.timestamp() *1000),
@@ -1280,6 +1283,8 @@ async def main():
                             log(err_msg, LogLevel.CRITICAL)
                             # dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid hi_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                     else:
+                        hi_candles_invalid_reason = f"missing hi candles."
+
                         hi_candles_valid = False
                         err_msg = f"hi candles missing, topic: {hi_candles_w_ta_topic}"
                         log(err_msg, LogLevel.CRITICAL)
@@ -1295,7 +1300,7 @@ async def main():
                         pd_lo_candles_w_ta['timestamp_ms'] = pd_lo_candles_w_ta['timestamp_ms'].astype('int64') // 1_000_000
                         lo_row = pd_lo_candles_w_ta.iloc[-1]
                         lo_row_tm1 = pd_lo_candles_w_ta.iloc[-2]
-                        candles_age = dt_now.timestamp() *1000 - lo_row['timestamp_ms']
+                        candles_age = int(dt_now.timestamp() *1000 - lo_row['timestamp_ms'])
                         if candles_age < lo_interval_ms:
                             lo_candles_valid = True
 
@@ -1311,6 +1316,8 @@ async def main():
                             trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in trailing_candles]
                             
                         else:
+                            lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
+                            
                             lo_candles_valid = False
                             err_msg = {
                                 'current_ts_ms' : int(dt_now.timestamp() *1000),
@@ -1321,6 +1328,8 @@ async def main():
                             log(err_msg, LogLevel.CRITICAL)
                             # dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Invalid lo_candles", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
                     else:
+                        lo_candles_invalid_reason = f"missing lo candles."
+
                         lo_candles_valid = False
                         err_msg = f"lo candles missing, topic: {lo_candles_w_ta_topic}"
                         log(err_msg, LogLevel.CRITICAL)
@@ -1606,7 +1615,15 @@ async def main():
                     It's by design strategy_executor will make entries only if you have valid candles.
                     However, TP/SL may be triggered regardless - mid price is coming from orderbook, not historical candles.
                     '''
-                    print(f"hi_candles_valid: {hi_candles_valid}, lo_candles_valid: {lo_candles_valid}")
+                    hi_candles_valid_check = f"hi_candles_w_ta_topic: {hi_candles_w_ta_topic}, hi_candles_valid: {hi_candles_valid}, hi_candles_invalid_reason: {hi_candles_invalid_reason}"
+                    lo_candles_valid_check = f"lo_candles_w_ta_topic: {lo_candles_w_ta_topic}, lo_candles_valid: {lo_candles_valid}, lo_candles_invalid_reason: {lo_candles_invalid_reason}"
+                    if hi_candles_valid and lo_candles_valid:
+                        print(hi_candles_valid_check)
+                        print(lo_candles_valid_check)
+                    else:
+                        log(hi_candles_valid_check, log_level=LogLevel.ERROR)
+                        log(lo_candles_valid_check, log_level=LogLevel.ERROR)
+
                     if hi_candles_valid and lo_candles_valid:
                         if param['dump_candles']:
                             pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
