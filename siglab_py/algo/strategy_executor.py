@@ -2277,6 +2277,7 @@ async def main():
                 if (not block_entries or pos!=0):
                     time.sleep(int(param['loop_freq_ms']/1000))
                 else:
+                    log(f"Sleep little longer! block_entries: {block_entries}, pos: {pos}") 
                     time.sleep(10)
                 
                 if loop_counter==0 or loop_counter%1000==0:
