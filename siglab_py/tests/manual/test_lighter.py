@@ -31,7 +31,53 @@ async def main():
     print(f"{pformat(balances, indent=2, width=100)}")
 
     '''
-    
+    [
+        'info' = { ... }
+        'id' = None
+        'symbol' = 'SOL/USDC:USDC'
+        'timestamp' = None
+        'datetime' = None
+        'isolated' = False
+        'hedged' = None
+        'side' = 'long'
+        'contracts' = 0.001
+        'contractSize' = 1.0
+        'entryPrice' = 84.222
+        'markPrice' = None
+        'notional' = 0.08417
+        'leverage' = 16.666666666666668
+        'collateral' = 0.0
+        'initialMargin' = None
+        'maintenanceMargin' = None
+        'initialMarginPercentage' = None
+        'maintenanceMarginPercentage' = None
+        'unrealizedPnl' = -5.2e-05
+        'liquidationPrice' = 0.0
+        'marginMode' = 'cross'
+        'percentage' = None
+    ]
+    '''
+    positions = await exchange.fetch_positions()
+    print(f"{pformat(positions, indent=2, width=100)}")
+
+    '''
+        [
+            {
+                'info' = { ... }
+                'id' = 'xxxxx'
+                'timestamp' = xxxxx
+                'datetime' = '2025-12-20T23:00:00.000Z'
+                'symbol' = 'SOL/USDC:USDC'
+                'order' = 'xxx'
+                'type' = 'trade'
+                'side' = 'buy'
+                'takerOrMaker' = 'taker'
+                'price' = 84.222
+                'amount' = 0.001
+                'cost' = 0.084222
+                'fee' = {'cost': None, 'currency': None}
+                'fees' = []
+                'subAccountAddress' = None
     '''
     trades = await exchange.fetch_my_trades(
         symbol="SOL/USDC:USDC",
