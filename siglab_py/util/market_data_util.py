@@ -106,12 +106,14 @@ def instantiate_exchange(
         )  
     elif exchange_name=='lighter':
         '''
-        @todo how to pass apikey/secret to lighter constructor
+        Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+
             lighter = ccxt.lighter({
-                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
+                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
                 'options': {
-                    'apiKeyIndex': 5,        # Integer (0–254) corresponding to the specific API key you created.
-                    'accountIndex': 715085,  # Integer identifying your Lighter internal account (master or sub-account).
+                    'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
+                    'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
+                    'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
                 }
             })
         '''
@@ -256,12 +258,14 @@ async def async_instantiate_exchange(
         )
     elif exchange_name=='lighter':
         '''
-        @todo how to pass apikey/secret to lighter constructor
+        Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+
             lighter = ccxt.lighter({
-                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',   # from https://app.lighter.xyz/apikeys
+                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
                 'options': {
-                    'apiKeyIndex': 5,        # Integer (0–254) corresponding to the specific API key you created.
-                    'accountIndex': 715085,  # Integer identifying your Lighter internal account (master or sub-account).
+                    'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
+                    'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
+                    'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
                 }
             })
         '''
