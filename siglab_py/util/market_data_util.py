@@ -124,7 +124,8 @@ def instantiate_exchange(
             })
         '''
         exchange = ccxt.lighter({
-            'privateKey' : api_key
+            'privateKey' : api_key,
+            'options' : exchange_specific_options
         })
     elif exchange_name=='aster':
         '''
@@ -284,7 +285,8 @@ async def async_instantiate_exchange(
             })
         '''
         exchange = ccxtpro.lighter({
-            'privateKey' : api_key
+            'privateKey' : api_key,
+            'options' : exchange_specific_options
         })
     elif exchange_name=='aster':
         '''
