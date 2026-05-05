@@ -670,7 +670,7 @@ async def main():
 
     gateway_id : str = param['gateway_id']
 
-    fh = logging.FileHandler(f"strategy_executor_{param['gateway_id']}_{TargetStrategy.__name__}.log")
+    fh = logging.FileHandler(f"strategy_executor_{param['gateway_id']}_{TargetStrategy.__name__}.log", encoding='utf-8')
     fh.setLevel(log_level)
     fh.setFormatter(formatter)     
     logger.addHandler(fh)
@@ -2303,6 +2303,8 @@ async def main():
                 
                 if loop_counter>0 and loop_counter%100==0:
                     try:
+                        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
                         plt.clear_figure()
                         plt.theme("dark")
                         plt.plotsize(70, 18)
@@ -2316,13 +2318,15 @@ async def main():
                         plt.xlabel("Duration (sec)")
                         plt.ylabel("Frequency")
                         
+                        plt.clear_color()
                         f = io.StringIO()
                         with redirect_stdout(f):
                             plt.show()
                         histogram_plot_text = f.getvalue()
+                        cleaned_histogram_plot_text = ansi_escape.sub('', histogram_plot_text)
 
-                        log(f"loop_duration_sec_history")
-                        log(histogram_plot_text, log_level=LogLevel.INFO)
+                        logger.info("[loop_duration_sec_history]")
+                        logger.info(cleaned_histogram_plot_text)
                         
                         loop_duration_sec_history.clear()
 
