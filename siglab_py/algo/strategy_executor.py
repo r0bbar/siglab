@@ -413,9 +413,13 @@ def parse_args():
     param['params_config_file'] = args.params_config_file
     params_config_file : str = f"{param['startup_scripts_dir_path']}\\{param['env']}\\{args.params_config_file}"
     param['params_config'] = None
+    param['exchange_specific_options'] = None
     if os.path.exists(params_config_file):
         with open(params_config_file, 'r', encoding='utf-8') as f:
                 param['params_config'] = json.load(f)
+
+                if 'exchange_specific_options' in param['params_config']:
+                    param['exchange_specific_options'] = param['params_config']['exchange_specific_options']
 
     param['target_strategy_name'] = args.target_strategy_name
 
@@ -780,6 +784,7 @@ async def main():
         if passphrase:
             passphrase = aws_kms.decrypt(passphrase.encode())
 
+
     exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
         gateway_id=gateway_id,
         api_key=api_key,
@@ -787,6 +792,7 @@ async def main():
         passphrase=passphrase,
         default_type=param['default_type'],
         rate_limit_ms=param['rate_limit_ms'],
+        exchange_specific_options=param['exchange_specific_options'] if 'exchange_specific_options' in param else None,
         verbose=param['verbose']
     )
     if exchange:
