@@ -110,7 +110,9 @@ def instantiate_exchange(
         )  
     elif exchange_name=='lighter':
         '''
-        Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+        For Lighter, pass your Ethereum wallet private key to 'api_key'.
+        
+        https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
             lighter = ccxt.lighter({
                 'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
@@ -121,7 +123,9 @@ def instantiate_exchange(
                 }
             })
         '''
-        exchange = ccxt.lighter()
+        exchange = ccxt.lighter({
+            'privateKey' : api_key
+        })
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
@@ -266,7 +270,9 @@ async def async_instantiate_exchange(
         )
     elif exchange_name=='lighter':
         '''
-        Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+        For Lighter, pass your Ethereum wallet private key to 'api_key'.
+        
+        https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
             lighter = ccxt.lighter({
                 'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
@@ -277,7 +283,9 @@ async def async_instantiate_exchange(
                 }
             })
         '''
-        exchange = ccxtpro.lighter()
+        exchange = ccxtpro.lighter({
+            'privateKey' : api_key
+        })
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
