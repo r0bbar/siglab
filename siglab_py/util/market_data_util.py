@@ -122,6 +122,46 @@ def instantiate_exchange(
                     'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
                 }
             })
+
+        To test:
+            from siglab_py.util.market_data_util import async_instantiate_exchange
+
+            api_key : str = "xxxxx" # Your Ethereum Wallet address! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
+
+            default_max_slippage_bps : int = 10 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
+
+            exchange_specific_options = {
+                    'apiKeyIndex': 0,
+                    'accountIndex': 687361,
+                    'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
+                }
+
+            exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
+                gateway_id='lighter',
+                api_key=api_key,
+                secret=secret,
+                passphrase=passphrase,
+                default_type=default_type,
+                default_sub_type=default_sub_type,
+                rate_limit_ms=rate_limit_ms,
+                default_max_slippage_bps=default_max_slippage_bps,
+                exchange_specific_options=exchange_specific_options,
+                verbose=verbose
+            )
+
+            normalized_ticker = 'SOL/USDC:USDC'
+            amount = 0.3
+            price = 85
+            side = 'sell'
+            order_type = 'market'
+
+            entry_order = await exchange.create_order(
+                symbol = normalized_ticker,
+                amount = amount,
+                price = price, # This is NOT optional: ccxt.base.errors.ArgumentsRequired: lighter createOrder() requires a price argument
+                type=order_type,
+                side=side
+            )
         '''
         exchange = ccxt.lighter({
             'privateKey' : api_key,
@@ -283,6 +323,46 @@ async def async_instantiate_exchange(
                     'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
                 }
             })
+
+        To test:
+            from siglab_py.util.market_data_util import async_instantiate_exchange
+
+            api_key : str = "xxxxx" # Your Ethereum Wallet address! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
+
+            default_max_slippage_bps : int = 10 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
+
+            exchange_specific_options = {
+                    'apiKeyIndex': 0,
+                    'accountIndex': 687361,
+                    'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
+                }
+
+            exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
+                gateway_id='lighter',
+                api_key=api_key,
+                secret=secret,
+                passphrase=passphrase,
+                default_type=default_type,
+                default_sub_type=default_sub_type,
+                rate_limit_ms=rate_limit_ms,
+                default_max_slippage_bps=default_max_slippage_bps,
+                exchange_specific_options=exchange_specific_options,
+                verbose=verbose
+            )
+
+            normalized_ticker = 'SOL/USDC:USDC'
+            amount = 0.3
+            price = 85
+            side = 'sell'
+            order_type = 'market'
+
+            entry_order = await exchange.create_order(
+                symbol = normalized_ticker,
+                amount = amount,
+                price = price, # This is NOT optional: ccxt.base.errors.ArgumentsRequired: lighter createOrder() requires a price argument
+                type=order_type,
+                side=side
+            )
         '''
         exchange = ccxtpro.lighter({
             'privateKey' : api_key,
