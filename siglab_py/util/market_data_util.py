@@ -163,10 +163,12 @@ def instantiate_exchange(
                 side=side
             )
         '''
-        exchange = ccxt.lighter({
-            'privateKey' : api_key,
-            'options' : exchange_specific_options
-        })
+        lighter_params = {
+            'privateKey' : api_key
+        }
+        if exchange_specific_options:
+            lighter_params['options'] = exchange_specific_options
+        exchange = ccxt.lighter(lighter_params)
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
@@ -364,10 +366,12 @@ async def async_instantiate_exchange(
                 side=side
             )
         '''
-        exchange = ccxtpro.lighter({
-            'privateKey' : api_key,
-            'options' : exchange_specific_options
-        })
+        lighter_params = {
+            'privateKey' : api_key
+        }
+        if exchange_specific_options:
+            lighter_params['options'] = exchange_specific_options
+        exchange = ccxtpro.lighter(lighter_params)
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
