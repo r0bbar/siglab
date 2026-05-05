@@ -496,6 +496,14 @@ async def execute_one_position(
         ):
             order_update = await exchange.fetch_order(order_id, ticker)
             return order_update
+
+        @retry(num_attempts=3, pause_between_retries_ms=3000)
+        async def _fetch_order_book(
+            ticker : str,
+            exchange : AnyExchange,
+        ):
+            orderbook = await exchange.fetch_order_book(symbol=ticker, limit=5)
+            return orderbook
         
         ticker_class : str = classify_ticker(position.ticker)
 
@@ -543,8 +551,8 @@ async def execute_one_position(
                 if rounded_slice_amount_in_base_ccy==0:
                     log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
                     continue
-
-                orderbook = await exchange.fetch_order_book(symbol=position.ticker, limit=5)
+                
+                orderbook = await _fetch_order_book(position.ticker, exchange) 
                 asks = [ ask[0] for ask in orderbook['asks'] ]
                 best_ask = min(asks)
                 bids = [ bid[0] for bid in orderbook['bids'] ]
