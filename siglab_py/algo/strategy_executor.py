@@ -111,6 +111,34 @@ Usage:
             Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
             https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
 
+        Performance and slippages: 
+            How tight your loops are will impact whether, for example, if strategy_executor is taking profit before the market start turning against your open position, if you manage to keep as much floating pnl possible when you have the chance. 
+            Impact will become increasingly significant as you trade lower timeframe, faster trades. 
+            Search log for "loop_duration_sec_history". You will find histogram which logs loops duration every hundred iterations. 
+            Things which may impact CPU loading? 
+            - 'how_many_candles' (Step 1) your strategy_executor is loading? Are you loading more candles than your strategy actually needs?
+            - how many concurrent strategy_executor, candles_ta_providers instances running on the VM?
+
+                2026-05-05 10:27:46,792 [loop_duration_sec_history]
+                2026-05-05 10:27:47,047                        Loop Duration (sec) Histogram                  
+                    ┌────────────────────────────────────────────────────────────────┐
+                23.0┤          ███                                                   │
+                    │          ███                                                   │
+                19.2┤          ███                                                   │
+                    │████      ███                                                   │
+                15.3┤████  ███████                                                   │
+                    │████  ██████████                                                │
+                11.5┤███████████████████                                             │
+                    │███████████████████                                             │
+                 7.7┤███████████████████                                             │
+                    │███████████████████                                             │
+                 3.8┤███████████████████████                                         │
+                    │█████████████████████████████   ███                         ████│
+                 0.0┤█████████████████████████████   ███                         ████│
+                    └┬───────────────┬───────────────┬──────────────┬───────────────┬┘
+                    0.8             4.4             8.0           11.6           15.2 
+                Frequency                     Duration (sec)                          
+
     Step 6. Start order gateway
         Top of the script for instructions
         https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py
