@@ -39,7 +39,7 @@ TAs computed (This is an expanding list):
 
 + ATR, std, log return, historical vols
 
-+ Boillenger bands (Yes incorrect spelling sorry)
++ Bollinger bands
 
 + FVG
 
