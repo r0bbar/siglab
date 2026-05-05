@@ -441,6 +441,9 @@ Your strategy should subclass from StrategyBase, it's got default Lambdas which 
 + [**strategy_executor.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py)
 This is the core live algo engine: It loads strategy you specify from command line argument and execute them.
 
+'--target_strategy_name' is your strategy file, containing the lambdas controlling entry, TP/SL logic. Reflection isn't best friend to fastest execution, it is however design intent to allow maximum, maintainable, back-test to live correspondence.
+
+
 + [**one_shot_strategy.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/one_shot_strategy.py)
 This is the industrailized of [**tp_algo.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/tp_algo.py), which is primarily for manual trades: You decides on entry, and from command line arguments specify TP/SL targets. OneShotStrategy will do the rest.
 
