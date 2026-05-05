@@ -2,6 +2,8 @@
 import sys
 import traceback
 import os
+import io
+from contextlib import redirect_stdout
 import logging
 from dotenv import load_dotenv
 import argparse
@@ -890,6 +892,7 @@ async def main():
         loop_counter : int = 0
         loop_start : datetime = datetime.now()
         loop_elapsed_sec : int = 0
+        loop_duration_sec_history: List[float] = []
         reversal : bool = False
         tp : bool = False
         sl : bool = False
@@ -908,6 +911,7 @@ async def main():
             try:
                 if loop_counter>0:
                     loop_elapsed_sec = round((datetime.now() - loop_start).total_seconds(), 2)
+                    loop_duration_sec_history.append(loop_elapsed_sec)
                 loop_start = datetime.now()
 
                 any_entry, any_exit, any_target_adj = False, False, False
@@ -2297,6 +2301,34 @@ async def main():
                     log(f"Sleep little longer! block_entries: {block_entries}, pos: {pos}") 
                     time.sleep(10)
                 
+                if loop_counter>0 and loop_counter%100==0:
+                    try:
+                        plt.clear_figure()
+                        plt.theme("dark")
+                        plt.plotsize(70, 18)
+                        plt.hist(
+                            loop_duration_sec_history,
+                            bins=20,
+                            color="cyan",
+                            marker="█"
+                        )
+                        plt.title("Loop Duration (sec) Histogram")
+                        plt.xlabel("Duration (sec)")
+                        plt.ylabel("Frequency")
+                        
+                        f = io.StringIO()
+                        with redirect_stdout(f):
+                            plt.show()
+                        histogram_plot_text = f.getvalue()
+
+                        log(f"loop_duration_sec_history")
+                        log(histogram_plot_text, log_level=LogLevel.INFO)
+                        
+                        loop_duration_sec_history.clear()
+
+                    except Exception as suckit_err:
+                        pass
+                    
                 if loop_counter==0 or loop_counter%1000==0:
                     try:
                         files_purged : List[str] = purge_old_file(
