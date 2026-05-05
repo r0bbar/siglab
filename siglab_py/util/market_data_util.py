@@ -38,21 +38,25 @@ def instantiate_exchange(
     default_type : Union[str, None] = 'spot',
     default_sub_type : Union[str, None] = None,
     default_max_slippage_bps : int = 100, # This is for market orders
-    rate_limit_ms : float = 100
+    rate_limit_ms : float = 100,
+    exchange_specific_options: Union[Dict[str, Any], None] = None,
 ) -> Union[AnyExchange, None]:
     exchange_name = exchange_name.lower().strip()
 
     # Look at ccxt exchange.describe. under 'options' \ 'defaultType' (and 'defaultSubType') for what markets the exchange support.
     # https://docs.ccxt.com/en/latest/manual.html#instantiation
+    _exchange_specific_options = {
+                'defaultType' : default_type,
+                'defaultSlippage' : default_max_slippage_bps
+            }
+    if exchange_specific_options:
+        _exchange_specific_options = _exchange_specific_options | exchange_specific_options
     exchange_params : Dict[str, Any]= {
                         'apiKey' : api_key,
                         'secret' : secret,
                         'enableRateLimit'  : True,
                         'rateLimit' : rate_limit_ms,
-                        'options' : {
-                            'defaultType' : default_type,
-                            'defaultSlippage' : default_max_slippage_bps
-                        }
+                        'options' : _exchange_specific_options
                     }
     
     if default_sub_type:
@@ -153,6 +157,7 @@ async def async_instantiate_exchange(
     default_sub_type : Union[str, None] = None,
     default_max_slippage_bps : int = 100, # This is for market orders
     rate_limit_ms : float = 100,
+    exchange_specific_options: Union[Dict[str, Any], None] = None,
     verbose : bool = False
 ) -> Union[AnyExchange, None]:
     exchange : Union[AnyExchange, None] = None
@@ -161,15 +166,18 @@ async def async_instantiate_exchange(
 
     # Look at ccxt exchange.describe. under 'options' \ 'defaultType' (and 'defaultSubType') for what markets the exchange support.
     # https://docs.ccxt.com/en/latest/manual.html#instantiation
+    _exchange_specific_options = {
+                'defaultType' : default_type,
+                'defaultSlippage' : default_max_slippage_bps
+            }
+    if exchange_specific_options:
+        _exchange_specific_options = _exchange_specific_options | exchange_specific_options
     exchange_params : Dict[str, Any]= {
                         'apiKey' : api_key,
                         'secret' : secret,
                         'enableRateLimit'  : True,
                         'rateLimit' : rate_limit_ms,
-                        'options' : {
-                            'defaultType' : default_type,
-                            'defaultSlippage' : default_max_slippage_bps
-                        },
+                        'options' : _exchange_specific_options,
                         'verbose': verbose
                     }
     
