@@ -390,4 +390,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         logger.info("Stopped by user")
     except Exception as e:
-        logger.info(f"Unexpected error: {e}")
+        logger.info(f"Unexpected error: {e} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
