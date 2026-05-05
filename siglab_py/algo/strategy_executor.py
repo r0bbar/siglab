@@ -131,6 +131,8 @@ Debug from VSCode, launch.json:
                         "--env" , "dev",
                         "--target_strategy_name", "YourStrategyClassName",
 
+                        "--params_config_file", "test_params_for_debug.json",
+
                         "--gateway_id", "hyperliquid_01",
                         "--default_type", "linear",
                         "--rate_limit_ms", "100",
@@ -156,12 +158,12 @@ Debug from VSCode, launch.json:
                         "--block_entry_impacting_events","Y",
                         "--num_intervals_current_ecoevents", "96",
 
-                        "hi_candles_provider_topic" : "mds_assign_aaa",
-                        "lo_candles_provider_topic" : "mds_assign_bbb",
-                        "orderbooks_provider_topic" : "mds_assign_ccc",
-                        "hi_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-hyperliquid-1h-L24-S12",
-                        "lo_candles_w_ta_topic" : "candles_ta-SOL-USDT-SWAP-hyperliquid-15m-L24-S12",
-                        "orderbook_topic" : "orderbooks_SOL/USDT:USDT_hyperliquid",
+                        "hi_candles_provider_topic", "mds_assign_aaa",
+                        "lo_candles_provider_topic", "mds_assign_bbb",
+                        "orderbooks_provider_topic", "mds_assign_ccc",
+                        "hi_candles_w_ta_topic", "candles_ta-SOL-USDT-SWAP-hyperliquid-1h-L24-S12",
+                        "lo_candles_w_ta_topic", "candles_ta-SOL-USDT-SWAP-hyperliquid-15m-L24-S12",
+                        "orderbook_topic", "orderbooks_SOL/USDT:USDT_hyperliquid",
 
                         "--trading_window_start", "Mon_00:00",
                         "--trading_window_end", "Fri_17:00",
@@ -176,6 +178,15 @@ Debug from VSCode, launch.json:
             }
         ]
     }
+
+    Put complex JSON config in --params_config_file "\siglab\siglab_py\bat\dev\test_params_for_debug.json". Example, Lighter DEX requires additional param for instantiation:
+        {
+            "exchange_specific_options" :  {
+                "apiKeyIndex" : 0,
+                "accountIndex": 12345678,
+                "libraryPath": "C:\\lighter\\lighter-signer-windows-amd64.dll"
+            }
+        }
 '''
 param : Dict = {
     'trailing_stop_mode': "linear", # linear or parabolic
