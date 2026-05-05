@@ -13,7 +13,7 @@ The repo include all the infrastructure code necessary to backtest a trading str
 
 + [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
 
-**siglab_py** is your shortest path to setup a quantitative trading desk.
+**siglab_py** is your shortest path to setup a quantitative trading desk, from signal to backtests, research, to live execution and post-trade analysis.
 
 ![Overall Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py.jpg)
 
