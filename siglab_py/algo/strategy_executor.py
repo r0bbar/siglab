@@ -104,15 +104,23 @@ Usage:
                 For long: --non_unified_params_long 
                         { "tdMode" : "cash" }
                 For shorts, non_unified_params_1_short 
+
+            Another example, Lighter DEX exchange instantiation specification.
+                        {
+                            "exchange_specific_options" :  {
+                                "apiKeyIndex": 0,
+                                "accountIndex": 123456,
+                                "libraryPath": "C:/lighter/lighter-signer-windows-amd64.dll"
+                        }
+
             Define them in '--params_config_file'.
 
         What's "L" and "S" means in --hi_candles_w_ta_topic --lo_candles_w_ta_topic?
         L24: long intervals 24
         S12: short intervals 12
 
-        notification_info_url/notification_critical_url/notification_alert_url: How to get webhook urls? 
-            Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
-            https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
+        --notification_info_url/notification_critical_url/notification_alert_url: If configured strategy_executor will dispatch notifications to Discord
+        --privacy_first: Y (default) or N. If set to Y, Discord notification will mask dollar amounts, only bps and percentages will be included in notifications. 
 
         Performance and slippages: 
             How tight your loops are will impact whether, for example, if strategy_executor is taking profit before the market start turning against your open position, if you manage to keep as much floating pnl possible when you have the chance. 

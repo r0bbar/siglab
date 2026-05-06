@@ -60,9 +60,19 @@ Usage:
     --notification_info_url, --notification_critical_url and --notification_alert_url are if you want gateway to dispatch notification on events.
     --order_amount_randomize_max_pct adds small variance to sliced order amount (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
     
-    notification_info_url/notification_critical_url/notification_alert_url: How to get webhook urls? 
-        Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
-        https://medium.com/@natalia_assad/how-send-a-table-to-slack-using-python-d1a20b08abe0
+    --notification_info_url/notification_critical_url/notification_alert_url: If configured gateway will dispatch notifications to Discord
+    --privacy_first: Y (default) or N. If set to Y, Discord notification will mask dollar amounts, only bps and percentages will be included in notifications. 
+
+    Any complex json that's not easy to feed thru command line args?
+            For example, Lighter DEX exchange instantiation specification.
+                        {
+                            "exchange_specific_options" :  {
+                                "apiKeyIndex": 0,
+                                "accountIndex": 123456,
+                                "libraryPath": "C:/lighter/lighter-signer-windows-amd64.dll"
+                        }
+
+            Define them in '--params_config_file'.
 
     Another example:
         python gateway.py --gateway_id hyperliquid_01 --default_type linear --rate_limit_ms 100 --notification_info_url=https://hooks.slack.com/services/xxx --notification_critical_url=https://hooks.slack.com/services/yyy --notification_alert_url=https://hooks.slack.com/services/zzz
