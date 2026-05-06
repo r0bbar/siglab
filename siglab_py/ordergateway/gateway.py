@@ -34,6 +34,9 @@ from siglab_py.constants import LogLevel
 from siglab_py.util.notification_util import dispatch_notification
 
 current_filename = os.path.basename(__file__)
+current_dir : str = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+startup_scripts_dir_path = f"{parent_dir}\\bat"
 
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
@@ -229,6 +232,8 @@ param : Dict = {
     "wait_fill_threshold_ms" : 5000,
 
     'current_filename' : current_filename,
+    'current_dir' : parent_dir,
+    'startup_scripts_dir_path' : None,
 
     'notification' : {
         'footer' : None,
@@ -307,6 +312,10 @@ def log(message : str, log_level : LogLevel = LogLevel.INFO):
 def parse_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--env", help="Environment: dev, prod (default).", default='prod')
+    parser.add_argument("--startup_scripts_dir_path", help="where you put your bat/sh startup files? Default: startup_scripts_dir_path={parent_dir}\\bat", default=startup_scripts_dir_path)
+    parser.add_argument("--params_config_file", help="Put more complex config here (One's thats not easy to feed thru command line args). Default: None", default=None)
+
     parser.add_argument("--gateway_id", help="gateway_id: Where are you sending your order?", default=None)
     parser.add_argument("--dry_run", help="Y or N (default, for testing). If Y, orders won't be dispatched to exchange, gateway will fake reply.", default='N')
     parser.add_argument("--default_type", help="default_type: spot, linear, inverse, futures ...etc", default='linear')
@@ -335,6 +344,24 @@ def parse_args():
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
+
+    param['env'] = args.env
+    param['startup_scripts_dir_path'] = args.startup_scripts_dir_path
+    param['params_config_file'] = args.params_config_file
+    params_config_file : str = f"{param['startup_scripts_dir_path']}\\{param['env']}\\{args.params_config_file}"
+    param['params_config'] = None
+    param['exchange_specific_options'] = None
+    if os.path.exists(params_config_file):
+        print(f"Loading params_config from: {params_config_file}")
+
+        with open(params_config_file, 'r', encoding='utf-8') as f:
+                param['params_config'] = json.load(f)
+                print(f"Loaded params_config from: {params_config_file}")
+
+                if 'exchange_specific_options' in param['params_config']:
+                    param['exchange_specific_options'] = param['params_config']['exchange_specific_options']
+                    print(f"exchange_specific_options loaded: {param['exchange_specific_options']}")
+
     param['gateway_id'] = args.gateway_id
 
     if args.dry_run:
@@ -1111,6 +1138,7 @@ async def main():
         default_sub_type=param['default_sub_type'],
         rate_limit_ms=param['rate_limit_ms'],
         default_max_slippage_bps=param['default_max_slippage_bps'],
+        exchange_specific_options=param['exchange_specific_options'] if 'exchange_specific_options' in param else None,
         verbose=param['verbose']
     )
     if exchange:
