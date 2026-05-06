@@ -260,7 +260,7 @@ param : Dict = {
 
     'current_filename' : current_filename,
     'current_dir' : parent_dir,
-    'startup_scripts_dir_path' : startup_scripts_dir_path,
+    'startup_scripts_dir_path' : None,
 
     'max_num_connectivity_errors' : 50,
 
@@ -368,6 +368,7 @@ def parse_args():
     parser = argparse.ArgumentParser() 
 
     parser.add_argument("--env", help="Environment: dev, prod (default).", default='prod')
+    parser.add_argument("--startup_scripts_dir_path", help="where you put your bat/sh startup files? Default: startup_scripts_dir_path={parent_dir}\\bat", default=startup_scripts_dir_path)
     parser.add_argument("--params_config_file", help="Put more complex config here (One's thats not easy to feed thru command line args). Default: None", default=None)
 
     parser.add_argument(
@@ -454,6 +455,7 @@ def parse_args():
     args, additional_args = parser.parse_known_args()
 
     param['env'] = args.env
+    param['startup_scripts_dir_path'] = args.startup_scripts_dir_path
     param['params_config_file'] = args.params_config_file
     params_config_file : str = f"{param['startup_scripts_dir_path']}\\{param['env']}\\{args.params_config_file}"
     param['params_config'] = None
