@@ -1977,7 +1977,7 @@ async def main():
                                     orderhist_cache = pd.concat([orderhist_cache, pd.DataFrame([orderhist_cache_row])], axis=0, ignore_index=True)
 
                                     log(executed_position)
-                                    dispatch_notification(title=f"#entry {param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy']} (USD amount: {amount_filled_usdt if not param['privacy_first'] else '---'}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    dispatch_notification(title=f"#entry {param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy'] if not param['privacy_first'] else '---'} (USD amount: {amount_filled_usdt if not param['privacy_first'] else '---'}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                     if param['dump_candles']:
                                         pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
