@@ -459,11 +459,15 @@ def parse_args():
     param['params_config'] = None
     param['exchange_specific_options'] = None
     if os.path.exists(params_config_file):
+        print(f"Loading params_config from: {params_config_file}")
+
         with open(params_config_file, 'r', encoding='utf-8') as f:
                 param['params_config'] = json.load(f)
+                print(f"Loaded params_config from: {params_config_file}")
 
                 if 'exchange_specific_options' in param['params_config']:
                     param['exchange_specific_options'] = param['params_config']['exchange_specific_options']
+                    print(f"exchange_specific_options loaded: {param['exchange_specific_options']}")
 
     param['target_strategy_name'] = args.target_strategy_name
 
