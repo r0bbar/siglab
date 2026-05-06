@@ -126,7 +126,7 @@ def instantiate_exchange(
         To test:
             from siglab_py.util.market_data_util import async_instantiate_exchange
 
-            api_key : str = "xxxxx" # Your Ethereum Wallet address! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
+            api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
 
             default_max_slippage_bps : int = 10 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
 
@@ -329,7 +329,7 @@ async def async_instantiate_exchange(
         To test:
             from siglab_py.util.market_data_util import async_instantiate_exchange
 
-            api_key : str = "xxxxx" # Your Ethereum Wallet address! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
+            api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
 
             default_max_slippage_bps : int = 10 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
 
