@@ -2122,6 +2122,8 @@ async def main():
                                 expected_pos_after_execution=0 # @todo: for multi-slice exits, this may not be zero
                             )
                         ]
+
+                        position_summary['pos_side'] = pos_side.name # Original side!
                         
                         log(
                             pformat(
