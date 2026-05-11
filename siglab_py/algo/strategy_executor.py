@@ -961,7 +961,8 @@ async def main():
 
                 any_entry, any_exit, any_target_adj = False, False, False
 
-                dt_now = datetime.now()
+                utc_now : datetime = datetime.now(timezone.utc)
+                dt_now : datetime = datetime.now()
                 block_entries = False
 
                 dt_targettz = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
@@ -988,9 +989,15 @@ async def main():
                         block_entries = True
                         log(f"Block entries: Outside trading window")
 
-                    log(f"trading_window start: {param['trading_window_start']}, end: {param['trading_window_end']}, in_window: {parsed_trading_window['in_window']}")
+                    log(f"trading_window start({param['rolldate_tz']}): {param['trading_window_start']}, end: {param['trading_window_end']}, in_window: {parsed_trading_window['in_window']}")
                 else:
                     log(f"No trading window specified")
+
+                if algo_param['params_config'] and 'utc_entry_hours' in algo_param['params_config']:
+                    permissible_utc_hours = algo_param['params_config']['utc_entry_hours'][str(utc_now.weekday())]
+                    if utc_now.hour not in permissible_utc_hours:
+                        block_entries = True
+                        log(f"Block entries: Outside permissible trading hours ({param['rolldate_tz']}): {[ x + delta_hour for x in permissible_utc_hours]}")
 
                 if (loop_counter%10==0):
                     if full_economic_calendars_topic:
