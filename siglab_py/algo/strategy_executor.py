@@ -100,12 +100,12 @@ Usage:
         Bear in mind numba don't support reflection.
 
         Any complex json that's not easy to feed thru command line args?
-            For example, exchange specific custom params you'd need to pass to create_order.
+            Example 1, exchange specific custom params you'd need to pass to create_order.
                 For long: --non_unified_params_long 
                         { "tdMode" : "cash" }
                 For shorts, non_unified_params_1_short 
 
-            Another example, Lighter DEX exchange instantiation specification.
+            Example 2, Lighter DEX exchange instantiation specification.
                         {
                             "exchange_specific_options" :  {
                                 "apiKeyIndex": 0,
@@ -113,7 +113,22 @@ Usage:
                                 "libraryPath": "C:/lighter/lighter-signer-windows-amd64.dll"
                         }
 
-            Define them in '--params_config_file'.
+            Example 3, In additional to 'trading_window_start' and 'trading_window_end', you can define permissible trading hours in UTC in algo_param['params_config']['utc_entry_hours'].
+
+            Very often traders love to trade only US open, sometimes mid week only when weekly trend is more settled:
+                {
+                    "utc_entry_hours" :  {
+                        "0" : [],
+                        "1" : [18,19,20,21,22,23],
+                        "2" : [18,19,20,21,22,23],
+                        "3" : [18,19,20,21,22,23],
+                        "4" : [],
+                        "5" : [],
+                        "6" : []
+                    }
+                }
+
+            Define complex JSON config in '--params_config_file'.
 
         What's "L" and "S" means in --hi_candles_w_ta_topic --lo_candles_w_ta_topic?
         L24: long intervals 24
