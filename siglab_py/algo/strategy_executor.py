@@ -1010,9 +1010,11 @@ async def main():
 
                 if algo_param['params_config'] and 'utc_entry_hours' in algo_param['params_config']:
                     permissible_utc_hours = algo_param['params_config']['utc_entry_hours'][str(utc_now.weekday())]
+                    permissible_local_hours = [ x + delta_hour for x in permissible_utc_hours]
+                    print(f"permissible_local_hours: {permissible_local_hours}")
                     if utc_now.hour not in permissible_utc_hours:
                         block_entries = True
-                        log(f"Block entries: Outside permissible trading hours ({param['rolldate_tz']}): {[ x + delta_hour for x in permissible_utc_hours]}")
+                        log(f"Block entries: Outside permissible trading hours ({param['rolldate_tz']}): {permissible_local_hours}")
 
                 if (loop_counter%10==0):
                     if full_economic_calendars_topic:
