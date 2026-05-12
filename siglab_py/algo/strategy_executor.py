@@ -977,6 +977,7 @@ async def main():
                 any_entry, any_exit, any_target_adj = False, False, False
 
                 utc_now : datetime = datetime.now(timezone.utc)
+                utc_now_tzaware : datetime = utc_now.replace(tzinfo=timezone.utc)
                 dt_now : datetime = datetime.now()
                 block_entries = False
 
@@ -1010,8 +1011,15 @@ async def main():
 
                 if algo_param['params_config'] and 'utc_entry_hours' in algo_param['params_config']:
                     permissible_utc_hours = algo_param['params_config']['utc_entry_hours'][str(utc_now.weekday())]
-                    permissible_local_hours = [ x + delta_hour for x in permissible_utc_hours]
-                    print(f"permissible_local_hours: {permissible_local_hours}")
+                    _permissible_utc_hours = [ 
+                        datetime(utc_now.year, utc_now.month, utc_now.day, utc_hour).replace(tzinfo=timezone.utc) 
+                            for utc_hour 
+                            in permissible_utc_hours
+                    ]
+                    permissible_local_hours = [ 
+                        utc_hour.astimezone(ZoneInfo(param['rolldate_tz'])).hour 
+                            for utc_hour in _permissible_utc_hours]
+                    print(f"permissible_local_hours ({param['rolldate_tz']}): {permissible_local_hours}")
                     if utc_now.hour not in permissible_utc_hours:
                         block_entries = True
                         log(f"Block entries: Outside permissible trading hours ({param['rolldate_tz']}): {permissible_local_hours}")
