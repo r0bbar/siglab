@@ -58,7 +58,9 @@ def instantiate_exchange(
                         'rateLimit' : rate_limit_ms,
                         'options' : _exchange_specific_options
                     }
-    
+    if secret=="DUMMY_SECRET":
+        # Lighter DEX: secret actually not passed to Lighter, if you do, upon create_order you'd have error "invalid signature"
+        exchange_params.pop("secret")
     if default_sub_type:
         exchange_params['defaultSubType'] = default_sub_type
 
@@ -227,7 +229,9 @@ async def async_instantiate_exchange(
                         'options' : _exchange_specific_options,
                         'verbose': verbose
                     }
-    
+    if secret=="DUMMY_SECRET":
+        # Lighter DEX: secret actually not passed to Lighter, if you do, upon create_order you'd have error "invalid signature"
+        exchange_params.pop("secret")
     if default_sub_type:
         exchange_params['defaultSubType'] = default_sub_type
 
