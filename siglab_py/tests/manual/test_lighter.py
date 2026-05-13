@@ -15,16 +15,31 @@ Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ
             })
 '''
 async def main():
-    private_key : str = 'xxxxx' # This is your Ethereum Wallet private key. It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys).
+    private_key : str = 'xxxxxxxxxx' # This is your Ethereum Wallet private key. It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys).
+
+    ticker : str = "SOL/USDC:USDC"
+    amount_base_ccy = 0.1
+    side = 'sell'
+    order_type = 'market'
 
     rate_limit_ms = 100
+    default_type : str = "linear"
+    default_max_slippage_bps : int = 5 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
+    
+    exchange_specific_options: Union[Dict[str, Any], None] = {
+        'apiKeyIndex': 0,
+        'accountIndex': 123456,
+        'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
+    }
+    _exchange_specific_options = {
+                'defaultType' : default_type,
+                'defaultSlippage' : default_max_slippage_bps
+            }
+    _exchange_specific_options = _exchange_specific_options | exchange_specific_options
+
     exchange_params = {
         'privateKey': private_key,
-        'options': {
-            'apiKeyIndex': 0,
-            'accountIndex': 687361,
-            'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
-        }
+        'options': _exchange_specific_options
     }
     exchange = ccxtpro.lighter(exchange_params) 
     balances = await exchange.fetch_balance()
@@ -59,6 +74,21 @@ async def main():
     '''
     positions = await exchange.fetch_positions()
     print(f"{pformat(positions, indent=2, width=100)}")
+
+    orderbook = await exchange.fetch_order_book(symbol=ticker, limit=5)
+    asks = [ ask[0] for ask in orderbook['asks'] ]
+    best_ask = min(asks)
+    bids = [ bid[0] for bid in orderbook['bids'] ]
+    best_bid = max(bids)
+    mid = (best_bid + best_ask)/2
+
+    executed_order = await exchange.create_order(
+                            symbol = ticker,
+                            type = order_type,
+                            amount = amount_base_ccy,
+                            price = mid,
+                            side = side
+    )
 
     '''
         [
