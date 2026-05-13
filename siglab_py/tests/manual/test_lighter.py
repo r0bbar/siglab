@@ -1,5 +1,7 @@
 import asyncio
 from pprint import pformat
+
+from siglab_py.util.market_data_util import async_instantiate_exchange
 import ccxt.pro as ccxtpro
 
 '''
@@ -15,17 +17,19 @@ Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ
             })
 '''
 async def main():
-    private_key : str = 'xxxxxxxxxx' # This is your Ethereum Wallet private key. It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys).
+    private_key : str = 'xxxxx' # This is your Ethereum Wallet private key. It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys).
 
     ticker : str = "SOL/USDC:USDC"
     amount_base_ccy = 0.1
-    side = 'sell'
+    side = 'buy'
     order_type = 'market'
 
     rate_limit_ms = 100
     default_type : str = "linear"
+    default_sub_type = None
     default_max_slippage_bps : int = 5 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
-    
+    verbose : bool = False
+
     exchange_specific_options: Union[Dict[str, Any], None] = {
         'apiKeyIndex': 0,
         'accountIndex': 123456,
@@ -37,11 +41,32 @@ async def main():
             }
     _exchange_specific_options = _exchange_specific_options | exchange_specific_options
 
+
+    # Instantiating exchange with CCXT directly
     exchange_params = {
         'privateKey': private_key,
         'options': _exchange_specific_options
     }
     exchange = ccxtpro.lighter(exchange_params) 
+
+    balances = await exchange.fetch_balance()
+    print(f"{pformat(balances, indent=2, width=100)}")
+
+
+    # Another way to instantiate exchange.
+    exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
+        gateway_id='lighter',
+        api_key=private_key,
+        secret="DUMMY_SECRET", # secret not actually passed to Lighter
+        passphrase=None,
+        default_type=default_type,
+        default_sub_type=default_sub_type,
+        rate_limit_ms=rate_limit_ms,
+        default_max_slippage_bps=default_max_slippage_bps,
+        exchange_specific_options=exchange_specific_options,
+        verbose=verbose
+    )
+
     balances = await exchange.fetch_balance()
     print(f"{pformat(balances, indent=2, width=100)}")
 
