@@ -26,10 +26,10 @@ async def main():
     rate_limit_ms = 100
     default_type : str = "linear"
     default_sub_type = None
-    # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled: "Order canceled due to excessive slippage beyond allowed limit"
-    # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter. 
-    # Too tight? Again, "Order canceled due to excessive slippage beyond allowed limit".
-    default_max_slippage_bps : int = 30 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter. Too tight? "Order canceled due to excessive slippage beyond allowed limit".
+    # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
+    # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled
+    # Generally set defaultSlippage to 30-100, this should suffice for slower markets.
+    default_max_slippage_bps : int = 100
     verbose : bool = False
 
     exchange_specific_options: Union[Dict[str, Any], None] = {
