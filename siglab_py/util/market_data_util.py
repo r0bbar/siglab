@@ -131,8 +131,7 @@ def instantiate_exchange(
             api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
 
             # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
-            # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled
-            # Generally set defaultSlippage to 30-100, this should suffice for slower markets.
+            # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
             default_max_slippage_bps : int = 30
 
             exchange_specific_options = {
@@ -181,6 +180,8 @@ def instantiate_exchange(
         exchange = ccxt.aster()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}.")
+    
+    exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
     exchange.load_markets() # type: ignore
 
@@ -339,8 +340,7 @@ async def async_instantiate_exchange(
             api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
 
             # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
-            # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled
-            # Generally set defaultSlippage to 30-100, this should suffice for slower markets.
+            # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
             default_max_slippage_bps : int = 100
 
             exchange_specific_options = {
@@ -389,6 +389,8 @@ async def async_instantiate_exchange(
         exchange = ccxtpro.aster()
     else:
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
+
+    exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
     await exchange.load_markets() # type: ignore
 
