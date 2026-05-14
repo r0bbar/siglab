@@ -837,10 +837,15 @@ async def execute_one_position(
                                 best_ask = min(asks)
                                 bids = [ bid[0] for bid in orderbook['bids'] ]
                                 best_bid = max(bids)
+
+                                default_max_slippage_bps = max(
+                                                                min(position.leg_room_bps*10, 30),
+                                                                100
+                                                            )
                                 if position.side=='buy':
-                                    limit_price = best_ask * (1 + position.leg_room_bps*5 /10000)
+                                    limit_price = best_ask * (1 + default_max_slippage_bps /10000)
                                 else:
-                                    limit_price = best_bid * (1 - position.leg_room_bps*5 /10000)
+                                    limit_price = best_bid * (1 - default_max_slippage_bps /10000)
                                 limit_price = float(exchange.price_to_precision(position.ticker, limit_price))
                                 executed_resent_order = await exchange.create_order(
                                     symbol=position.ticker,
