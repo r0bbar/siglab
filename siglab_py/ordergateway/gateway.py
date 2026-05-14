@@ -837,13 +837,16 @@ async def execute_one_position(
                                 best_ask = min(asks)
                                 bids = [ bid[0] for bid in orderbook['bids'] ]
                                 best_bid = max(bids)
-                                target_price = best_ask if position.side=='buy' else best_bid
-                                target_price = float(exchange.price_to_precision(position.ticker, target_price))
+                                if position.side=='buy':
+                                    limit_price = best_ask * (1 + position.leg_room_bps*5 /10000)
+                                else:
+                                    limit_price = best_bid * (1 - position.leg_room_bps*5 /10000)
+                                limit_price = float(exchange.price_to_precision(position.ticker, limit_price))
                                 executed_resent_order = await exchange.create_order(
                                     symbol=position.ticker,
                                     type='market',
                                     amount=remaining_amount,
-                                    price = target_price, # Even for market orders, still pass price. Some exchanges may require this.
+                                    price = limit_price, # Even for market orders, still pass price. Some exchanges may require this. *5? We want a fat leg room as we just want to execute aggressively.
                                     side=position.side,
                                     params=order_params
                                 )
