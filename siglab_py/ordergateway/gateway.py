@@ -831,11 +831,19 @@ async def execute_one_position(
                             if rounded_slice_amount_in_base_ccy>min_amount:
                                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy
                             if rounded_slice_amount_in_base_ccy>0:
+                                # Need fetch best prices again after waited all these seconds
+                                orderbook = await _fetch_order_book(position.ticker, exchange) 
+                                asks = [ ask[0] for ask in orderbook['asks'] ]
+                                best_ask = min(asks)
+                                bids = [ bid[0] for bid in orderbook['bids'] ]
+                                best_bid = max(bids)
+                                target_price = best_ask if position.side=='buy' else best_bid
+                                target_price = float(exchange.price_to_precision(position.ticker, target_price))
                                 executed_resent_order = await exchange.create_order(
                                     symbol=position.ticker,
                                     type='market',
                                     amount=remaining_amount,
-                                    price = rounded_limit_price, # Even for market orders, still pass price. Some exchanges may require this.
+                                    price = target_price, # Even for market orders, still pass price. Some exchanges may require this.
                                     side=position.side,
                                     params=order_params
                                 )
