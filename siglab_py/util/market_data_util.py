@@ -37,7 +37,7 @@ def instantiate_exchange(
     passphrase : Union[str, None] = None,
     default_type : Union[str, None] = 'spot',
     default_sub_type : Union[str, None] = None,
-    default_max_slippage_bps : int = 100, # This is for market orders
+    default_max_slippage_bps : int = 300, # This is for market orders
     rate_limit_ms : float = 100,
     exchange_specific_options: Union[Dict[str, Any], None] = None,
 ) -> Union[AnyExchange, None]:
@@ -208,7 +208,7 @@ async def async_instantiate_exchange(
     passphrase : str,
     default_type : Union[str, None] = 'spot',
     default_sub_type : Union[str, None] = None,
-    default_max_slippage_bps : int = 100, # This is for market orders
+    default_max_slippage_bps : int = 300, # This is for market orders
     rate_limit_ms : float = 100,
     exchange_specific_options: Union[Dict[str, Any], None] = None,
     verbose : bool = False
