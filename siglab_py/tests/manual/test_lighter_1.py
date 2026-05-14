@@ -26,7 +26,10 @@ async def main():
     rate_limit_ms = 100
     default_type : str = "linear"
     default_sub_type = None
-    default_max_slippage_bps : int = 5 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter.
+    # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled: "Order canceled due to excessive slippage beyond allowed limit"
+    # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter. 
+    # Too tight? Again, "Order canceled due to excessive slippage beyond allowed limit".
+    default_max_slippage_bps : int = 30 # If you specify a slippage too wide, create_order will still go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter. Too tight? "Order canceled due to excessive slippage beyond allowed limit".
     verbose : bool = False
 
     exchange_specific_options: Union[Dict[str, Any], None] = {
@@ -87,15 +90,17 @@ async def main():
     best_ask = min(asks)
     bids = [ bid[0] for bid in orderbook['bids'] ]
     best_bid = max(bids)
-    mid = (best_bid + best_ask)/2
+    price = best_ask if side=='buy' else best_bid
 
     executed_order = await exchange.create_order(
                             symbol = ticker,
                             type = order_type,
                             amount = amount_base_ccy,
-                            price = mid,
+                            price = price,
                             side = side
     )
+
+    order_id = executed_order['clientOrderId']
 
     '''
         [
@@ -123,7 +128,7 @@ async def main():
             'subAccountAddress': None
         }
     )
-    order_id = "xxxxxxxxxxxxxxx"
+    order_id = executed_order['clientOrderId']
     filtered = [t for t in trades if str(t.get('order')) == str(order_id)]
     print(f"{pformat(filtered, indent=2, width=100)}")
 
