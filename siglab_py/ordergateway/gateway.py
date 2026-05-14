@@ -838,10 +838,7 @@ async def execute_one_position(
                                 bids = [ bid[0] for bid in orderbook['bids'] ]
                                 best_bid = max(bids)
 
-                                default_max_slippage_bps = max(
-                                                                min(position.leg_room_bps*10, 30),
-                                                                100
-                                                            )
+                                default_max_slippage_bps = exchange.options['default_max_slippage_bps'] if 'default_max_slippage_bps' in exchange.options['default_max_slippage_bps'] else 100
                                 if position.side=='buy':
                                     limit_price = best_ask * (1 + default_max_slippage_bps /10000)
                                 else:
