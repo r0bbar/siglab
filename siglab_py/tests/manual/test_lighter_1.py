@@ -27,8 +27,7 @@ async def main():
     default_type : str = "linear"
     default_sub_type = None
     # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
-    # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled
-    # Generally set defaultSlippage to 30-100, this should suffice for slower markets.
+    # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
     default_max_slippage_bps : int = 100
     verbose : bool = False
 
@@ -90,7 +89,12 @@ async def main():
     best_ask = min(asks)
     bids = [ bid[0] for bid in orderbook['bids'] ]
     best_bid = max(bids)
-    price = best_ask if side=='buy' else best_bid
+
+    default_max_slippage_bps = exchange.options['default_max_slippage_bps']
+    if side=='buy':
+        price = best_ask * (1 + default_max_slippage_bps /10000)
+    else:
+        price = best_bid * (1 - default_max_slippage_bps /10000)
 
     executed_order = await exchange.create_order(
                             symbol = ticker,
