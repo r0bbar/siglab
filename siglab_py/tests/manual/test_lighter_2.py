@@ -51,24 +51,7 @@ async def main():
 
     balances = await exchange.fetch_balance()
     print(f"{pformat(balances, indent=2, width=100)}")
-
-
-    # Another way to instantiate exchange.
-    exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
-        gateway_id='lighter',
-        api_key=private_key,
-        secret="DUMMY_SECRET", # secret not actually passed to Lighter
-        passphrase=None,
-        default_type=default_type,
-        default_sub_type=default_sub_type,
-        rate_limit_ms=rate_limit_ms,
-        default_max_slippage_bps=default_max_slippage_bps,
-        exchange_specific_options=exchange_specific_options,
-        verbose=verbose
-    )
-
-    balances = await exchange.fetch_balance()
-    print(f"{pformat(balances, indent=2, width=100)}")
+    
 
     '''
     [
