@@ -30,7 +30,7 @@ async def main():
     # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
     # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
     default_max_slippage_bps : int = 100
-    verbose : bool = False
+    verbose : bool = True
 
     exchange_specific_options: Union[Dict[str, Any], None] = {
         'apiKeyIndex': 0,
@@ -50,10 +50,16 @@ async def main():
         'options': _exchange_specific_options
     }
     exchange = ccxtpro.lighter(exchange_params) 
-    exchange.options['default_max_slippage_bps'] = default_max_slippage_bpss
+    exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
     balances = await exchange.fetch_balance()
     print(f"{pformat(balances, indent=2, width=100)}")
+
+    open_orders = await exchange.fetch_open_orders(ticker)
+    print(f"{pformat(open_orders, indent=2, width=100)}")
+
+    closed_orders = await exchange.fetch_closed_orders(ticker)
+    print(f"{pformat(closed_orders, indent=2, width=100)}")
     
 
     '''
