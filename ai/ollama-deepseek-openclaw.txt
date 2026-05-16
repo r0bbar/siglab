@@ -1,0 +1,73 @@
+1. Install Ollama
+	https://ollama.com/download
+	
+	7GB Ollama installed to:
+		C:\Users\$USERNAME$\AppData\Local\Programs\Ollama
+		
+	Other places:
+		C:\Users\$USERNAME$\.ollama
+		C:\Users\$USERNAME$\AppData\Roaming\ollama app.exe\
+		
+	By default, it downloads to: C:\Users\$USERNAME$\.ollama\models
+	
+	To download to say D drive (Save precious disk space in C drive!), after you run Ollama installer
+		a. go to "Settings", change "Model Location" to say D:\ollama
+		b. edit environment variable OLLAMA_MODELS
+	
+
+2. Download models
+	For example, https://ollama.com/library/deepseek-r1
+	
+	If you run:
+		ollama run deepseek-r1
+		
+	Find out exactly which model you pulled:
+		ollama list
+	
+	The deepseek-r1 model comes in various sizes (e.g., 7B, 14B, 32B parameters). A 32B model requires about 20GB of VRAM. If your GPU has, say, 8GB, the model can't fit and will automatically spill over to the much slower system RAM and CPU. 
+		
+	You can still have fast, useful AI on your laptop by using smaller models. They are much lighter and will run at reasonable speed on just a CPU. This command downloads the Llama 3.1 model with 8 billion parameters, compressed using the Q4_K_M quantization scheme which optimizes it for your GPU memory
+		ollama pull llama3.1:8b-instruct-q4_K_M
+		
+	After that, from command prompt run:
+		D:\>cd ollama
+		D:\ollama>ollama run llama3.1:8b-instruct-q4_K_M
+		pulling manifest
+		pulling e6a7edc1a4d7: 100% ▕███████████████████████████████████████████████████████████████▏ 5.2 GB
+		pulling c5ad996bda6e: 100% ▕███████████████████████████████████████████████████████████████▏  556 B
+		pulling 6e4c38e1172f: 100% ▕███████████████████████████████████████████████████████████████▏ 1.1 KB
+		pulling ed8474dc73db: 100% ▕███████████████████████████████████████████████████████████████▏  179 B
+		pulling f64cd5418e4b: 100% ▕███████████████████████████████████████████████████████████████▏  487 B
+		verifying sha256 digest
+		writing manifest
+		success
+		>>> Is our conversation private? Nothing from our conversation will be sent to the Cloud? This is running Deepseek locally using Ollama.
+		Yes, you are correct. When you run the DeepSeek model locally using Ollama, your conversations are private and are not sent to any cloud server. All processing happens directly on your machine...
+
+		>>> Send a message (/? for help)
+
+	
+3. Interact with Deepseek from python
+	Deepseek run locally has no 
+		a) web search capacity
+		b) access to local disk
+	It's just a brain with no access to data. 
+	
+	Check Ollama local API server running in back ground: http://localhost:11434/
+	
+	If not, command to start:
+		ollama serve
+	
+	Examples,
+		hello_deepseek_requests.py			Simple communication with local Deepseek instance using 'requests'
+		hello_deepseek_ollama.py			Simple communication with local Deepseek instance using 'ollama' package (You need pip install the package)
+		hello_deepseek_rag_websearch.py		Fetch something from the web, then feed to Deepseek, ask Deepseek to summarise.
+	
+	
+5. Basic terminologies
+	LLM: "Deepseek", "ChatGPT", "Grok" these are LLM
+	Runner: "Ollama"
+	MCP: Model Context Protocol --> connecting to tools
+	RAG: Retrieval-Augmented Generation --> data feed to LLM
+	Agents: "OpenClaw", "Manus" - LLM + Planning (Think Cron jobs), Reasoning (By using LLM) + Memory + MCP + RAG
+	
