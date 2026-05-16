@@ -167,7 +167,8 @@ def instantiate_exchange(
                 side=side
             )
         '''
-        exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
+        if exchange_specific_options:
+            exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
         lighter_params = {
             'privateKey' : api_key
         }
@@ -377,7 +378,8 @@ async def async_instantiate_exchange(
                 side=side
             )
         '''
-        exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
+        if exchange_specific_options:
+            exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
         lighter_params = {
             'privateKey' : api_key
         }
