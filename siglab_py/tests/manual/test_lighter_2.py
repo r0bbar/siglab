@@ -1,8 +1,10 @@
 import asyncio
+from typing import Dict, Union, Any
 from pprint import pformat
 
-from siglab_py.util.market_data_util import async_instantiate_exchange
 import ccxt.pro as ccxtpro
+
+from siglab_py.exchanges.any_exchange import AnyExchange
 
 '''
 Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
