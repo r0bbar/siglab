@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "siglab_py"
-version = "0.2.8"
-description = "Market data fetches, TA calculations and generic order gateway."
+version = "0.9.52"
+description = "Back test, market data fetches, TA calculations, order gateway, strategy executor, post-trade analaysis."
 authors = [{name = "r0bbarh00d", email = "r0bbarh00d@gmail.com"}]
 license = {text = "MIT"}
 readme = "README.md"
