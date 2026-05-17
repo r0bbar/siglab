@@ -25,6 +25,7 @@
 		ollama list
 	
 	The deepseek-r1 model comes in various sizes (e.g., 7B, 14B, 32B parameters). A 32B model requires about 20GB of VRAM. If your GPU has, say, 8GB, the model can't fit and will automatically spill over to the much slower system RAM and CPU. 
+	Bare Minimum build for AI Agents to run locally?	https://youtu.be/P-Fmo_CCIbY?si=VyQT-7EQHdppcHxn
 		
 	You can still have fast, useful AI on your laptop by using smaller models. They are much lighter and will run at reasonable speed on just a CPU. This command downloads the Llama 3.1 model with 8 billion parameters, compressed using the Q4_K_M quantization scheme which optimizes it for your GPU memory
 		ollama pull llama3.1:8b-instruct-q4_K_M
