@@ -57,13 +57,6 @@ async def main():
     balances = await exchange.fetch_balance()
     print(f"{pformat(balances, indent=2, width=100)}")
 
-    open_orders = await exchange.fetch_open_orders(ticker)
-    print(f"{pformat(open_orders, indent=2, width=100)}")
-
-    closed_orders = await exchange.fetch_closed_orders(ticker)
-    print(f"{pformat(closed_orders, indent=2, width=100)}")
-    
-
     '''
     [
         'info' = { ... }
@@ -115,6 +108,19 @@ async def main():
     )
 
     order_id = executed_order['clientOrderId']
+    
+    open_orders = await exchange.fetch_open_orders(ticker)
+    print(f"{pformat(open_orders, indent=2, width=100)}")
+
+    closed_orders = await exchange.fetch_closed_orders(ticker)
+    print(f"{pformat(closed_orders, indent=2, width=100)}")
+
+    all_orders = await exchange.fetch_orders(ticker)
+    print(f"{pformat(all_orders, indent=2, width=100)}")
+
+    # Not implemented by ccxtpro.lighter atm
+    # executed_order_update = await exchange.fetch_order(id=order_id, symbol=ticker)
+    # print(f"{pformat(executed_order_update, indent=2, width=100)}")
 
     '''
         [
