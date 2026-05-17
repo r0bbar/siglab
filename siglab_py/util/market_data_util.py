@@ -29,6 +29,7 @@ from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.futubull import Futubull
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.exchanges.deribit import Deribit, DeribitAsync
+from siglab_py.exchanges.lighter import Lighter, LighterAsync
 
 def instantiate_exchange(
     exchange_name : str,
@@ -174,7 +175,7 @@ def instantiate_exchange(
         }
         if exchange_specific_options:
             lighter_params['options'] = exchange_specific_options
-        exchange = ccxt.lighter(lighter_params)
+        exchange = Lighter(lighter_params)
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
@@ -385,7 +386,7 @@ async def async_instantiate_exchange(
         }
         if exchange_specific_options:
             lighter_params['options'] = exchange_specific_options
-        exchange = ccxtpro.lighter(lighter_params)
+        exchange = LighterAsync(lighter_params)
     elif exchange_name=='aster':
         '''
         @todo how to pass apikey/secret to aster constructor 
