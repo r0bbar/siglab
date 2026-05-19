@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-from ccxt.base.types import Str
+from ccxt.base.types import Str, Num, OrderType, OrderSide
 import ccxt
 import ccxt.pro as ccxtpro
 
@@ -11,6 +11,14 @@ class Lighter(ccxt.lighter):
     def __init__(self, *args: Dict[str, Any]) -> None:
         super().__init__(*args) # type: ignore
     
+    def create_order(self, symbol: str, type: OrderType, side: OrderSide, amount: float, price: Num = None, params={}):
+        '''
+        create_order returns an order with null 'id' from Lighter DEX. In this case, lookup via fetch_order will fail.
+        '''
+        executed_order = super().create_order(symbol=symbol, type=type, side=side, amount=amount, price=price, params=params)
+        executed_order['id'] = executed_order['clientOrderId'] if not executed_order['id'] else executed_order['id']
+        return executed_order
+
     def fetch_orders(self, symbol: str, params={}): # type: ignore
         open_orders = super().fetch_open_orders(symbol)
         closed_orders = super().fetch_closed_orders(symbol)
@@ -19,12 +27,20 @@ class Lighter(ccxt.lighter):
     
     def fetch_order(self, id: str, symbol: Str = None, params={}):
         orders = self.fetch_orders(symbol)
-        orders = [ order for order in orders if order['clientOrderId']==id ]
+        orders = [ order for order in orders if order['clientOrderId']==id or order['id']==id ]
         return orders[-1] if orders else None
 
 class LighterAsync(ccxtpro.lighter):
     def __init__(self, *args: Dict[str, Any]) -> None:
         super().__init__(*args) # type: ignore
+    
+    async def create_order(self, symbol: str, type: OrderType, side: OrderSide, amount: float, price: Num = None, params={}):
+        '''
+        create_order returns an order with null 'id' from Lighter DEX. In this case, lookup via fetch_order will fail.
+        '''
+        executed_order = await super().create_order(symbol=symbol, type=type, side=side, amount=amount, price=price, params=params)
+        executed_order['id'] = executed_order['clientOrderId'] if not executed_order['id'] else executed_order['id']
+        return executed_order
 
     async def load_markets(self, reload=False, params={}):
         self.markets = await super().load_markets(reload=reload, params=params)
@@ -102,5 +118,5 @@ class LighterAsync(ccxtpro.lighter):
     
     async def fetch_order(self, id: str, symbol: Str = None, params={}):
         orders = await self.fetch_orders(symbol)
-        orders = [ order for order in orders if order['clientOrderId']==id ]
+        orders = [ order for order in orders if order['clientOrderId']==id or order['id']==id ]
         return orders[-1] if orders else None
