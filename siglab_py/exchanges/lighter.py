@@ -18,7 +18,7 @@ class Lighter(ccxt.lighter):
         return orders
     
     def fetch_order(self, id: str, symbol: Str = None, params={}):
-        orders = self.fetch_order(symbol)
+        orders = self.fetch_orders(symbol)
         orders = [ order for order in orders if order['clientOrderId']==id ]
         return orders[-1] if orders else None
 
@@ -101,6 +101,6 @@ class LighterAsync(ccxtpro.lighter):
         return orders
     
     async def fetch_order(self, id: str, symbol: Str = None, params={}):
-        orders = await self.fetch_order(symbol)
+        orders = await self.fetch_orders(symbol)
         orders = [ order for order in orders if order['clientOrderId']==id ]
         return orders[-1] if orders else None
