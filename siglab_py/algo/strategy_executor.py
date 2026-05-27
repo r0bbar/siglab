@@ -1806,10 +1806,12 @@ async def main():
                                 target_price, target_price_long, target_price_short = None, None, None
                                 if allow_entry_final_long and allow_entry_func_final_result['target_price_long']:
                                     target_price_long = round_to_sigfigs(allow_entry_func_final_result['target_price_long'], sigfigs=6)
-                                    target_price = target_price_long
+                                    if allow_entry_initial_long:
+                                        target_price = target_price_long
                                 if allow_entry_final_short and allow_entry_func_final_result['target_price_short']:
                                     target_price_short = round_to_sigfigs(allow_entry_func_final_result['target_price_short'], sigfigs=6)
-                                    target_price = target_price_short
+                                    if allow_entry_initial_short:
+                                        target_price = target_price_short
 
                                 log(f"allow_entry_final_long: {allow_entry_final_long}, target_price_long: {target_price_long}, allow_entry_final_short: {allow_entry_final_short}, target_price_short: {target_price_short}")
 
