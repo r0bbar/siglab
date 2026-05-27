@@ -18,6 +18,7 @@ from siglab_py.constants import TrendDirection
 def classify_candle(
     candle : pd.Series,
     min_candle_height_ratio : float = 5,
+    marubozu_threshold : float = 1.1,
     distance_from_mid_doji_threshold_bps : float = 10
 ) -> Union[str, None]:
     candle_class : Union[str, None] = None
@@ -25,22 +26,26 @@ def classify_candle(
     high = candle['high']
     low = candle['low']
     close = candle['close']
+    atr_bps = candle['atr_bps']
     candle_full_height = high - low # always positive
     candle_body_height = close - open # can be negative
+    candle_body_height_bps = candle_body_height / close * 10000
     candle_full_mid = (high + low)/2
     candle_body_mid = (open + close)/2
     distance_from_mid_bps = (candle_full_mid/candle_body_mid -1)*10000 if candle_full_mid>candle_body_mid else (candle_body_mid/candle_full_mid -1)*10000
+    distance_mid_2_high = high - candle_body_mid
+    distance_mid_2_low = candle_body_mid - low
 
     candle_height_ratio = candle_full_height / abs(candle_body_height) if candle_body_height!=0 else float('inf')
 
     if (
         candle_height_ratio>=min_candle_height_ratio
-        and close>low
+        and distance_mid_2_high<distance_mid_2_low
     ):
         candle_class = 'hammer'
     elif (
         candle_height_ratio>=min_candle_height_ratio
-        and close<high
+        and distance_mid_2_high>distance_mid_2_low
     ):
         candle_class = 'shooting_star'
     elif(
@@ -48,6 +53,14 @@ def classify_candle(
         and distance_from_mid_bps<=distance_from_mid_doji_threshold_bps
     ):
         candle_class = 'doji'
+    elif(
+        candle_height_ratio<marubozu_threshold and candle_height_ratio>=1
+        and candle_body_height_bps>atr_bps
+    ):
+        if close>open:
+            candle_class = 'bullish_marubozu'
+        else:
+            candle_class = 'bearish_marubozu'
 
     # Keep add more ...
 
@@ -315,8 +328,6 @@ def compute_candles_stats(
 
     pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
 
-    pd_candles['candle_class'] = pd_candles.apply(lambda row: classify_candle(row), axis=1) # type: ignore
-
     close_short_periods_rolling = pd_candles['close'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio))
     close_long_periods_rolling = pd_candles['close'].rolling(window=sliding_window_how_many_candles)
     close_short_periods_ewm = pd_candles['close'].ewm(span=int(sliding_window_how_many_candles/slow_fast_interval_ratio), adjust=False)
@@ -482,6 +493,8 @@ def compute_candles_stats(
     max_high = pd_candles['high'].rolling(window=int(sliding_window_how_many_candles)).max()
     min_low = pd_candles['low'].rolling(window=int(sliding_window_how_many_candles)).min()
     price_range = max_high - min_low
+
+    pd_candles['candle_class'] = pd_candles.apply(lambda row: classify_candle(row), axis=1) # type: ignore
 
     pd_candles.loc[:,'choppiness_index'] = round(100 * (np.log10(tr_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
     pd_candles.loc[:,'choppiness_index_up'] = round(100 * (np.log10(r_up_sum) / np.log10(sliding_window_how_many_candles * price_range)), 2)
