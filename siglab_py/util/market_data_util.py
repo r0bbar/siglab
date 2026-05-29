@@ -424,7 +424,10 @@ async def async_instantiate_exchange(
 
     return exchange
 
-def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
+def timestamp_to_datetime_cols(
+        pd_candles : pd.DataFrame,
+        validation_max_gaps : int = 10
+    ):
     def _fix_timestamp_ms(x):
         if isinstance(x, pd.Timestamp):
             return int(x.value // 10**6)
@@ -475,7 +478,7 @@ def timestamp_to_datetime_cols(pd_candles : pd.DataFrame):
     NUM_MS_IN_1HR = 60*60*1000
     if timestamp_ms_gap_median>=NUM_MS_IN_1HR:
         num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
-        assert(num_rows_with_expected_gap/pd_candles.shape[0]>0.9)
+        assert(num_rows_with_expected_gap/pd_candles.shape[0] > (100 - validation_max_gaps) / 100)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
 
 '''
@@ -535,14 +538,17 @@ def timestamp_to_week_of_month(timestamp_ms: int) -> int:
     week_of_month = (day_of_month - 1) // 7
     return week_of_month
 
-def fix_column_types(pd_candles : pd.DataFrame):
+def fix_column_types(
+        pd_candles : pd.DataFrame,
+        validation_max_gaps : int = 10
+    ):
     pd_candles['open'] = pd_candles['open'].astype(float)
     pd_candles['high'] = pd_candles['high'].astype(float)
     pd_candles['low'] = pd_candles['low'].astype(float)
     pd_candles['close'] = pd_candles['close'].astype(float)
     pd_candles['volume'] = pd_candles['volume'].astype(float)
 
-    timestamp_to_datetime_cols(pd_candles)
+    timestamp_to_datetime_cols(pd_candles=pd_candles, validation_max_gaps=validation_max_gaps)
 
     '''
     The 'Unnamed: 0', 'Unnamed : 1'... etc columns often appears in a DataFrame when it is saved to a file (e.g., CSV or Excel) and later loaded. 
@@ -830,6 +836,7 @@ def fetch_candles(
             candle_size=candle_size,
             num_candles_limit=num_candles_limit,
             ticker_change_map=ticker_change_map,
+            validation_max_gaps=validation_max_gaps,
             logger=logger
         )
     if num_intervals!=1:
@@ -897,6 +904,7 @@ def _fetch_candles_ccxt(
     candle_size : str,
     num_candles_limit : int = 100,
     ticker_change_map : List[Dict[str, Union[str, int]]] = [],
+    validation_max_gaps : int = 10,
     logger = None
 ) -> Dict[str, Union[pd.DataFrame, None]]:
     rsp = {}
@@ -975,7 +983,7 @@ def _fetch_candles_ccxt(
 
         columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
         pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
-        fix_column_types(pd_all_candles)
+        fix_column_types(pd_candles=pd_all_candles, validation_max_gaps=validation_max_gaps)
         pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
 
         rsp[ticker] = pd_all_candles
