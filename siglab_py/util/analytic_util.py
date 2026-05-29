@@ -302,6 +302,7 @@ def compute_candles_stats(
         hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
         boillenger_std_multiples_for_aggressive_moves_detect : int = 3, # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
         target_fib_level : float = 0.618,
+        validation_max_gaps : int = 10,
         pypy_compat : bool = True
         ):
     BUCKETS_m0_100 = bucket_series(
@@ -324,7 +325,7 @@ def compute_candles_stats(
     '''
     # pd_candles = pd_candles[pd_candles.close.notnull()] # Don't make a copy. Drop in-place
     
-    fix_column_types(pd_candles) # Do this AFTER filtering. Or you'd mess up index, introduce error around idmax, idmin. fix_column_types will drop all 'unnamed' columns and reset_index.
+    fix_column_types(pd_candles=pd_candles, validation_max_gaps=validation_max_gaps) # Do this AFTER filtering. Or you'd mess up index, introduce error around idmax, idmin. fix_column_types will drop all 'unnamed' columns and reset_index.
 
     pd_candles['is_green'] =  pd_candles['close'] >= pd_candles['open']
 
