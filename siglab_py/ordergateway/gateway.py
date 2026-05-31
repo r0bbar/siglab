@@ -505,8 +505,8 @@ async def execute_one_position(
 
         min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # This is in number of contracts
         multiplier = float(market['contractSize']) if 'contractSize' in market and market['contractSize'] else 1
-        position.multiplier = multiplier
-        min_amount_base_ccy = float(min_amount/multiplier)
+        position.multiplier = multiplier # Example, for OKX: BTC/USDT:USDT one contract = 0.01 BTC, 'contractSize' = 0.01
+        min_amount_base_ccy = float(min_amount * multiplier) # Example above, 100 contracts = 1 BTC 
 
         order_amount_randomize_max_pct : float = param['order_amount_randomize_max_pct']
 
@@ -548,6 +548,7 @@ async def execute_one_position(
         last_randomized_order_amount : float = 0
         apply_last_randomized_amount : bool = False # False: Apply new variance, True: Apply -1 * last_randomized_order_amount
         i = 0
+        last_slice_i = len(slices)-1
         for slice in slices:
             try:
                 log(f"{position.ticker} sending slice# {i}")
@@ -570,13 +571,43 @@ async def execute_one_position(
                 rounded_slice_amount_in_base_ccy = slice_amount_in_base_ccy / multiplier # After divided by multiplier, rounded_slice_amount_in_base_ccy in number of contracts actually (Not in base ccy).
                 if rounded_slice_amount_in_base_ccy>min_amount:
                     _rounded_slice_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy))
-                    amount_diff = _rounded_slice_amount_in_base_ccy - rounded_slice_amount_in_base_ccy
+                    amount_diff = _rounded_slice_amount_in_base_ccy - rounded_slice_amount_in_base_ccy # amount_diff in number of contracts
                 else:
                     # Order amount < min_amount will be rejected by exchange. Deliberate design to just set order amount to min_amount for simplicity sake.
-                    log(f"rder amount < min_amount will be rejected by exchange. Deliberate design to just set order amount to min_amount for simplicity sake. slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, multiplier: {multiplier}. rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}, min_amount: {min_amount}")
+                    log(f"order amount < min_amount will be rejected by exchange. Deliberate design to just set order amount to min_amount for simplicity sake. slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, multiplier: {multiplier}. rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}, min_amount: {min_amount}")
                     rounded_slice_amount_in_base_ccy = min_amount
                     amount_diff = 0
                     # raise Exception(f"Order amount < min_amount will be rejected by exchange. slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, multiplier: {multiplier}. rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}, min_amount: {min_amount}")
+                
+                if position.reduce_only and position.expected_pos_after_execution==0:
+                    # Ensure clean position closure
+                    if i==last_slice_i-1:
+                        if ticker_class!='spot':
+                            updated_position = await exchange.fetch_position(symbol=position.ticker)
+                            remaining_amount = (updated_position['contracts'] if updated_position else None)  # Already in number of contracts (Not in base ccy).
+                            remaining_amount_base_ccy = float(remaining_amount * multiplier)
+                                
+                        else:
+                            balances = await exchange.fetch_balance()
+                            base_ccy : str = position.ticker.split("/")[0]
+                            remaining_amount_base_ccy = balances[base_ccy]['total'] if base_ccy in balances else 0
+
+                        if (remaining_amount_base_ccy - _rounded_slice_amount_in_base_ccy*multiplier)<=min_amount_base_ccy:
+                            # If next slice (i.e. last slice) amount less than min_amount_base_ccy, just finish it (include last slice amount) this slice
+                            _rounded_slice_amount_in_base_ccy = remaining_amount
+
+                    elif i==last_slice_i:
+                        if ticker_class!='spot':
+                            updated_position = await exchange.fetch_position(symbol=position.ticker)
+                            remaining_amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
+                                
+                        else:
+                            balances = await exchange.fetch_balance()
+                            base_ccy : str = position.ticker.split("/")[0]
+                            remaining_amount = balances[base_ccy]['total'] if base_ccy in balances else 0
+
+                        rounded_slice_amount_in_base_ccy = remaining_amount
+
                 if amount_diff>=min_amount:
                     rounded_slice_amount_in_base_ccy = _rounded_slice_amount_in_base_ccy
 
@@ -763,9 +794,9 @@ async def execute_one_position(
                             log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
                             log(f"{json.dumps(updated_position, indent=4)}")
 
-                            amount = (updated_position['contracts'] if updated_position else None)
+                            amount = (updated_position['contracts'] if updated_position else None) # Already in number of contracts (Not in base ccy).
                             if amount:
-                                amount = amount * position.multiplier # in base ccy
+                                amount = amount * position.multiplier # Convert amount back to base ccy
 
                                 if amount != position.expected_pos_after_execution:
                                     raise
