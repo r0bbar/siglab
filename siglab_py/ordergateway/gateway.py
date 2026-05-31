@@ -591,6 +591,7 @@ async def execute_one_position(
                             balances = await exchange.fetch_balance()
                             base_ccy : str = position.ticker.split("/")[0]
                             remaining_amount_base_ccy = balances[base_ccy]['total'] if base_ccy in balances else 0
+                            remaining_amount = remaining_amount_base_ccy
 
                         if (remaining_amount_base_ccy - _rounded_slice_amount_in_base_ccy*multiplier)<=min_amount_base_ccy:
                             # If next slice (i.e. last slice) amount less than min_amount_base_ccy, just finish it (include last slice amount) this slice
