@@ -245,7 +245,7 @@ Debug from VSCode, launch.json:
         }
 '''
 param : Dict = {
-    'max_position_break_diff_bps' : 3, # max allowable position break threshold, if diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
+    'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
 
     'trailing_stop_mode': "linear", # linear or parabolic
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
@@ -442,6 +442,8 @@ def parse_args():
     parser.add_argument("--sl_hard_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
+
+    parser.add_argument("--max_position_break_diff_bps", help="max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.", default=3)
     parser.add_argument("--trailing_stop_mode", help="This is for trailing stops tightening 'calc_eff_trailing_sl': linear or parabolic. Default: linear", default='linear')
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     parser.add_argument("--recover_min_percent", help="This is minimum unreal pnl recovery when your trade is red before trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
@@ -559,6 +561,7 @@ def parse_args():
     param['sl_hard_percent'] = float(args.sl_hard_percent)
     param['sl_num_intervals_delay'] = int(args.sl_num_intervals_delay)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
+    param['max_position_break_diff_bps'] = float(args.max_position_break_diff_bps)
     param['trailing_stop_mode'] = args.trailing_stop_mode
     param['non_linear_pow'] = float(args.non_linear_pow)
     param['recover_min_percent'] = float(args.recover_min_percent)
