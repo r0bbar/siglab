@@ -245,6 +245,8 @@ Debug from VSCode, launch.json:
         }
 '''
 param : Dict = {
+    'max_position_break_diff_bps' : 3, # max allowable position break threshold, if diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
+
     'trailing_stop_mode': "linear", # linear or parabolic
     'non_linear_pow' : 5, # For non-linear trailing stops tightening. 
     'level_granularity' : 0,
@@ -1338,13 +1340,16 @@ async def main():
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                    if position_from_exchange_base_ccy!=pos: 
-                        position_break = True
+                    if position_from_exchange_base_ccy!=pos:
+                        position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos) * entry_px
+                        position_break_diff_bps = position_break_diff_in_base_ccy/position_from_exchange_base_ccy * 10000
+                        if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
+                            position_break = True
 
-                        err_msg = f"{_ticker}: Position break! expected: {pos}, actual: {position_from_exchange_base_ccy}" 
-                        log(err_msg)
-                        dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
-            
+                            err_msg = f"{_ticker}: Position break! expected: {pos}, actual: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
+                            log(err_msg)
+                            dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                
                 if position_break:
                     log(f"Position break! Exiting execution. Did you manually close the trade?")
                     break
