@@ -503,7 +503,7 @@ async def execute_one_position(
         if not market:
             raise ValueError(f"Market not found for {position.ticker} under {exchange.name}")
 
-        min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # This is in number of contracts
+        min_amount = float(market['limits']['amount']['min']) if market['limits']['amount']['min'] else 0 # This is in number of contracts. Example, for OKX: BTC/USDT:USDT, this is 0.01 contract.
         multiplier = float(market['contractSize']) if 'contractSize' in market and market['contractSize'] else 1
         position.multiplier = multiplier # Example, for OKX: BTC/USDT:USDT one contract = 0.01 BTC, 'contractSize' = 0.01
         min_amount_base_ccy = float(min_amount * multiplier) # Example above, 100 contracts = 1 BTC 
