@@ -52,7 +52,7 @@ logger.addHandler(fh)
 '''
 Usage:
     set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-    python simple_price_alert.py --tickers "BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC" --backup_tickers "BTC/USDT:USDT,SOL/USDT:USDT,ETH/USDT:USDT,XAU/USDT:USDT,CL/USDT:USDT,QQQ/USDT:USDT" --exchange_name lighter --backup_exchange_name aster --candle_size 5m --how_many_candles 288 --num_std 3  --notification_info_url https://xxx.com/xxx --notification_critial_url https://xxx.com/xxx --notification_alert_url https://xxx.com/xxx
+    python simple_price_alert.py --tickers "BTC/USDC:USDC,SOL/USDC:USDC,ETH/USDC:USDC,XAU/USDC:USDC,WTI/USDC:USDC,QQQ/USDC:USDC,SPY/USDC:USDC" --backup_tickers "BTC/USDT:USDT,SOL/USDT:USDT,ETH/USDT:USDT,XAU/USDT:USDT,CL/USDT:USDT,QQQ/USDT:USDT" --exchange_name lighter --backup_exchange_name aster --candle_size 5m --how_many_candles 288 --num_std 3  --notification_info_url https://xxx.com/xxx --notification_critical_url https://xxx.com/xxx --notification_alert_url https://xxx.com/xxx
     
     --tickers: comma separated list of tickers you want to monitor
     --exchange_name: defaults to Lighter (https://app.lighter.xyz/trade)
@@ -87,7 +87,7 @@ launch.json for Debugging from VSCode:
                     "--how_many_candles", "288",
                     "--num_std",  "3",
                     "--notification_info_url", "https://xxx.com/xxx",
-                    "--notification_critial_url", "https://xxx.com/xxx",
+                    "--notification_critical_url", "https://xxx.com/xxx",
                     "--notification_alert_url", "https://xxx.com/xxx",
                 ],
                 "env": {
