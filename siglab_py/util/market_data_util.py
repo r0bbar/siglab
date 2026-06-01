@@ -919,12 +919,12 @@ def _fetch_candles_ccxt(
 
         @retry(num_attempts=3, pause_between_retries_ms=1000, logger=logger)
         def _fetch_ohlcv(exchange, symbol, timeframe, since, limit, params) -> Union[List, NoReturn]:
-                one_timeframe = f"1{timeframe[-1]}"
-                candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
-                if candles and len(candles)>0:
-                    candles.sort(key=lambda x : x[0], reverse=False)
+            one_timeframe = f"1{timeframe[-1]}"
+            candles = exchange.fetch_ohlcv(symbol=symbol, timeframe=one_timeframe, since=since, limit=limit, params=params)
+            if candles and len(candles)>0:
+                candles.sort(key=lambda x : x[0], reverse=False)
 
-                return candles
+            return candles
             
         def _calc_increment(candle_size):
             increment = 1
