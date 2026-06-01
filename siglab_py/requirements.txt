@@ -3,6 +3,7 @@ dotmap
 typing_extensions
 arrow
 tzlocal
+tabulate
 nest_asyncio
 pandas
 numpy
