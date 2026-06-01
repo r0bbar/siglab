@@ -3,7 +3,7 @@ import os
 import sys
 import traceback
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Union, Any
 from datetime import datetime, timedelta
 import time
 import arrow
@@ -17,6 +17,7 @@ from pprint import pformat
 from redis import StrictRedis
 from requests.exceptions import HTTPError
 
+from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import instantiate_exchange
 from siglab_py.util.market_data_util import fetch_candles
 from siglab_py.util.notification_util import dispatch_notification
