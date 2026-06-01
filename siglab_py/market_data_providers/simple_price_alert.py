@@ -66,7 +66,7 @@ Usage:
 
     --price_alert_topic: Price alerts are be dispatched to redis, strategies (... secondary processors as well) can respond to it. Default: trading.price.abnormal_price_movement
 
-    --slack_info_url/slack_critial_url/slack_alert_url: optional. Lookup how to configure "Incoming WebHooks" (a slack app) under Slack's "Browse Apps"
+    --notification_info_url/notification_critial_url/notification_alert_url: optional.
 
 launch.json for Debugging from VSCode:
     {
