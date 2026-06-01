@@ -158,6 +158,42 @@ class MarketDataUtilTests(unittest.TestCase):
 
         assert pd_candles is not None
 
+    def test_fetch_trades_ccxt(self):
+        param = {
+            'apiKey' : None,
+            'secret' : None,
+            'password' : None,
+            'subaccount' : None,
+            'rateLimit' : 100,    # In ms
+            'options' : {
+                'defaultType': 'swap'            }
+        }
+
+        exchange : Exchange = okx(param) # type: ignore
+
+        @retry(num_attempts=3, pause_between_retries_ms=1000)
+        def _fetch_trades(exchange, symbol, since, limit) -> Union[List, NoReturn]:
+            trades = exchange.fetch_trades(symbol=symbol, since=since, limit=limit)
+            if trades and len(trades)>1:
+                trades.sort(key=lambda x : x['timestamp'], reverse=False)
+                assert(trades[0]['timestamp']<trades[-1]['timestamp'])
+            return trades
+        
+        '''
+        Caveats:
+            since: Many exchanges don't actually respect 'since' parameter and only give you recent trades.
+            limit: Generally exchanges give you recent hundred(s) trades and not more.
+        
+        Format:
+            [
+                ...
+                {'info': {'instId': 'BTC-USDT-SWAP', 'side': 'buy', 'sz': '0.01', 'px': '73720.8', 'source': '0', 'tradeId': '2637932250', 'ts': '1780286404649'}, 'timestamp': 1780286404649, 'datetime': '2026-06-01T04:00:04.649Z', 'symbol': 'BTC/USDT:USDT', 'id': '2637932250', 'order': None, 'type': None, 'takerOrMaker': None, 'side': 'buy', 'price': 73720.8, 'amount': 0.01, 'cost': 7.37208, 'fee': {'cost': None, 'currency': None}, 'fees': []}
+                ...
+            ]
+        '''
+        trades = _fetch_trades(exchange=exchange, symbol="BTC/USDT:USDT", since=None, limit=1000)
+        assert(trades)
+
     def test_aggregate_candles(self):
         end_date : datetime = datetime.today()
         start_date : datetime = end_date + timedelta(hours=-8)
