@@ -5,6 +5,7 @@ arrow
 tzlocal
 tabulate
 nest_asyncio
+aiohttp
 pandas
 numpy
 boto3
