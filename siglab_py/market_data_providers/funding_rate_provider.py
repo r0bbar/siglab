@@ -30,6 +30,9 @@ parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
 Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+
+This is generally fixed by: asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+If not, on call to async_instantiate_exchange, set pass_aiohttp_session to True
 '''
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -118,6 +121,8 @@ def parse_args():
     parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
+    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
+
     args, additional_args = parser.parse_known_args()
 
     param['exchange_name'] = args.exchange_name
@@ -156,6 +161,7 @@ async def main():
         passphrase=None,
         default_type=param['default_type'],
         rate_limit_ms=param['rate_limit_ms'],
+        pass_aiohttp_session=param['pass_aiohttp_session']
     )
     if exchange:
         loop_counter = 0

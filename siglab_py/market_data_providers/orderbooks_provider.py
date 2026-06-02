@@ -25,6 +25,9 @@ from siglab_py.util.market_data_util import async_instantiate_exchange
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
 Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+
+This is generally fixed by: asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+If not, on call to async_instantiate_exchange, set pass_aiohttp_session to True
 '''
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -142,7 +145,8 @@ async def instantiate_exhange(
                             default_type = market_type,
                             api_key=None,  # type: ignore
                             secret=None,  # type: ignore
-                            passphrase=None  # type: ignore
+                            passphrase=None,  # type: ignore
+                            pass_aiohttp_session=param['pass_aiohttp_session']
                             )
     exchange.name = exchange_name # type: ignore Otherwise, Error: Cannot assign to attribute "name" for class "binance" "str" is not assignable to "None"
     return exchange  # type: ignore
@@ -167,6 +171,8 @@ def parse_args():
 
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
 
+    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
+
     args = parser.parse_args()
     if args.provider_id:
         param['provider_id'] = args.provider_id
@@ -174,6 +180,14 @@ def parse_args():
     param['ts_delta_observation_ms_threshold'] = int(args.ts_delta_observation_ms_threshold)
     param['ts_delta_consecutive_ms_threshold'] = int(args.ts_delta_consecutive_ms_threshold)
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
+
+    if args.pass_aiohttp_session:
+        if args.pass_aiohttp_session=='Y':
+            param['pass_aiohttp_session'] = True
+        else:
+            param['pass_aiohttp_session'] = False
+    else:
+        param['pass_aiohttp_session'] = False
 
 def init_redis_client() -> StrictRedis:
     redis_client : StrictRedis = StrictRedis(

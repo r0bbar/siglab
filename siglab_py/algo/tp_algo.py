@@ -25,6 +25,9 @@ current_filename = os.path.basename(__file__)
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
 Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+
+This is generally fixed by: asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+If not, on call to async_instantiate_exchange, set pass_aiohttp_session to True
 '''
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -196,6 +199,8 @@ def parse_args():
     
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
 
+    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
+
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
     parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
@@ -245,6 +250,14 @@ def parse_args():
     param['non_linear_pow'] = float(args.non_linear_pow)
     
     param['loop_freq_ms'] = int(args.loop_freq_ms)
+
+    if args.pass_aiohttp_session:
+        if args.pass_aiohttp_session=='Y':
+            param['pass_aiohttp_session'] = True
+        else:
+            param['pass_aiohttp_session'] = False
+    else:
+        param['pass_aiohttp_session'] = False
 
     param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
     param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
@@ -316,7 +329,8 @@ async def main():
         secret=secret,
         passphrase=passphrase,
         default_type=param['default_type'],
-        rate_limit_ms=param['rate_limit_ms']
+        rate_limit_ms=param['rate_limit_ms'],
+        pass_aiohttp_session=param['pass_aiohttp_session']
     )
     if exchange:
         markets = await exchange.load_markets() # type: ignore

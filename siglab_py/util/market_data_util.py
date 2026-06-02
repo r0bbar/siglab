@@ -10,6 +10,7 @@ import math
 import pandas as pd
 import numpy as np
 import asyncio
+import aiohttp
 from tabulate import tabulate
 import inspect
 
@@ -213,7 +214,8 @@ async def async_instantiate_exchange(
     default_max_slippage_bps : int = 300, # This is for market orders
     rate_limit_ms : float = 100,
     exchange_specific_options: Union[Dict[str, Any], None] = None,
-    verbose : bool = False
+    verbose : bool = False,
+    pass_aiohttp_session : bool = False # Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers')
 ) -> Union[AnyExchange, None]:
     exchange : Union[AnyExchange, None] = None
     exchange_name : str = gateway_id.split('_')[0]
@@ -240,6 +242,10 @@ async def async_instantiate_exchange(
         exchange_params.pop("secret")
     if default_sub_type:
         exchange_params['defaultSubType'] = default_sub_type
+    if pass_aiohttp_session:
+        connector = aiohttp.TCPConnector(resolver=aiohttp.resolver.ThreadedResolver())
+        session = aiohttp.ClientSession(connector=connector)
+        exchange_params['session'] = session
 
     if exchange_name=='binance':
         # spot, future, margin, delivery, option

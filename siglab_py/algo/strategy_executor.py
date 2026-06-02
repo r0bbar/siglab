@@ -50,6 +50,9 @@ startup_scripts_dir_path = f"{parent_dir}\\bat"
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
 Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+
+This is generally fixed by: asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+If not, on call to async_instantiate_exchange, set pass_aiohttp_session to True
 '''
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -470,6 +473,8 @@ def parse_args():
 
     parser.add_argument("--dump_candles", help="This is for trouble shooting only. Y or N (default).", default='N')
 
+    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
+
     parser.add_argument("--start_timestamp_ms", help="You want your algo to start only after what time? This is timestamp in ms. Default is None (start immediately)", default=None)
 
     parser.add_argument("--hi_candles_provider_topic", help="hi_candles provider redis topic. Example mds_assign_aaa, this is for strategy_executor to trigger provider. No provider triggering if set to None (default).", default=None)
@@ -630,6 +635,14 @@ def parse_args():
             param['dump_candles'] = False
     else:
         param['dump_candles'] = False
+
+    if args.pass_aiohttp_session:
+        if args.pass_aiohttp_session=='Y':
+            param['pass_aiohttp_session'] = True
+        else:
+            param['pass_aiohttp_session'] = False
+    else:
+        param['pass_aiohttp_session'] = False
 
     param['start_timestamp_ms'] = int(args.start_timestamp_ms) if args.start_timestamp_ms else None
 
@@ -871,7 +884,8 @@ async def main():
         default_type=param['default_type'],
         rate_limit_ms=param['rate_limit_ms'],
         exchange_specific_options=param['exchange_specific_options'] if 'exchange_specific_options' in param else None,
-        verbose=param['verbose']
+        verbose=param['verbose'],
+        pass_aiohttp_session=param['pass_aiohttp_session']
     )
     if exchange:
         markets = await exchange.load_markets() 

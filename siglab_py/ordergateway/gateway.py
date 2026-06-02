@@ -41,6 +41,9 @@ startup_scripts_dir_path = f"{parent_dir}\\bat"
 '''
 Error: RuntimeError: aiodns needs a SelectorEventLoop on Windows.
 Hack, by far the filthest hack I done in my career: Set SelectorEventLoop on Windows
+
+This is generally fixed by: asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+If not, on call to async_instantiate_exchange, set pass_aiohttp_session to True
 '''
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -349,6 +352,8 @@ def parse_args():
 
     parser.add_argument("--privacy_first", help="Y (default) or N. If set to True, notional, position size and pnl in $ will be excluded from notifications.", default='Y')
 
+    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
+
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
     parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
@@ -427,6 +432,14 @@ def parse_args():
             param['privacy_first'] = False
     else:
         param['privacy_first'] = True
+
+    if args.pass_aiohttp_session:
+        if args.pass_aiohttp_session=='Y':
+            param['pass_aiohttp_session'] = True
+        else:
+            param['pass_aiohttp_session'] = False
+    else:
+        param['pass_aiohttp_session'] = False
 
     param['notification']['notification']['info']['webhook_url'] = args.notification_info_url
     param['notification']['notification']['critical']['webhook_url'] = args.notification_critical_url
@@ -1194,7 +1207,8 @@ async def main():
         rate_limit_ms=param['rate_limit_ms'],
         default_max_slippage_bps=param['default_max_slippage_bps'],
         exchange_specific_options=param['exchange_specific_options'] if 'exchange_specific_options' in param else None,
-        verbose=param['verbose']
+        verbose=param['verbose'],
+        pass_aiohttp_session=param['pass_aiohttp_session']
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
