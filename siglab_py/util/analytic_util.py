@@ -787,6 +787,7 @@ def compute_candles_stats(
     ]
     choices = ['bullish', 'bearish', 'bullish', 'bearish']
     pd_candles['macd_cross_last'] = np.select(conditions, choices, default=None) # type: ignore
+    pd_candles['macd_cross'] = pd_candles['macd_cross'].astype(object) # Ensure the column is an 'object' dtype before assigning strings, bug fix for: Error: Invalid value 'bullish' for dtype 'float64' <class 'TypeError'> Invalid value 'bullish' for dtype 'float64' 
     pd_candles.loc[bullish_macd_crosses, 'macd_cross'] = 'bullish'
     pd_candles.loc[bearish_macd_crosses, 'macd_cross'] = 'bearish'
 
