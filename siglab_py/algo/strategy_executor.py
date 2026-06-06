@@ -1384,7 +1384,16 @@ async def main():
                             message = message.decode('utf-8')
                         hi_candles_w_ta = json.loads(message) if message else None
                         pd_hi_candles_w_ta = pd.read_json(StringIO(hi_candles_w_ta))
-                        pd_hi_candles_w_ta['timestamp_ms'] = pd_hi_candles_w_ta['timestamp_ms'].astype('int64') // 1_000_000
+
+                        ts_series = pd_hi_candles_w_ta['timestamp_ms'].astype('int64')
+                        ts_str_len = ts_series.astype(str).str.len()
+                        pd_hi_candles_w_ta['timestamp_ms'] = np.where(
+                            ts_str_len == 10, ts_series * 1000,
+                            np.where(ts_str_len == 13, ts_series,
+                            np.where(ts_str_len == 16, ts_series // 1000,
+                            np.where(ts_str_len == 19, ts_series // 1_000_000, ts_series)))
+                        )
+
                         hi_row = pd_hi_candles_w_ta.iloc[-1]
                         hi_row_tm1 = pd_hi_candles_w_ta.iloc[-2]
                         candles_age = int(dt_now.timestamp() *1000 - hi_row['timestamp_ms'])
@@ -1417,7 +1426,16 @@ async def main():
                             message = message.decode('utf-8')
                         lo_candles_w_ta = json.loads(message) if message else None
                         pd_lo_candles_w_ta = pd.read_json(StringIO(lo_candles_w_ta))
-                        pd_lo_candles_w_ta['timestamp_ms'] = pd_lo_candles_w_ta['timestamp_ms'].astype('int64') // 1_000_000
+                        
+                        ts_series = pd_lo_candles_w_ta['timestamp_ms'].astype('int64')
+                        ts_str_len = ts_series.astype(str).str.len()
+                        pd_lo_candles_w_ta['timestamp_ms'] = np.where(
+                            ts_str_len == 10, ts_series * 1000,
+                            np.where(ts_str_len == 13, ts_series,
+                            np.where(ts_str_len == 16, ts_series // 1000,
+                            np.where(ts_str_len == 19, ts_series // 1_000_000, ts_series)))
+                        )
+
                         lo_row = pd_lo_candles_w_ta.iloc[-1]
                         lo_row_tm1 = pd_lo_candles_w_ta.iloc[-2]
                         candles_age = int(dt_now.timestamp() *1000 - lo_row['timestamp_ms'])
