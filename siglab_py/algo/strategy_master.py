@@ -3,7 +3,7 @@ import os
 import sys
 import traceback
 import logging
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from enum import Enum
 from datetime import datetime, timedelta
 import time
@@ -172,13 +172,14 @@ async def main() -> None:
             position_summaries.clear()
 
             keys = redis_client.keys()
+            keys = [ key.decode("utf-8") for key in keys ]
             for key in keys:
                 try:
-                    s_key : str = key.decode("utf-8")
-                    print(f"Found key: {s_key}")
+                    print(f"Found key: {key}")
                     
-                    if position_topic_regex_pattern.match(s_key):
-                        print(s_key)
+                    if position_topic_regex_pattern.match(key):
+                        print(f"Matched key: {key}")
+                        
                         message = redis_client.get(key)
                         if message:
                             message = message.decode('utf-8')
@@ -192,7 +193,7 @@ async def main() -> None:
                             if gateway_hb_topic in keys:
                                 gateway_hb = redis_client.get(gateway_hb_topic)
                                 if gateway_hb:
-                                    gateway_hb = message.decode('utf-8')
+                                    gateway_hb = gateway_hb.decode('utf-8')
                                     gateway_hb = json.loads(gateway_hb)
                                     timestamp_ms = gateway_hb['timestamp_ms']
                                     position_summary['gateway_hb'] = datetime.fromtimestamp(int(timestamp_ms/1000))
