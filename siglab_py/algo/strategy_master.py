@@ -99,6 +99,7 @@ param : Dict = {
     
     'mds': {
         'topics': {
+            "gateway_hb_topic" : "gateway_hb_$GATEWAY_ID$"
         },
         'redis': {
             'host': 'localhost',
@@ -182,6 +183,18 @@ async def main() -> None:
                             position_summary = json.loads(message)
                             position_summary['ticker'] = position_summary['ticker'].replace(":","_").replace("/","_")
                             position_summary["key"] = f"{position_summary['gateway_id']} {position_summary['ticker']}"
+
+                            position_summary['gateway_hb'] = None
+
+                            gateway_hb_topic = param['mds']['topics']['gateway_hb_topic'].replace("$GATEWAY_ID$", position_summary['gateway_id'])
+                            if gateway_hb_topic in keys:
+                                gateway_hb = redis_client.get(gateway_hb_topic)
+                                if gateway_hb:
+                                    gateway_hb = message.decode('utf-8')
+                                    gateway_hb = json.loads(gateway_hb)
+                                    timestamp_ms = gateway_hb['timestamp_ms']
+                                    position_summary['gateway_hb'] = datetime.fromtimestamp(int(timestamp_ms/1000))
+
                             position_summaries.append(position_summary)
 
                 except Exception as key_err:
