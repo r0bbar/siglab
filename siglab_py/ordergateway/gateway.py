@@ -261,13 +261,15 @@ param : Dict = {
 
     'mds' : {
         'topics' : {
-            
+            "gateway_hb_topic" : "gateway_hb_$GATEWAY_ID$"
         },
         'redis' : {
             'host' : 'localhost',
             'port' : 6379,
             'db' : 0,
-            'ttl_ms' : 1000*60*15 # 15 min?
+            'ttl_ms' : 1000*60*15, # 15 min?
+
+            'gateway_hb_ttl_ms' : 1000*30 # 30 sec
         }
     }
 }
@@ -1084,6 +1086,8 @@ async def work(
     redis_client : StrictRedis,
     notification_params : Dict[str, Any]
 ):
+    gateway_hb_topic = param['mds']['topics']['gateway_hb_topic'].replace("$GATEWAY_ID$", param['gateway_id'])
+
     incoming_orders_topic_regex : str = param['incoming_orders_topic_regex']
     incoming_orders_topic_regex = incoming_orders_topic_regex.replace("$GATEWAY_ID$", param['gateway_id'])
     incoming_orders_topic_regex_pattern : Pattern = re.compile(incoming_orders_topic_regex)
@@ -1160,6 +1164,13 @@ async def work(
                         f"Failed to process {key}. Error: {key_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}",
                         log_level=LogLevel.ERROR
                         )
+            
+            if loop_i%10==0:
+                gateway_hb = {
+                    'gateway_id' : param['gateway_id'],
+                    'timestamp_ms' : int(datetime.now().timestamp() * 1000)
+                }
+                redis_client.set(name=gateway_hb_topic, value=json.dumps(gateway_hb).encode('utf-8'), ex=int(param['mds']['redis']['position_summary_ttl_ms']/1000))
 
             if loop_i%1000==0:
                 balances = await exchange.fetch_balance()
