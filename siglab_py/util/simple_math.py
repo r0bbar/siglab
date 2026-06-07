@@ -38,6 +38,12 @@ def compute_level_increment(
 ) -> float:
     if math.isnan(num):
         return num
+    if num==0:
+        '''
+        >>> math.log10(0.0)
+        ValueError: math domain error
+        '''
+        return num
     level_size = num * level_granularity
     magnitude = math.floor(math.log10(abs(level_size)))
     base_increment = 10 ** magnitude
@@ -63,11 +69,11 @@ def compute_adjacent_levels(
         ) -> Union[None, List[float]]:
     if math.isnan(num):
         return None
-    if level_granularity!=0:
+    if level_granularity!=0 and num!=0: # If num==0, compute_level_increment returns zero
         rounded_level_size = compute_level_increment(num, level_granularity)
     else:
         # If caller don't specify level_granularity (i.e. level_granularity=0), then compute major rounded level based on msd (Most Significant Digit)
-        msd = msd_power(num) + msd_adj
+        msd = (msd_power(num) if num!=0 else 0) + msd_adj # If num==0, msd_power returns None
         rounded_level_size = 10**msd
         rounded_num = round(num / rounded_level_size) * rounded_level_size
         for i in range(num_levels_per_side):
