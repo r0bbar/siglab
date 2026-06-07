@@ -186,51 +186,52 @@ async def main() -> None:
 
                 except Exception as key_err:
                     logger.error(f"{key_err}")
-        
-            pd_position_summaries = pd.DataFrame(position_summaries)
-            pd_position_summaries.sort_values(
-                    by=['gateway_id', 'ticker'],
-                    ascending=[True, True],
-                    inplace=True
-                )
-            _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
-            
 
-            s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
-            logger.info(s_position_summaries)
-            
-            row_hashes = pd.util.hash_pandas_object(_pd_position_summaries, index=False)
-            message_hash = hashlib.sha256(row_hashes.values).hexdigest()
-            logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
-            if message_hash!=prev_message_hash:
-                prev_message_hash = message_hash
-
-                dispatch_notification(
-                                    title=f"#position {param['current_filename']}", 
-                                    message=_pd_position_summaries, 
-                                    footer=param['notification']['footer'], 
-                                    params=notification_params, 
-                                    log_level=LogLevel.INFO, 
-                                    logger=logger
-                                )
-
-                _pd_position_summaries_attachment = pd_position_summaries[param["selected_fields_for_notification_attachment"]]
-                position_summaries_csv = "position_summaries.csv"
-                _pd_position_summaries_attachment.to_csv(position_summaries_csv)
-
-                with open(position_summaries_csv, "rb") as csv:
-                    dispatch_notification(
-                        title=f"#position {param['current_filename']}", 
-                        message=_pd_position_summaries, 
-                        files=[
-                            ("position_summaries.csv", csv)
-                        ],
-                        footer=param['notification']['footer'], 
-                        params=notification_params, 
-                        log_level=LogLevel.INFO, 
-                        logger=logger
+            if position_summaries:
+                pd_position_summaries = pd.DataFrame(position_summaries)
+                pd_position_summaries.sort_values(
+                        by=['gateway_id', 'ticker'],
+                        ascending=[True, True],
+                        inplace=True
                     )
-            
+                _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
+                
+
+                s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
+                logger.info(s_position_summaries)
+                
+                row_hashes = pd.util.hash_pandas_object(_pd_position_summaries, index=False)
+                message_hash = hashlib.sha256(row_hashes.values).hexdigest()
+                logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
+                if message_hash!=prev_message_hash:
+                    prev_message_hash = message_hash
+
+                    dispatch_notification(
+                                        title=f"#position {param['current_filename']}", 
+                                        message=_pd_position_summaries, 
+                                        footer=param['notification']['footer'], 
+                                        params=notification_params, 
+                                        log_level=LogLevel.INFO, 
+                                        logger=logger
+                                    )
+
+                    _pd_position_summaries_attachment = pd_position_summaries[param["selected_fields_for_notification_attachment"]]
+                    position_summaries_csv = "position_summaries.csv"
+                    _pd_position_summaries_attachment.to_csv(position_summaries_csv)
+
+                    with open(position_summaries_csv, "rb") as csv:
+                        dispatch_notification(
+                            title=f"#position {param['current_filename']}", 
+                            message=_pd_position_summaries, 
+                            files=[
+                                ("position_summaries.csv", csv)
+                            ],
+                            footer=param['notification']['footer'], 
+                            params=notification_params, 
+                            log_level=LogLevel.INFO, 
+                            logger=logger
+                        )
+                
             elapsed_ms = int((time.time() - start_ts_sec) *1000)
             logger.info(f"[loop# {loop_counter}] end to end elapsed_ms: {elapsed_ms:,}")
 
