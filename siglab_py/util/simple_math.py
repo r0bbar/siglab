@@ -58,7 +58,7 @@ def round_to_level(
     if math.isnan(num) or num==0:
         return num
     rounded_level_size = compute_level_increment(num, level_granularity)
-    rounded_num = round(num / rounded_level_size) * rounded_level_size if rounded_level_size==0 else 0
+    rounded_num = round(num / rounded_level_size) * rounded_level_size if rounded_level_size!=0 else 0
     return rounded_num
 
 def compute_adjacent_levels(
@@ -228,14 +228,8 @@ def bucket_series(
         }
 
     else:
-        range_min = round_to_level(
-            min(values),
-            level_granularity=level_granularity
-            )
-        range_max = round_to_level(
-            max(values),
-            level_granularity=level_granularity
-            )
+        range_min = min(values)
+        range_max = max(values)
         step = round_to_level(
                 abs(range_max - range_min) * level_granularity,
                 level_granularity=level_granularity
