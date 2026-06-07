@@ -80,7 +80,7 @@ def compute_adjacent_levels(
             if rounded_num - (i+1)*rounded_level_size <= 0:
                 rounded_level_size = 10**(msd-1)
                 break
-    rounded_num = round(num / rounded_level_size) * rounded_level_size
+    rounded_num = round(num / rounded_level_size) * rounded_level_size if rounded_level_size!=0 else 0
     levels = [ rounded_num ]
     levels = list(reversed([ rounded_num - (i+1)*rounded_level_size for i in list(range(num_levels_per_side))])) + levels + [ rounded_num + (i+1)*rounded_level_size for i in list(range(num_levels_per_side))]
     return levels
