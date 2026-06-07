@@ -3,7 +3,7 @@ import os
 import sys
 import traceback
 import logging
-from typing import Dict, Optional
+from typing import List, Dict, Optional, Union
 from enum import Enum
 from datetime import datetime, timedelta
 import time
