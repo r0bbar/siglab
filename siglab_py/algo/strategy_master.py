@@ -194,6 +194,8 @@ async def main() -> None:
                                     gateway_hb = json.loads(gateway_hb)
                                     timestamp_ms = gateway_hb['timestamp_ms']
                                     position_summary['gateway_hb'] = datetime.fromtimestamp(int(timestamp_ms/1000))
+                            else:
+                                print(f"Gateway HB not found. Expected gateway_hb_topic: {gateway_hb_topic}")
 
                             position_summaries.append(position_summary)
 
