@@ -1822,13 +1822,13 @@ async def main():
                             indicator_source : str = indicator.split(":")[0]
                             indicator_name = indicator.split(":")[-1]
                             if indicator_source=="lo_row":
-                                indicator_value = lo_row[indicator_name]
+                                indicator_value = lo_row[indicator_name] if indicator_name in pd_lo_candles_w_ta.columns else None
                             elif indicator_source=="lo_row_tm1":
-                                indicator_value = lo_row_tm1[indicator_name]
+                                indicator_value = lo_row_tm1[indicator_name] if indicator_name in pd_lo_candles_w_ta.columns else None
                             elif indicator_source=="hi_row":
-                                indicator_value = hi_row[indicator_name]
+                                indicator_value = hi_row[indicator_name] if indicator_name in pd_hi_candles_w_ta.columns else None
                             elif indicator_source=="hi_row_tm1":
-                                indicator_value = hi_row_tm1[indicator_name]
+                                indicator_value = hi_row_tm1[indicator_name] if indicator_name in pd_hi_candles_w_ta.columns else None
                             elif indicator_source=="strategy_specific_data_cache":
                                 indicator_value = strategy_specific_data_cache[indicator_name] if indicator_name in strategy_specific_data_cache else None
                             pd_position_cache.loc[position_cache_row.name, indicator] = indicator_value
