@@ -120,6 +120,8 @@ def bucket_series(
     def _generate_sequence(start, stop, step):
         result = []
         current = start
+        if step==0:
+            step = (stop-start)/10
         num_steps = int((stop - start) / step) + 1
         for i in range(num_steps):
             result.append(round(start + i * step, 10))
