@@ -1170,7 +1170,7 @@ async def work(
                     'gateway_id' : param['gateway_id'],
                     'timestamp_ms' : int(datetime.now().timestamp() * 1000)
                 }
-                redis_client.set(name=gateway_hb_topic, value=json.dumps(gateway_hb).encode('utf-8'), ex=int(param['mds']['redis']['position_summary_ttl_ms']/1000))
+                redis_client.set(name=gateway_hb_topic, value=json.dumps(gateway_hb).encode('utf-8'), ex=int(param['mds']['redis']['gateway_hb_ttl_ms']/1000))
 
             if loop_i%1000==0:
                 balances = await exchange.fetch_balance()
