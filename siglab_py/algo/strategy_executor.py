@@ -1154,12 +1154,13 @@ async def main():
                     pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
 
                 if abs(pos_usdt)<=param['residual_pos_usdt_threshold'] and pos_status==PositionStatus.OPEN.name:
+                    # @todo: Should we reset pos and pos_usdt to zero here? Reconcile with exchange/broker?
                     pos_status = PositionStatus.CLOSED.name
                     pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
 
                     dispatch_notification(
-                        title=f"{param['current_filename']} {param['gateway_id']} Residual position marked closed.", 
-                        message=f"pos: {pos}, pos_usdt: {pos_usdt} <= {param['residual_pos_usdt_threshold']}", 
+                        title=f"{param['current_filename']} {param['gateway_id']} Residual position (< ${param['residual_pos_usdt_threshold']}) marked closed. Please reconcille with exchange/broker, and if you'd need to fix position cache?", 
+                        message=f"pos: {pos}, pos_usdt: {pos_usdt} <= {param['residual_pos_usdt_threshold']}. Residuals generally comes from order notional vs slicing.", 
                         footer=param['notification']['footer'], 
                         params=notification_params, 
                         log_level=LogLevel.CRITICAL, 
