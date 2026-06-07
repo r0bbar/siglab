@@ -1148,9 +1148,24 @@ async def main():
                 pos = position_cache_row['pos'] if position_cache_row['pos'] else 0
                 pos_usdt = position_cache_row['pos_usdt'] if position_cache_row['pos_usdt'] else 0
                 pos_status = position_cache_row['status']
-                if (pos==0 or pos_usdt<=param['residual_pos_usdt_threshold']) and pos_status==PositionStatus.OPEN.name:
+
+                if pos==0 and pos_status==PositionStatus.OPEN.name:
+                    pos_status = PositionStatus.CLOSED.name
+                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status
+
+                if abs(pos_usdt)<=param['residual_pos_usdt_threshold'] and pos_status==PositionStatus.OPEN.name:
                     pos_status = PositionStatus.CLOSED.name
                     pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
+
+                    dispatch_notification(
+                        title=f"{param['current_filename']} {param['gateway_id']} Residual position marked closed.", 
+                        message=f"pos: {pos}, pos_usdt: {pos_usdt} <= {param['residual_pos_usdt_threshold']}", 
+                        footer=param['notification']['footer'], 
+                        params=notification_params, 
+                        log_level=LogLevel.CRITICAL, 
+                        logger=logger
+                    )
+
                 if pos_status!=PositionStatus.OPEN.name and (pos and pos!=0):
                     pos_status = PositionStatus.OPEN.name
                     pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
@@ -2139,7 +2154,7 @@ async def main():
                     # STEP 2. Unwind position
                     tp = False
                     sl = False
-                    if pos!=0:
+                    if pos!=0 and pos_status==PositionStatus.OPEN.name:
                         reason : str = None
                         if unreal_live>0:
                             if lo_candles_valid:
