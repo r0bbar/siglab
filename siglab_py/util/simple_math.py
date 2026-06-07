@@ -58,7 +58,7 @@ def round_to_level(
     if math.isnan(num) or num==0:
         return num
     rounded_level_size = compute_level_increment(num, level_granularity)
-    rounded_num = round(num / rounded_level_size) * rounded_level_size
+    rounded_num = round(num / rounded_level_size) * rounded_level_size if rounded_level_size==0 else 0
     return rounded_num
 
 def compute_adjacent_levels(
