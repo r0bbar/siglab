@@ -430,6 +430,7 @@ def parse_args():
     parser.add_argument("--max_pos_amount_quote_ccy", help="Allows for sliced entries. Default is set to 'amount_quote_ccy'", default=None)
     parser.add_argument("--max_pos_amount_base_ccy", help="Allows for sliced entries. Default is set to 'amount_base_ccy'", default=None)
     parser.add_argument("--residual_pos_usdt_threshold", help="If pos_usdt<=residual_pos_usdt_threshold (in USD, default $100), PositionStatus will be marked to CLOSED. Used in combination with max_position_break_diff_bps", default=100)
+    parser.add_argument("--max_position_break_diff_bps", help="max allowable position break threshold in bps, default: 3 bps. Used in combination with residual_pos_usdt_threshold. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.", default=3)
     parser.add_argument("--leg_room_bps", help="Leg room, for Limit orders only. A more positive leg room is a more aggressive order to get filled. i.e. Buy at higher price, Sell at lower price.", default=5)
     parser.add_argument("--slices", help="Algo can break down larger order into smaller slices. Default: 1", default=1)
     parser.add_argument("--exit_slices", help="# slices for exits. Why separate config for exit? Very often, for exits you want get done quicker. Default: max(1, slices/2) where 'slices' refers to # slices for entries.", default=None)
@@ -446,7 +447,6 @@ def parse_args():
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
 
-    parser.add_argument("--max_position_break_diff_bps", help="max allowable position break threshold in bps, default: 3 bps. Used in combination with residual_pos_usdt_threshold. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.", default=3)
     parser.add_argument("--trailing_stop_mode", help="This is for trailing stops tightening 'calc_eff_trailing_sl': linear or parabolic. Default: linear", default='linear')
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
     parser.add_argument("--recover_min_percent", help="This is minimum unreal pnl recovery when your trade is red before trailing stop mechanism will be activated: max_recovered_pnl_percent_notional>=recover_min_percent and abs(max_pain_percent_notional)>=recover_max_pain_percent. Default: float('inf'), meaing trailing stop won't be fired.", default=float('inf'))
@@ -551,6 +551,7 @@ def parse_args():
             param['amount_base_ccy']
         )
     param['residual_pos_usdt_threshold'] = float(args.residual_pos_usdt_threshold)
+    param['max_position_break_diff_bps'] = float(args.max_position_break_diff_bps)
     param['leg_room_bps'] = int(args.leg_room_bps)
     param['slices'] = int(args.slices)
     param['exit_slices'] = int(args.exit_slices) if args.exit_slices else max(1, int(param['slices']/2)) 
@@ -566,7 +567,6 @@ def parse_args():
     param['sl_hard_percent'] = float(args.sl_hard_percent)
     param['sl_num_intervals_delay'] = int(args.sl_num_intervals_delay)
     param['reversal_num_intervals'] = int(args.reversal_num_intervals)
-    param['max_position_break_diff_bps'] = float(args.max_position_break_diff_bps)
     param['trailing_stop_mode'] = args.trailing_stop_mode
     param['non_linear_pow'] = float(args.non_linear_pow)
     param['recover_min_percent'] = float(args.recover_min_percent)
