@@ -1124,26 +1124,36 @@ async def main():
                         'ob_best_bid' : None,
                         'ob_best_ask' : None,
                         
-                        'unreal_live' : 0,
-						'max_unreal_live' : 0,
-                        'max_pain' : 0,
-                        'max_recovered_pnl' : 0,
-                        'pnl_live_bps' : 0,
-                        'pnl_open_bps' : 0,
-						'max_unreal_live_bps' : 0,
-                        'max_unreal_open_bps' : 0,
+                        'unreal_live' : 0.0,
+						'max_unreal_live' : 0.0,
+                        'max_pain' : 0.0,
+                        'max_recovered_pnl' : 0.0,
+                        'pnl_live_bps' : 0.0,
+                        'pnl_open_bps' : 0.0,
+						'max_unreal_live_bps' : 0.0,
+                        'max_unreal_open_bps' : 0.0,
                         
                         'running_sl_percent_hard' : param['sl_hard_percent'],
                         'sl_trailing_min_threshold_crossed' : False,
                         'sl_percent_trailing' : param['sl_percent_trailing'],
                         'effective_tp_trailing_percent' : param['default_effective_tp_trailing_percent'],
-                        'loss_trailing' : 0
+                        'loss_trailing' : 0.0
                     }
                     position_cache_row.update({ind: None for ind in strategy_indicators})
                     pd_position_cache = pd.concat([pd_position_cache, pd.DataFrame([position_cache_row])], axis=0, ignore_index=True)
                     position_cache_row = pd_position_cache.loc[(pd_position_cache.exchange==exchange_name) & (pd_position_cache.ticker==_ticker)]
-            
+
                 position_cache_row = position_cache_row.iloc[0]
+
+                if pd_position_cache['pos_entries'].dtype != object:
+                    '''
+                    Appears depending on environment/pandas version:
+                        Error: Invalid value '2026-03-01 13:55:00.123456' for dtype 'str'. Value should be a string or missing value, got 'datetime' instead. <class 'TypeError'> Invalid value
+                    This is the offending line:
+                        pos_entries.append(pos_created)
+                        pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
+                    '''
+                    pd_position_cache['pos_entries'] = pd_position_cache['pos_entries'].astype(object)
 
                 # Note: arrow.get will populate tzinfo
                 pos = position_cache_row['pos'] if position_cache_row['pos'] else 0
