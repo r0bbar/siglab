@@ -2167,7 +2167,7 @@ async def main():
                 # STEP 2. Unwind position
                 tp = False
                 sl = False
-                if pos!=0 and pos_status==PositionStatus.OPEN.name and pos_usdt>param['residual_pos_usdt_threshold']:
+                if pos!=0 and pos_status==PositionStatus.OPEN.name and abs(pos_usdt)>param['residual_pos_usdt_threshold']:
                     reason : str = None
                     if unreal_live>0:
                         if lo_candles_valid:
