@@ -1974,8 +1974,7 @@ async def main():
                                 entry_duration_ms = round(( (done_timestamp_ms/1000) - entry_start_timestamp ) *1000, 3)
                                             
                                 # Strategy lambdas may reference 'this_ticker_open_trades'. Also depending on implementation, 'this_ticker_open_trades' may be referenced from other lambdas, so add upon entries. 
-                                this_ticker_open_trades.append(
-                                    {
+                                new_open_trade = {
                                         'entry_timestamp_ms' : done_timestamp_ms,
                                         'ticker' : _ticker,
                                         'side' : side,
@@ -1983,12 +1982,13 @@ async def main():
                                         'entry_price' : entry_px,
                                         'target_price' : target_price
                                     }
-                                )
                                 
                                 # Some strategies have sl_adj logic which works in conjunction with order_notional_adj, if you want sl_price in notification correct, you need trigger sl_adj before notification dispatched. 
                                 kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                                 sl_adj_func_result = sl_adj_func(**kwargs)
                                 running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
+
+                                assert(running_sl_percent_hard>0)
 
                                 # recalculate targets, based on entry_px
                                 if side=='buy':
@@ -2008,6 +2008,13 @@ async def main():
 
                                     # negative slippage is to your favor
                                     slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px>mid else slippage_bps
+
+                                this_ticker_open_trades['target_price'] = tp_max_price
+                                this_ticker_open_trades.append(new_open_trade)
+                                if side == 'buy':
+                                    assert(this_ticker_open_trades['target_price']>this_ticker_open_trades['entry_price'])
+                                if side == 'sell':
+                                    assert(this_ticker_open_trades['target_price']<this_ticker_open_trades['entry_price'])
 
                                 tp_max_pnl_est = abs(amount_filled_usdt) * tp_max_percent/100
                                 tp_min_pnl_est = abs(amount_filled_usdt) * tp_min_percent/100
