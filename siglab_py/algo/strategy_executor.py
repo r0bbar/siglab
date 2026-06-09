@@ -2143,6 +2143,7 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'sl_trailing_min_threshold_crossed'] = sl_trailing_min_threshold_crossed
 
                         msg = {
+                            'ticker' : _ticker,
                             'side' : pos_side.name,
                             'mid' : mid,
                             'entry_px' : entry_px,
@@ -2157,7 +2158,7 @@ async def main():
                             'effective_tp_trailing_percent' : effective_tp_trailing_percent
                         }
                         log(msg, LogLevel.CRITICAL)
-                        dispatch_notification(title=f"#tpmincross {param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                        dispatch_notification(title=f"#tpmincross {param['current_filename']} {param['gateway_id']} sl_trailing_min_threshold_crossed: True for {_ticker}!", message=msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     pd_position_cache.loc[position_cache_row.name, 'effective_tp_trailing_percent'] = effective_tp_trailing_percent
 
