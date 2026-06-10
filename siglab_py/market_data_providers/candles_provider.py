@@ -16,6 +16,9 @@ import numpy as np
 from redis import StrictRedis
 from redis.client import PubSub
 
+from ccxt.hyperliquid import hyperliquid
+from ccxt.lighter import lighter
+from ccxt.deribit import deribit
 from ccxt.binance import binance
 from ccxt.okx import okx
 from ccxt.bybit import bybit
@@ -116,6 +119,18 @@ logger.addHandler(sh)
 
 market_type : str = param['market_type'] 
 
+hyperliquid_exchange = hyperliquid({
+    'defaultType' : market_type
+})
+
+lighter_exchange = lighter({
+    'defaultType' : market_type
+})
+
+deribit_exchange = deribit({
+    'defaultType' : market_type
+})
+
 binance_exchange = binance({
     'defaultType' : market_type
 })
@@ -129,6 +144,9 @@ bybit_exchange = bybit({
 })
 
 exchanges = {
+    f"hyperliquid" : hyperliquid_exchange,
+    f"lighter" : lighter_exchange,
+    f"deribit" : deribit_exchange,
     f"binance" : binance_exchange,
     f"okx" : okx_exchange,
     f"bybit" : bybit_exchange
