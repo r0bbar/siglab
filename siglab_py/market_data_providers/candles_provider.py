@@ -92,7 +92,7 @@ param : Dict = {
     'mds' : {
         'topics' : {
             'partition_assign_topic' : 'mds_assign_$PROVIDER_ID$',
-            'candles_publish_topic' : 'candles-$PREFIX$-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
+            'candles_publish_topic' : 'candles-$PREFIX$-$SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
         },
         'redis' : {
             'host' : 'localhost',
@@ -171,6 +171,7 @@ def parse_args():
     parser.add_argument("--publish_key_prefix", help="publish_key prefix", default=None)
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
+    parser.add_argument("--publish_key_symbol", help="Use denormalized_ticker in publish_key? or use base_ccy?", default='denormalized_ticker')
 
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=1000)
@@ -181,6 +182,7 @@ def parse_args():
     param['publish_key_prefix'] = args.publish_key_prefix
     param['candle_size'] = args.candle_size
     param['how_many_candles'] = int(args.how_many_candles)
+    param['publish_key_symbol'] = args.publish_key_symbol
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
     param['loop_freq_ms'] = int(args.loop_freq_ms)
@@ -306,13 +308,19 @@ def process_universe(
                         num_fetches_this_wave += 1
 
                         denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
+                        base_ccy = _ticker.split('/')[0]
+                        publish_key_symbol = denormalized_ticker
+                        if param['publish_key_symbol']=='denormalized_ticker':
+                            publish_key_symbol = denormalized_ticker
+                        elif param['publish_key_symbol']=='base_ccy':
+                            publish_key_symbol = base_ccy
 
                         publish_key = param['mds']['topics']['candles_publish_topic']
                         if param['publish_key_prefix']:
                             publish_key = publish_key.replace('$PREFIX$', param['publish_key_prefix'])
                         else:
                             publish_key = publish_key.replace('-$PREFIX$', '')
-                        publish_key = publish_key.replace('$DENORMALIZED_SYMBOL$', denormalized_ticker)
+                            publish_key = publish_key.replace('$SYMBOL$', publish_key_symbol)
                         publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                         publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
 
