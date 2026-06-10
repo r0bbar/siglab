@@ -4,7 +4,7 @@ from enum import Enum
 import argparse
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, Union
+from typing import Any, List, Dict, Union
 import logging
 import json
 from tabulate import tabulate
@@ -24,6 +24,8 @@ from ccxt.okx import okx
 from ccxt.bybit import bybit
 from ccxt.base.exchange import Exchange
 
+from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.util.market_data_util import instantiate_exchange
 from siglab_py.util.market_data_util import fetch_candles, get_old_ticker, get_ticker_map
 
 
@@ -235,7 +237,14 @@ def process_universe(
                     
                     this_row_header = f'({i} of {universe.shape[0]}) exchange_name: {exchange_name}, ticker: {_ticker}'
                     
-                    exchange = exchanges[exchange_name]
+                    exchange : Union[AnyExchange, None] = instantiate_exchange(
+                                                                exchange_name=exchange_name,
+                                                                api_key=None,
+                                                                secret=None,
+                                                                passphrase=None,
+                                                                default_type=param['default_type'],
+                                                                rate_limit_ms=param['rate_limit_ms'],
+                                                            )
 
                     exchange.load_markets() # in case ticker change after gateway startup
 
