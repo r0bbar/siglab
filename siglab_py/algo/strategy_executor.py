@@ -2009,12 +2009,12 @@ async def main():
                                     # negative slippage is to your favor
                                     slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px>mid else slippage_bps
 
-                                this_ticker_open_trades['target_price'] = tp_max_price
+                                new_open_trade['target_price'] = tp_max_price
                                 this_ticker_open_trades.append(new_open_trade)
                                 if side == 'buy':
-                                    assert(this_ticker_open_trades['target_price']>this_ticker_open_trades['entry_price'])
+                                    assert(new_open_trade['target_price']>new_open_trade['entry_price'])
                                 if side == 'sell':
-                                    assert(this_ticker_open_trades['target_price']<this_ticker_open_trades['entry_price'])
+                                    assert(new_open_trade['target_price']<new_open_trade['entry_price'])
 
                                 tp_max_pnl_est = abs(amount_filled_usdt) * tp_max_percent/100
                                 tp_min_pnl_est = abs(amount_filled_usdt) * tp_min_percent/100
