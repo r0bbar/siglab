@@ -1384,7 +1384,7 @@ async def main():
 
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
-                    if position_from_exchange_base_ccy!=pos:
+                    if pos and position_from_exchange_base_ccy!=pos:
                         position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos) * entry_px
                         position_break_diff_bps = position_break_diff_in_base_ccy/position_from_exchange_base_ccy * 10000 if position_from_exchange_base_ccy!=0 else 0
                         if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
