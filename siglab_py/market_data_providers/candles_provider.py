@@ -320,7 +320,7 @@ def process_universe(
                             publish_key = publish_key.replace('$PREFIX$', param['publish_key_prefix'])
                         else:
                             publish_key = publish_key.replace('-$PREFIX$', '')
-                            publish_key = publish_key.replace('$SYMBOL$', publish_key_symbol)
+                        publish_key = publish_key.replace('$SYMBOL$', publish_key_symbol)
                         publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                         publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
 
