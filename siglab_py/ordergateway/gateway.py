@@ -598,6 +598,7 @@ async def execute_one_position(
                     # Ensure clean position closure
                     if i==last_slice_i-1:
                         if ticker_class!='spot':
+                            updated_position = None
                             try:
                                 updated_position = await exchange.fetch_position(symbol=position.ticker)
                             except NotSupported:
@@ -606,7 +607,7 @@ async def execute_one_position(
                                     updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
                                     if updated_position:
                                         updated_position = updated_position[-1]
-                            remaining_amount = (updated_position['contracts'] if updated_position else None)  # Already in number of contracts (Not in base ccy).
+                            remaining_amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
                             remaining_amount_base_ccy = float(remaining_amount * multiplier)
                                 
                         else:
@@ -621,6 +622,7 @@ async def execute_one_position(
 
                     elif i==last_slice_i:
                         if ticker_class!='spot':
+                            updated_position = None
                             try:
                                 updated_position = await exchange.fetch_position(symbol=position.ticker)
                             except NotSupported:
@@ -819,9 +821,11 @@ async def execute_one_position(
                         
                         # Best effort to auto-validate:
                         if ticker_class!='spot':
+                            updated_position = None
                             try:
                                 updated_position = await exchange.fetch_position(symbol=position.ticker)
                             except NotSupported:
+                                updated_position = None
                                 positions_from_exchange = await exchange.fetch_positions()
                                 if positions_from_exchange:
                                     updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
