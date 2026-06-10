@@ -242,8 +242,7 @@ def process_universe(
                                                                 api_key=None,
                                                                 secret=None,
                                                                 passphrase=None,
-                                                                default_type=param['default_type'],
-                                                                rate_limit_ms=param['rate_limit_ms'],
+                                                                default_type=market_type,
                                                             )
 
                     exchange.load_markets() # in case ticker change after gateway startup
