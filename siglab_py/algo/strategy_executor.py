@@ -985,6 +985,8 @@ async def main():
         lo_candles_interval_rolled : bool = True
         strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
 
+        columns_type_initialized : bool = False
+
         connectivity_errors = []
 
         while True:
@@ -1152,25 +1154,24 @@ async def main():
                     Error: Invalid value '2026-03-01 13:55:00.123456' for dtype 'str'. Value should be a string or missing value, got 'datetime' instead. <class 'TypeError'> Invalid value
                 Seems these TypeError's depends on python/pandas versions.
                 '''
-                if pd_position_cache['pos_entries'].dtype != object:
-                    '''
-                    If you didnt fix column type? Things will blow up here:
-                        pos_entries.append(pos_created)
-                        pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
-                    '''
+                if not columns_type_initialized:
+                    columns_type_initialized = True # Do this only once
+                    
+                    pd_position_cache['created'] = pd_position_cache['created'].astype(object)
+                    pd_position_cache['tp_min_crossed'] = pd_position_cache['tp_min_crossed'].astype(object)
+                    pd_position_cache['closed'] = pd_position_cache['closed'].astype(object)
                     pd_position_cache['pos_entries'] = pd_position_cache['pos_entries'].astype(object)
-                pd_position_cache['tp_min_crossed'] = pd_position_cache['tp_min_crossed'].astype(object)
-                pd_position_cache['closed'] = pd_position_cache['closed'].astype(object)
-                pd_position_cache['unreal_live'] = pd_position_cache['unreal_live'].astype('float64')
-                pd_position_cache['max_unreal_live'] = pd_position_cache['max_unreal_live'].astype('float64')
-                pd_position_cache['max_pain'] = pd_position_cache['max_pain'].astype('float64')
-                pd_position_cache['max_recovered_pnl'] = pd_position_cache['max_recovered_pnl'].astype('float64')
-                pd_position_cache['pnl_live_bps'] = pd_position_cache['pnl_live_bps'].astype('float64')
-                pd_position_cache['pnl_open_bps'] = pd_position_cache['pnl_open_bps'].astype('float64')
-                pd_position_cache['max_unreal_live_bps'] = pd_position_cache['max_unreal_live_bps'].astype('float64')
-                pd_position_cache['max_unreal_open_bps'] = pd_position_cache['max_unreal_open_bps'].astype('float64')
-                pd_position_cache['loss_trailing'] = pd_position_cache['loss_trailing'].astype('float64')
-                pd_position_cache['running_sl_percent_hard'] = pd_position_cache['running_sl_percent_hard'].astype('float64')
+                    
+                    pd_position_cache['unreal_live'] = pd_position_cache['unreal_live'].astype('float64')
+                    pd_position_cache['max_unreal_live'] = pd_position_cache['max_unreal_live'].astype('float64')
+                    pd_position_cache['max_pain'] = pd_position_cache['max_pain'].astype('float64')
+                    pd_position_cache['max_recovered_pnl'] = pd_position_cache['max_recovered_pnl'].astype('float64')
+                    pd_position_cache['pnl_live_bps'] = pd_position_cache['pnl_live_bps'].astype('float64')
+                    pd_position_cache['pnl_open_bps'] = pd_position_cache['pnl_open_bps'].astype('float64')
+                    pd_position_cache['max_unreal_live_bps'] = pd_position_cache['max_unreal_live_bps'].astype('float64')
+                    pd_position_cache['max_unreal_open_bps'] = pd_position_cache['max_unreal_open_bps'].astype('float64')
+                    pd_position_cache['loss_trailing'] = pd_position_cache['loss_trailing'].astype('float64')
+                    pd_position_cache['running_sl_percent_hard'] = pd_position_cache['running_sl_percent_hard'].astype('float64')
 
                 # Note: arrow.get will populate tzinfo
                 pos = position_cache_row['pos'] if position_cache_row['pos'] else 0
