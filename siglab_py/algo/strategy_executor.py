@@ -1158,6 +1158,8 @@ async def main():
                         pd_position_cache.at[position_cache_row.name, 'pos_entries'] = pos_entries
                     '''
                     pd_position_cache['pos_entries'] = pd_position_cache['pos_entries'].astype(object)
+                pd_position_cache['tp_min_crossed'] = pd_position_cache['tp_min_crossed'].astype(object)
+                pd_position_cache['closed'] = pd_position_cache['closed'].astype(object)
                 pd_position_cache['unreal_live'] = pd_position_cache['unreal_live'].astype('float64')
                 pd_position_cache['max_unreal_live'] = pd_position_cache['max_unreal_live'].astype('float64')
                 pd_position_cache['max_pain'] = pd_position_cache['max_pain'].astype('float64')
@@ -1343,6 +1345,8 @@ async def main():
                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 '''
+                RECON block
+
                 'fetch_position' is for perpetual. 
                     If you long, you'd see side = 'long' 
                     If you short, you'd see side = 'short'
@@ -1399,20 +1403,37 @@ async def main():
                         position_from_exchange_base_ccy  = position_from_exchange_num_contracts * multiplier
 
                     if pos and position_from_exchange_base_ccy!=pos:
+                        # Case 1. Local cache has position, and different from exchange
                         position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos) * entry_px
                         position_break_diff_bps = position_break_diff_in_base_ccy/position_from_exchange_base_ccy * 10000 if position_from_exchange_base_ccy!=0 else 0
                         if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
                             if not position_break:
                                 # Only send notification on first time break detected, don't flood the notification channel
-                                err_msg = f"{_ticker}: Position break! expected: {pos}, actual: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
+                                err_msg = f"{_ticker}: Position break! local cache: {pos}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
                                 log(err_msg)
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             position_break = True
                             block_entries = True
-                            log(f"Block entries: Position break!")
+                            log(f"Block entries: Position break! Local cache has position, and different from exchange. position_break_diff_bps: {position_break_diff_bps}")
                         else:
                             position_break = False # Unlike block_entries reset every loop, position_break need be reset here.
+
+                    elif position_from_exchange_base_ccy and not pos:
+                        # Case 2. Exchange has position, but local cache doesn't.
+                        if param['amount_base_ccy']: # First iteration param['amount_base_ccy'] may still be null before mid is fetched
+                            position_break_diff_bps = round(position_from_exchange_base_ccy/param['amount_base_ccy'], 2) * 10000 if param['amount_base_ccy'] else 0
+                            if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
+                                if not position_break:
+                                    # Only send notification on first time break detected, don't flood the notification channel
+                                    err_msg = f"{_ticker}: Position break! local cache: ---, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}" 
+                                    log(err_msg)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
+                                position_break = True
+                                block_entries = True
+                                log(f"Block entries: Position break! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps}")
+
                             
                 hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
                 hi_candles_invalid_reason, lo_candles_invalid_reason = None, None
