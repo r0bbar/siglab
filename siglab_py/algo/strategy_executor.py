@@ -1676,7 +1676,7 @@ async def main():
                     param['max_pos_amount_base_ccy'] = round_to_sigfigs(param['max_pos_amount_quote_ccy']/mid, sigfigs=6)
                 log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
 
-                if pos!=0: # PNL Evaluation block
+                if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
                     pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
