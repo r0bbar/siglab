@@ -1348,6 +1348,8 @@ async def main():
 
                 '''
                 RECON block
+                Case 1. Local cache has position, and different from exchange.
+                Case 2. Exchange has position, but local cache doesn't.
 
                 'fetch_position' is for perpetual. 
                     If you long, you'd see side = 'long' 
