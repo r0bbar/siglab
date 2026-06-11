@@ -29,6 +29,7 @@ from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
+from siglab_py.util.retry_util import retry
 from siglab_py.util.datetime_util import parse_trading_window
 from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
 from siglab_py.util.simple_str import is_int_string, is_float_string
@@ -1385,8 +1386,14 @@ async def main():
                     BTC: { free: -5.2, total: -5.2 })
                 '''
                 position_from_exchange = None
+
+                @retry(num_attempts=3, pause_between_retries_ms=3000)
+                async def _fetch_position(exchange, ticker):
+                    position_from_exchange = await exchange.fetch_position(ticker) 
+                    return position_from_exchange
+
                 try:
-                    position_from_exchange = await exchange.fetch_position(_ticker) 
+                    position_from_exchange = await _fetch_position(exchange, _ticker) 
                 except NotSupported:
                     positions_from_exchange = await exchange.fetch_positions()
                     if positions_from_exchange:
