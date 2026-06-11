@@ -462,6 +462,7 @@ def parse_args():
     parser.add_argument("--num_intervals_current_ecoevents", help="Num intervals to block on incoming/outgoing economic events. For 15m bars for example, num_intervals_current_ecoevents=4*24 means 24 hours. Default: 0", default=0)
     parser.add_argument("--block_entry_impacting_events", help="Block entries if any impacting economic events 'impacting_economic_calendars'. Default N", default='N')
     
+    parser.add_argument("--fetch_position_with_retry", help="Y or N (default). fetch_position is for position reconciliation. If set to Y, fetch_position with retries may slow down the algo, but fewer false alerts.", default='N')
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
     parser.add_argument("--ttl_ms", help="TTL (ms) when publish to redis. Default 15min.", default=1000*60*15)
     parser.add_argument("--position_summary_ttl_ms", help="TTL (ms) when publish to redis. Default 30_000, or 30 sec.", default=1000*30)
@@ -610,6 +611,13 @@ def parse_args():
     param['mds']['topics']['lo_candles_w_ta_topic'] = args.lo_candles_w_ta_topic.strip() if args.lo_candles_w_ta_topic else None
     param['mds']['topics']['orderbook_topic'] = args.orderbook_topic.strip() if args.orderbook_topic else None
 
+    if args.fetch_position_with_retry:
+        if args.fetch_position_with_retry=='Y':
+            param['fetch_position_with_retry'] = True
+        else:
+            param['fetch_position_with_retry'] = False
+    else:
+        param['fetch_position_with_retry'] = False
     param['loop_freq_ms'] = int(args.loop_freq_ms)
 
     param['mds']['redis']['ttl_ms'] = int(args.ttl_ms)
@@ -1396,7 +1404,11 @@ async def main():
                     return position_from_exchange
 
                 try:
-                    position_from_exchange = await _fetch_position(exchange, _ticker) 
+                    if param['fetch_position_with_retry']:
+                        position_from_exchange = await _fetch_position(exchange, _ticker)
+                    else:
+                        position_from_exchange = await exchange.fetch_position(_ticker)
+
                 except NotSupported:
                     positions_from_exchange = await exchange.fetch_positions()
                     if positions_from_exchange:
