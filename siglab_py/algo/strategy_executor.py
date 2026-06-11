@@ -1388,7 +1388,7 @@ async def main():
                 '''
                 position_from_exchange = None
 
-                @retry(num_attempts=3, pause_between_retries_ms=3000)
+                @retry(num_attempts=5, pause_between_retries_ms=3000)
                 async def _fetch_position(exchange, ticker):
                     position_from_exchange = await exchange.fetch_position(ticker) 
                     return position_from_exchange
