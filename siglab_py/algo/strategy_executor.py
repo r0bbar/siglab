@@ -1426,18 +1426,18 @@ async def main():
 
                     if pos and position_from_exchange_base_ccy!=pos:
                         # Case 1. Local cache has position, and different from exchange
-                        position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos) * entry_px
+                        position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos)
                         position_break_diff_bps = position_break_diff_in_base_ccy/position_from_exchange_base_ccy * 10000 if position_from_exchange_base_ccy!=0 else 0
                         if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
                             if not position_break:
                                 # Only send notification on first time break detected, don't flood the notification channel
-                                err_msg = f"{_ticker}: Position break! local cache: {pos}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
+                                err_msg = f"{_ticker}: Position break! local cache: {pos}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
                                 log(err_msg)
                                 dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                             position_break = True
                             block_entries = True
-                            log(f"Block entries: Position break! Local cache has position, and different from exchange. position_break_diff_bps: {position_break_diff_bps}")
+                            log(f"Block entries: Position break! Local cache has position, and different from exchange. position_break_diff_bps: {position_break_diff_bps:,.2f}")
                         else:
                             position_break = False # Unlike block_entries reset every loop, position_break need be reset here.
 
@@ -1448,13 +1448,13 @@ async def main():
                             if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
                                 if not position_break:
                                     # Only send notification on first time break detected, don't flood the notification channel
-                                    err_msg = f"{_ticker}: Position break! local cache: ---, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps}" 
+                                    err_msg = f"{_ticker}: Position break! local cache: ---, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}" 
                                     log(err_msg)
                                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                                 position_break = True
                                 block_entries = True
-                                log(f"Block entries: Position break! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps}")
+                                log(f"Block entries: Position break! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps:,.2f}")
 
                             
                 hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
