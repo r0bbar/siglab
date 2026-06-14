@@ -540,7 +540,7 @@ async def execute_one_position(
 
                     log(f"{position.ticker} Last slice residual smaller than min_amount. Amount is added to prev slice instead. last_slice_amount: {last_slice.amount/multiplier}, last_slice_rounded_amount: {last_slice_rounded_amount}") 
         
-        @retry(num_attempts=3, pause_between_retries_ms=3000)
+        @retry(num_attempts=5, pause_between_retries_ms=3000)
         async def _fetch_order(
             order_id : str, 
             ticker : str,
