@@ -971,6 +971,7 @@ async def main():
         in_window : bool = False
         any_entry : bool = False
         any_exit : bool = False
+        other_cache_updates : bool = False
         any_target_adj : bool = False
         hi_row, hi_row_tm1 = None, None
         lo_row, lo_row_tm1 = None, None
@@ -1004,7 +1005,7 @@ async def main():
                     loop_duration_sec_history.append(loop_elapsed_sec)
                 loop_start = datetime.now()
 
-                any_entry, any_exit, any_target_adj = False, False, False
+                any_entry, any_exit, any_target_adj, other_cache_updates = False, False, False, False
 
                 utc_now : datetime = datetime.now(timezone.utc)
                 utc_now_tzaware : datetime = utc_now.replace(tzinfo=timezone.utc)
@@ -1204,9 +1205,7 @@ async def main():
                         logger=logger
                     )
 
-                if pos_status!=PositionStatus.OPEN.name and (pos and pos!=0):
-                    pos_status = PositionStatus.OPEN.name
-                    pd_position_cache.loc[position_cache_row.name, 'status'] = pos_status 
+                    other_cache_updates = True # persists changes to pd_position_cache
                     
                 pos_created = position_cache_row['created']
                 pos_created = arrow.get(pos_created).datetime if pos_created and isinstance(pos_created, str) else pos_created
@@ -2473,7 +2472,7 @@ async def main():
                     if os.path.exists(file_name):
                         os.rename(file_name, bak_file_name)
                     df.to_csv(file_name)
-                if (loop_counter%100==0) or (any_entry or any_exit):
+                if (loop_counter%100==0) or (any_entry or any_exit or other_cache_updates):
                     _safe_update_cache(
                         file_name  = position_cache_file_name.replace("$GATEWAY_ID$", gateway_id),
                         df = pd_position_cache
