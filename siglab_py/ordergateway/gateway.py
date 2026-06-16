@@ -883,13 +883,17 @@ async def execute_one_position(
 
                         try:
                             canellation_failed = False
-                            await exchange.cancel_order(order_id, position.ticker)
+                            cancelled_order = await exchange.cancel_order(order_id, position.ticker)
+                            _remaining_amount = cancelled_order['remaining'] if 'remaining' in cancelled_order else None # warning: Some exchanges don't support remaining. CCXT generally set this to None (not zero) if this is the case.
+                            if _remaining_amount:
+                                remaining_amount = _remaining_amount
+
                         except Exception as cancel_error:
                             # This could be due to timing issue, the order you're trying to cancelled already filled.
                             canellation_failed = True
                             position.get_execution(order_id)['status'] = 'closed'
 
-                        if not canellation_failed:
+                        if not canellation_failed and remaining_amount:
                             position.get_execution(order_id)['status'] = 'canceled'
 
                             canceled_execution = executions[order_id] # You'd have an update thru ws upon cancel_order!
