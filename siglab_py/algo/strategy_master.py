@@ -208,7 +208,7 @@ async def main() -> None:
             if position_summaries:
                 pd_position_summaries = pd.DataFrame(position_summaries)
                 pd_position_summaries.sort_values(
-                        by=['gateway_id', 'ticker'],
+                        by=['ticker', 'gateway_id'],
                         ascending=[True, True],
                         inplace=True
                     )
