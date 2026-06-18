@@ -20,6 +20,7 @@ from re import Pattern
 from redis import StrictRedis
 import asyncio
 from pprint import pformat
+from importlib.metadata import package_version
 
 import ccxt.pro as ccxtpro
 from ccxt.base.errors import OrderNotFound, NotSupported
@@ -1191,6 +1192,17 @@ async def work(
             await asyncio.sleep(param['loop_freq_ms']/1000)
 
 async def main():
+    version_siglab_py = package_version('siglab_py')
+    version_ccxt = package_version('ccxt')
+    version_pandas = package_version('pandas')
+    version_numpy = package_version('numpy')
+    param['versions'] = {
+        'siglab_py' : version_siglab_py,
+        'ccxt' : version_ccxt,
+        'pandas' : version_pandas,
+        'numpy' : version_numpy,
+    }
+
     parse_args()
     
     fh = logging.FileHandler(f"ordergateway_{param['gateway_id']}.log", encoding='utf-8')

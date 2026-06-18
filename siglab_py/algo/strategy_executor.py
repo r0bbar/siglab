@@ -23,6 +23,7 @@ import inspect
 from tabulate import tabulate
 from pprint import pformat
 import plotext as plt
+from importlib.metadata import package_version
 
 from requests.exceptions import HTTPError
 from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported
@@ -731,6 +732,17 @@ def fetch_economic_events(redis_client, topic) -> List[Dict]:
     return restored
 
 async def main():
+    version_siglab_py = package_version('siglab_py')
+    version_ccxt = package_version('ccxt')
+    version_pandas = package_version('pandas')
+    version_numpy = package_version('numpy')
+    param['versions'] = {
+        'siglab_py' : version_siglab_py,
+        'ccxt' : version_ccxt,
+        'pandas' : version_pandas,
+        'numpy' : version_numpy,
+    }
+
     parse_args()
 
     print(f"target_strategy_name: {param['target_strategy_name']}")
