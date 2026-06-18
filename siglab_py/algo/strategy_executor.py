@@ -968,6 +968,7 @@ async def main():
                 orderhist_cache['datetime'] = pd.to_datetime(orderhist_cache['datetime'])
 
         block_entries : bool = False
+        block_entry_reason : str = None
         in_window : bool = False
         any_entry : bool = False
         any_exit : bool = False
@@ -1012,6 +1013,7 @@ async def main():
                 dt_now : datetime = datetime.now()
                 
                 block_entries = False # We don't reset position_break to False here, as we use it to determine if it's first time break detected. If it is, only then we send notification.
+                block_entry_reason = None
 
                 dt_targettz = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
                 today_dayofweek = dt_targettz.weekday()
@@ -1035,7 +1037,8 @@ async def main():
                     in_window = parsed_trading_window['in_window']
                     if not parsed_trading_window['in_window']:
                         block_entries = True
-                        log(f"Block entries: Outside trading window")
+                        block_entry_reason = f"Outside trading window"
+                        log(f"Block entries: {block_entry_reason}")
 
                     log(f"trading_window start({param['rolldate_tz']}): {param['trading_window_start']}, end: {param['trading_window_end']}, in_window: {parsed_trading_window['in_window']}")
                 else:
@@ -1054,7 +1057,8 @@ async def main():
                     print(f"permissible_local_hours ({param['rolldate_tz']}): {permissible_local_hours}")
                     if utc_now.hour not in permissible_utc_hours:
                         block_entries = True
-                        log(f"Block entries: Outside permissible trading hours ({param['rolldate_tz']}): {permissible_local_hours}")
+                        block_entry_reason = f"Outside permissible trading hours ({param['rolldate_tz']}): {permissible_local_hours}"
+                        log(f"Block entries: {block_entry_reason}")
 
                 if (loop_counter%10==0):
                     if full_economic_calendars_topic:
@@ -1084,7 +1088,8 @@ async def main():
                         
                     if param['block_entry_impacting_events'] and impacting_economic_calendars:
                         block_entries = True
-                        log(f"Block entries: Incoming events")
+                        block_entry_reason = f"Incoming events"
+                        log(f"Block entries: {block_entry_reason}")
                 
                 if ticker_change_map:
                     old_ticker= get_old_ticker(_ticker, ticker_change_map)
@@ -1236,14 +1241,16 @@ async def main():
                     log(f"total_ms_elapsed_since_lo_interval_rolled: {total_ms_elapsed_since_lo_interval_rolled:,} (~{int(total_ms_elapsed_since_lo_interval_rolled/1000/60):,} min)")
                     if (total_ms_elapsed_since_lo_interval_rolled < lo_interval_ms) and (pos_closed.timestamp()*1000)>lo_row_timestamp_ms:
                         block_entries = True
-                        log(f"Block entries: recent TP, block re-entry within same lo candle")
+                        block_entry_reason = f"recent TP, block re-entry within same lo candle"
+                        log(f"Block entries: {block_entry_reason}")
 
                 if pos_status==PositionStatus.SL.name:
                     total_ms_elapsed_since_sl = int((datetime.now() - pos_closed).total_seconds() *1000)
                     log(f"sl_num_intervals_delay: {param['sl_num_intervals_delay']}, min_sl_age_ms: {min_sl_age_ms:,}, total_ms_elapsed_since_sl: {total_ms_elapsed_since_sl:,} (~{int(total_ms_elapsed_since_sl/1000/60):,} min)")
                     if total_ms_elapsed_since_sl < min_sl_age_ms:
                         block_entries = True
-                        log(f"Block entries: recent SL")
+                        block_entry_reason = f"recent SL"
+                        log(f"Block entries: {block_entry_reason}")
 
                 pos_entries = position_cache_row['pos_entries']
                 if isinstance(pos_entries, str):
@@ -1428,15 +1435,16 @@ async def main():
                         position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos)
                         position_break_diff_bps = position_break_diff_in_base_ccy/position_from_exchange_base_ccy * 10000 if position_from_exchange_base_ccy!=0 else 0
                         if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
+                            block_entry_reason = f"Position break! Local cache has position, and different from exchange. local cache: {pos}, , pos_usdt: {pos_usdt}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}. Check partial order cancels? slicing/rounding?"
+                            log(f"Block entries: {block_entry_reason}")
+
                             if not position_break:
                                 # Only send notification on first time break detected, don't flood the notification channel
-                                err_msg = f"{_ticker}: Position break! local cache: {pos}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}, pos_usdt: {pos_usdt}" 
-                                log(err_msg)
-                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=block_entry_reason, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                            position_break = True
+                            position_break = True # Set to True after notification dispatched only ONCE
                             block_entries = True
-                            log(f"Block entries: Position break! Local cache has position, and different from exchange. position_break_diff_bps: {position_break_diff_bps:,.2f}")
+                            
                         else:
                             position_break = False # Unlike block_entries reset every loop, position_break need be reset here.
 
@@ -1444,17 +1452,15 @@ async def main():
                         # Case 2. Exchange has position, but local cache doesn't.
                         if param['amount_base_ccy']: # First iteration param['amount_base_ccy'] may still be null before mid is fetched
                             position_break_diff_bps = round(position_from_exchange_base_ccy/param['amount_base_ccy'], 2) * 10000 if param['amount_base_ccy'] else 0
+                            block_entry_reason = f"Position break! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps:,.2f}, max_position_break_diff_bps: {algo_param['max_position_break_diff_bps']}. Check partial order cancels? slicing/rounding?"
+                            log(f"Block entries: {block_entry_reason}")
                             if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
                                 if not position_break:
                                     # Only send notification on first time break detected, don't flood the notification channel
-                                    err_msg = f"{_ticker}: Position break! local cache: ---, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}" 
-                                    log(err_msg)
-                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=block_entry_reason, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
-                                position_break = True
+                                position_break = True # Set to True after notification dispatched only ONCE
                                 block_entries = True
-                                log(f"Block entries: Position break! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps:,.2f}")
-
                             
                 hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
                 hi_candles_invalid_reason, lo_candles_invalid_reason = None, None
