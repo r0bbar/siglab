@@ -1798,11 +1798,15 @@ async def main():
                     elif param['tp_min_threshold_mode']=="live":
                         pnl_percent_notional = pnl_live_bps/100
 
-                    if max(unreal_live, unrealized_pnl_optimistic)>max_unreal_live:
+                    if unreal_live>max_unreal_live:
                         max_unreal_live = unreal_live
+                    if unrealized_pnl_optimistic>max_unreal_live:
+                        max_unreal_live = unrealized_pnl_optimistic
 
-                    if max(pnl_live_bps, unrealized_pnl_optimistic_bps)>max_unreal_live_bps:
-                        max_unreal_live_bps = pnl_live_bps                                
+                    if pnl_live_bps>max_unreal_live_bps:
+                        max_unreal_live_bps = pnl_live_bps
+                    if unrealized_pnl_optimistic_bps>max_unreal_live_bps:
+                        max_unreal_live_bps = unrealized_pnl_optimistic_bps                               
 
                     if pnl_open_bps>max_unreal_open_bps:
                         max_unreal_open_bps = pnl_open_bps
@@ -1846,7 +1850,7 @@ async def main():
                             }
                         )
 
-                    log(f"pnl eval block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
+                    log(f"pnl eval block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_live_bps: {max_unreal_live_bps}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
                     
                 '''
                 On turn of interval, candles_provider may need a little time to publish latest candles.
