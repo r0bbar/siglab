@@ -1617,8 +1617,8 @@ async def main():
                     'gateway_id' : gateway_id,
                     'ticker' : _ticker,
 
-                    'pos' : float(pos) if pos else "---",
-                    'pos_usdt' : float(pos_usdt) if pos_usdt else "---",
+                    'pos' : round(float(pos), 4) if pos else "---",
+                    'pos_usdt' : round(float(pos_usdt), 4) if pos_usdt else "---",
                     'pos_side' : pos_side.name,
                     'pos_status' : pos_status,
                     'block_entries' : block_entries,
@@ -1641,7 +1641,7 @@ async def main():
                     'tp_min_target' : float(tp_min_target) if tp_min_target else "---",
                     'sl_price' : float(sl_price) if sl_price else "---",
                     'max_pnl_potential_bps' : float(max_pnl_potential_bps) if max_pnl_potential_bps else "---",
-                    
+
                     'unreal_live' : float(unreal_live) if unreal_live else "---",
                     'max_unreal_live' : float(max_unreal_live) if max_unreal_live else "---",
                     'max_pain' : float(max_pain) if max_pain else "---",
