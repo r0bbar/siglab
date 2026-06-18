@@ -1616,17 +1616,23 @@ async def main():
                     'key' : f"{gateway_id} {_ticker}",
                     'gateway_id' : gateway_id,
                     'ticker' : _ticker,
+
                     'pos' : float(pos) if pos else "---",
                     'pos_usdt' : float(pos_usdt) if pos_usdt else "---",
                     'pos_side' : pos_side.name,
                     'pos_status' : pos_status,
+                    'block_entries' : block_entries,
                     'pos_created' : pos_created.strftime("%Y%m%d %H-%M-%S") if pos_created else "---",
                     'pos_closed' : pos_closed.strftime("%Y%m%d %H-%M-%S") if pos_closed else "---",
+
+                    'pnl_live_bps' : float(pnl_live_bps) if pnl_live_bps else "---",
+                    'pos_tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H-%M-%S") if pos_tp_min_crossed else "---",
+
                     'tp_min_percent' : float(tp_min_percent) if tp_min_percent else "---",
                     'tp_max_percent' : float(tp_max_percent) if tp_max_percent else "---",
                     'sl_hard_percent' : float(sl_hard_percent) if sl_hard_percent else "---",
                     'running_sl_percent_hard' : float(running_sl_percent_hard) if running_sl_percent_hard else "---",
-                    'pos_tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H-%M-%S") if pos_tp_min_crossed else "---",
+                    
                     'sl_trailing_min_threshold_crossed' : bool(sl_trailing_min_threshold_crossed),
                     'mid' : mid,
                     'entry_px' : float(entry_px) if entry_px else "---",
@@ -1635,6 +1641,7 @@ async def main():
                     'tp_min_target' : float(tp_min_target) if tp_min_target else "---",
                     'sl_price' : float(sl_price) if sl_price else "---",
                     'max_pnl_potential_bps' : float(max_pnl_potential_bps) if max_pnl_potential_bps else "---",
+                    
                     'unreal_live' : float(unreal_live) if unreal_live else "---",
                     'max_unreal_live' : float(max_unreal_live) if max_unreal_live else "---",
                     'max_pain' : float(max_pain) if max_pain else "---",
@@ -1644,7 +1651,9 @@ async def main():
                     'max_unreal_live_bps' : float(max_unreal_live_bps) if max_unreal_live_bps else "---",
                     'max_unreal_open_bps' : float(max_unreal_open_bps) if max_unreal_open_bps else "---",
                     'max_pain_percent_notional' : float(max_pain_percent_notional) if max_pain_percent_notional else "---",
-                    'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---"
+                    'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
+
+                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---" # Lengthy, leave it to last
                 }
 
                 if (
