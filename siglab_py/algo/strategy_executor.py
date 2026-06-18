@@ -23,7 +23,7 @@ import inspect
 from tabulate import tabulate
 from pprint import pformat
 import plotext as plt
-from importlib.metadata import package_version
+from importlib.metadata import version as package_version
 
 from requests.exceptions import HTTPError
 from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported

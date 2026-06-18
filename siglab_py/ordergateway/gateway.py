@@ -20,7 +20,7 @@ from re import Pattern
 from redis import StrictRedis
 import asyncio
 from pprint import pformat
-from importlib.metadata import package_version
+from importlib.metadata import version as package_version
 
 import ccxt.pro as ccxtpro
 from ccxt.base.errors import OrderNotFound, NotSupported
