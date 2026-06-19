@@ -61,7 +61,7 @@ class Order:
 
         self.timestamp_ms = int(datetime.now().timestamp() * 1000)
 
-        self.uid = uid if not uid else str(uuid.uuid4())
+        self.uid = str(uuid.uuid4()) if not uid else uid
 
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         return {
