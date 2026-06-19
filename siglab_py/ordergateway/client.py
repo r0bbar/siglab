@@ -464,6 +464,7 @@ def execute_positions(
                             logger.error(f"{pformat(executed_position, indent=2, width=100)}")
 
                         if executed_positions:
+                            # DO NOT BREAK loop until you've received fills from gateway
                             fills_received = True
                             redis_client.delete(key)
                             break
