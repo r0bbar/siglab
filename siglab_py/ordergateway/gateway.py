@@ -513,6 +513,8 @@ async def execute_one_position(
     notification_params : Dict[str, Any]
 ):
     try:
+        uid = position.uid
+
         await exchange.load_markets() # in case ticker change after gateway startup
 
         market : Dict[str, Any] = exchange.markets[position.ticker] if position.ticker in exchange.markets else None
@@ -526,7 +528,7 @@ async def execute_one_position(
 
         order_amount_randomize_max_pct : float = param['order_amount_randomize_max_pct']
 
-        log(f"{position.ticker} min_amount: {min_amount}, min_amount_base_ccy: {min_amount_base_ccy}, multiplier: {multiplier}, order_amount_randomize_max_pct: {order_amount_randomize_max_pct}") 
+        log(f"uid: {uid}, {position.ticker} min_amount: {min_amount}, min_amount_base_ccy: {min_amount_base_ccy}, multiplier: {multiplier}, order_amount_randomize_max_pct: {order_amount_randomize_max_pct}") 
 
         slices : List[Order] = position.to_slices()
 
@@ -1139,7 +1141,8 @@ async def work(
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms'] if order['wait_fill_threshold_ms']>0 else param['wait_fill_threshold_ms'],
-                                        non_unified_params=order['non_unified_params']
+                                        non_unified_params=order['non_unified_params'],
+                                        uid=order['uid']
                                     )
                                     for order in orders
                                 ]

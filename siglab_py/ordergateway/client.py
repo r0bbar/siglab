@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Union
 import json
 from  datetime import datetime
 import time
+import uuid
 import logging
 from pprint import pformat
 from redis import StrictRedis
@@ -40,7 +41,8 @@ class Order:
         leg_room_bps : float = 0,
         reduce_only : bool = False,
         fees_ccy : Union[str, None] = None,
-        non_unified_params : Dict[str, Union[str, float, bool]] = {}
+        non_unified_params : Dict[str, Union[str, float, bool]] = {},
+        uid : str = None
     ) -> None:
         if amount<=0:
             raise ValueError(f"amount must be >0!")
@@ -59,6 +61,8 @@ class Order:
 
         self.timestamp_ms = int(datetime.now().timestamp() * 1000)
 
+        self.uid = uid if not uid else str(uuid.uuid4())
+
     def to_dict(self) -> Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES]:
         return {
             "ticker" : self.ticker,
@@ -71,7 +75,8 @@ class Order:
             "dispatched_amount" : self.dispatched_amount,
             "dispatched_price" : self.dispatched_price,
             "timestamp_ms" : self.timestamp_ms,
-            "non_unified_params" : self.non_unified_params
+            "non_unified_params" : self.non_unified_params,
+            "uid" : self.uid
         }
 
 '''
@@ -91,12 +96,13 @@ class DivisiblePosition(Order):
         slices : int = 1,
         wait_fill_threshold_ms : float = -1,
         non_unified_params : Dict[str, Union[str, float, bool]] = {},
-        expected_pos_after_execution : float = None
+        expected_pos_after_execution : float = None,
+        uid : str = None
     ) -> None:
         if amount<=0:
             raise ValueError(f"amount must be >0!")
 
-        super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy)
+        super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy, uid)
 
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
@@ -409,6 +415,7 @@ class DivisiblePosition(Order):
         rv['done_timestamp_ms'] = self.done_timestamp_ms
         rv['non_unified_params'] = self.non_unified_params
         rv['expected_pos_after_execution'] = self.expected_pos_after_execution
+        rv['uid'] = self.uid
         return rv
 
 def execute_positions(
@@ -417,8 +424,10 @@ def execute_positions(
     ordergateway_pending_orders_topic : str,
     ordergateway_executions_topic : str
     ) -> Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None]:
-
     executed_positions : Union[Dict[JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES], None] = None
+
+    dispatched_uids = [ position.uid for position in positions ]
+    logger.info(f"dispatched_uids {dispatched_uids}")
 
     # https://redis.io/commands/publish/
     _positions = [ position.to_dict() for position in positions ]
@@ -435,7 +444,16 @@ def execute_positions(
                     message = redis_client.get(key)
                     if message:
                         message = message.decode('utf-8')
-                        executed_positions = json.loads(message)
+                        _executed_positions = json.loads(message)
+                        executed_positions = []
+                        for executed_position in _executed_positions:
+                            if executed_position['uid'] in dispatched_uids:
+                                executed_positions.append(executed_position)
+                                logger.info(f"uid {executed_position['uid']} included")
+                            else:
+                                logger.info(f"uid {executed_position['uid']} filtered")
+                            logger.error(f"{pformat(executed_position, indent=2, width=100)}")
+
                         fills_received = True
 
                         redis_client.delete(key)
