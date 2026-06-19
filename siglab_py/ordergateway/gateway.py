@@ -514,6 +514,7 @@ async def execute_one_position(
 ):
     try:
         uid = position.uid
+        log(f"execute_one_position processing uid {uid}")
 
         await exchange.load_markets() # in case ticker change after gateway startup
 
@@ -1146,6 +1147,9 @@ async def work(
                                     )
                                     for order in orders
                                 ]
+
+                                dispatched_uids = [ position.uid for position in positions ]
+                                log(f"dispatched_uids {dispatched_uids}")
 
                                 start = time.time()
                                 pending_executions = [ execute_one_position(exchange, position, param, executions, notification_params) for position in positions ]
