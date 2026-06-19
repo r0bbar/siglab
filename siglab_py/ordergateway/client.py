@@ -102,7 +102,17 @@ class DivisiblePosition(Order):
         if amount<=0:
             raise ValueError(f"amount must be >0!")
 
-        super().__init__(ticker, side, amount, order_type, leg_room_bps, reduce_only, fees_ccy, uid)
+        super().__init__(
+            ticker=ticker, 
+            side=side, 
+            amount=amount, 
+            order_type=order_type, 
+            leg_room_bps=leg_room_bps, 
+            reduce_only=reduce_only, 
+            fees_ccy=fees_ccy, 
+            non_unified_params=non_unified_params,
+            uid=uid
+        )
 
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
@@ -111,7 +121,6 @@ class DivisiblePosition(Order):
         self.average_cost : Union[float, None] = None
         self.fees : Union[float, None] = None
         self.pos : Union[float, None] = None # in base ccy, after execution. (Not in USDT or quote ccy, Not in # contracts)
-        self.non_unified_params = non_unified_params
 
         '''
         This is for post-trade position check, in case if fetch_order(order_id) failed.
@@ -454,10 +463,10 @@ def execute_positions(
                                 logger.info(f"uid {executed_position['uid']} filtered")
                             logger.error(f"{pformat(executed_position, indent=2, width=100)}")
 
-                        fills_received = True
-
-                        redis_client.delete(key)
-                        break
+                        if executed_positions:
+                            fills_received = True
+                            redis_client.delete(key)
+                            break
 
         except Exception as loop_err:
             raise loop_err
