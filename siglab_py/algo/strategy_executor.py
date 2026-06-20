@@ -1817,7 +1817,11 @@ async def main():
 
                     if pnl_live_bps>max_unreal_live_bps:
                         max_unreal_live_bps = pnl_live_bps
-                    if unrealized_pnl_optimistic_bps>max_unreal_live_bps:
+                    if (
+                        unrealized_pnl_optimistic_bps>max_unreal_live_bps
+                        and total_sec_since_pos_created > lo_interval_ms/1000 # max_unreal_live_bps evaluated using unrealized_pnl_optimistic_bps? This should NOT include using ENTRY candle, as that'd include price history prior to entry!
+                        and lo_candles_valid
+                    ):
                         max_unreal_live_bps = unrealized_pnl_optimistic_bps                               
 
                     if pnl_open_bps>max_unreal_open_bps:
