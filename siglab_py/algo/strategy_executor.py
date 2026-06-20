@@ -1003,6 +1003,7 @@ async def main():
         sl_hard_percent : float = param['sl_hard_percent']
         executed_position = None
         position_break : bool = False
+        keep_looping : bool = True
         lo_row_timestamp_ms : int = 0
         lo_candles_interval_rolled : bool = True
         strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
@@ -1011,7 +1012,7 @@ async def main():
 
         connectivity_errors = []
 
-        while True:
+        while keep_looping:
             try:
                 if loop_counter>0:
                     loop_elapsed_sec = round((datetime.now() - loop_start).total_seconds(), 2)
@@ -1458,6 +1459,16 @@ async def main():
 
                             position_break = True # Set to True after notification dispatched only ONCE
                             block_entries = True
+
+                            if (abs(position_from_exchange_base_ccy) *mid) <= param['residual_pos_usdt_threshold']:
+                                '''
+                                Manually closing position from Exchange GUI is one way traders can intervene, it's the atomic last resort. 
+                                We want to make sure this works very reliably: If you manually close position: strategy_executor must stop entirely.
+                                a) no further entry
+                                b) strategy_executor will not try to further close position ("reduce_only" may not work in some exchanges? brokers? Just in case ...)
+                                   This also means strategy_executor will NOT further monitor/manage your position.
+                                '''
+                                keep_looping = False
                             
                         else:
                             position_break = False # Unlike block_entries reset every loop, position_break need be reset here.
