@@ -1476,7 +1476,7 @@ async def main():
                                 position_break = True # Set to True after notification dispatched only ONCE
                                 block_entries = True
                             
-                log(f"recon_block position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, pos: {pos}, pos_usdt: {pos_usdt}, pos_side: {pos_side.name}, pos_status: {pos_status}, position_break_diff_bps: {position_break_diff_bps}, max_position_break_diff_bps: {algo_param['max_position_break_diff_bps']}")
+                log(f"recon_block position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, pos: {pos}, pos_usdt: {round(pos_usdt, 2)}, pos_side: {pos_side.name}, pos_status: {pos_status}, position_break_diff_bps: {round(position_break_diff_bps, 2)}, max_position_break_diff_bps: {algo_param['max_position_break_diff_bps']}")
 
                 hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
                 hi_candles_invalid_reason, lo_candles_invalid_reason = None, None
