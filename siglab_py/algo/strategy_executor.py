@@ -1881,7 +1881,7 @@ async def main():
                             }
                         )
 
-                    log(f"pnl_eval_block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_live_bps: {max_unreal_live_bps}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
+                    log(f"pnl_eval_block unreal_live: {round(unreal_live, 2)}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_live_bps: {max_unreal_live_bps}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
                     
                 '''
                 On turn of interval, candles_provider may need a little time to publish latest candles.
