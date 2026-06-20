@@ -1433,7 +1433,9 @@ async def main():
                         position_from_exchange = [ pos for pos in positions_from_exchange if pos['symbol']==_ticker ]
                         if position_from_exchange:
                             position_from_exchange = position_from_exchange[-1]
+                
                 position_from_exchange_base_ccy = 0
+                position_break_diff_bps = 0
                 if exchange.options['defaultType']!='spot': 
                     if position_from_exchange:
                         position_from_exchange_num_contracts = position_from_exchange['contracts']
@@ -1474,6 +1476,8 @@ async def main():
                                 position_break = True # Set to True after notification dispatched only ONCE
                                 block_entries = True
                             
+                log(f"recon_block position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, pos: {pos}, pos_usdt: {pos_usdt}, pos_side: {pos_side.name}, pos_status: {pos_status}, position_break_diff_bps: {position_break_diff_bps}, max_position_break_diff_bps: {algo_param['max_position_break_diff_bps']}")
+
                 hi_candles_valid, lo_candles_valid, orderbook_valid = False, False, False
                 hi_candles_invalid_reason, lo_candles_invalid_reason = None, None
                 trailing_candles = []
@@ -1866,7 +1870,7 @@ async def main():
                             }
                         )
 
-                    log(f"pnl eval block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_live_bps: {max_unreal_live_bps}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
+                    log(f"pnl_eval_block unreal_live: {unreal_live}, pnl_live_bps: {pnl_live_bps}, pnl_open_bps: {pnl_open_bps}, tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}, sl_percent_trailing: {param['sl_percent_trailing']}, max_unreal_live_bps: {max_unreal_live_bps}, max_unreal_open_bps: {max_unreal_open_bps}, effective_tp_trailing_percent: {effective_tp_trailing_percent}, loss_trailing: {loss_trailing}, running_sl_percent_hard: {running_sl_percent_hard}")
                     
                 '''
                 On turn of interval, candles_provider may need a little time to publish latest candles.
