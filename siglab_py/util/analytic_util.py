@@ -364,6 +364,17 @@ def compute_candles_stats(
         ordered=True
     )
 
+    pd_candles['counter_trend_candle_height_bps'] = np.where(
+        pd_candles['distance_from_ema_bps'] < 0,
+        pd_candles['candle_height_bps'],
+        0
+    )
+    pd_candles['counter_trend_candle_body_height_bps'] = np.where(
+        pd_candles['distance_from_ema_bps'] < 0,
+        abs(pd_candles['candle_body_height_bps']),
+        0
+    )
+
     pd_candles['std'] = close_long_periods_rolling.std()
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
 
