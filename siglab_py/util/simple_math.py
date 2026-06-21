@@ -140,7 +140,7 @@ def bucket_series(
             'values' : [ x for x in values if x<0 ]
         }
         for interval in intervals:
-            buckets[f"{last_interval} - {interval}"] = {
+            buckets[f"{round_to_sigfigs(last_interval)} - {round_to_sigfigs(interval)}"] = {
                 'min' : last_interval,
                 'max' : interval,
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
@@ -165,7 +165,7 @@ def bucket_series(
             'values' : [ x for x in values if x<-1 ]
         }
         for interval in intervals:
-            buckets[f"{last_interval} - {interval}"] = {
+            buckets[f"{round_to_sigfigs(last_interval)} - {round_to_sigfigs(interval)}"] = {
                 'min' : last_interval,
                 'max' : interval,
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
@@ -190,7 +190,7 @@ def bucket_series(
             'values' : [ x for x in values if x<0 ]
         }
         for interval in intervals:
-            buckets[f"{last_interval} - {interval}"] = {
+            buckets[f"{round_to_sigfigs(last_interval)} - {round_to_sigfigs(interval)}"] = {
                 'min' : last_interval,
                 'max' : interval,
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
@@ -215,7 +215,7 @@ def bucket_series(
             'values' : [ x for x in values if x<-100 ]
         }
         for interval in intervals:
-            buckets[f"{last_interval} - {interval}"] = {
+            buckets[f"{round_to_sigfigs(last_interval)} : {round_to_sigfigs(interval)}"] = {
                 'min' : last_interval,
                 'max' : interval,
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
@@ -237,19 +237,19 @@ def bucket_series(
         
         intervals = _generate_sequence(range_min+step, range_max, step)
         last_interval = range_min
-        buckets[f"< {range_min}"] = {
+        buckets[f"< {round_to_sigfigs(range_min)}"] = {
             'min' : float("-inf"),
             'max' : range_min,
             'values' : [ x for x in values if x<range_min ]
         }
         for interval in intervals:
-            buckets[f"{last_interval} - {interval}"] = {
+            buckets[f"{round_to_sigfigs(last_interval)} : {round_to_sigfigs(interval)}"] = {
                 'min' : last_interval,
                 'max' : interval,
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
             }
             last_interval = interval
-        buckets[f"> {range_max}"] = {
+        buckets[f"> {round_to_sigfigs(range_max)}"] = {
                 'min' : last_interval,
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=range_max ]
