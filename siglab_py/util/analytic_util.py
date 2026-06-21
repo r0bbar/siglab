@@ -312,6 +312,18 @@ def compute_candles_stats(
 						level_granularity=0.1
 					)
     
+    close_buckets : Dict[
+                str, 
+                Dict[str,Union[float, List[float]]]
+            ] = bucket_series(
+                                                    values = pd_candles['close'].tolist(),
+                                                    outlier_threshold_percent = 10,
+                                                    level_granularity=level_granularity
+            )
+    pd_candles['close_bucket'] = pd_candles['close'].apply(
+        lambda x: bucketize_val(x, close_buckets)
+    )
+    
     pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low'] # always positive
     pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open'] # sometimes negative
     pd_candles['candle_height_bps'] = pd_candles['candle_height']/pd_candles['open']

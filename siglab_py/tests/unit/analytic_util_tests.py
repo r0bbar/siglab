@@ -106,6 +106,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'open', 'high', 'low', 'close', 'volume', 
             'datetime', 'datetime_utc', 'year', 'month', 'day', 'hour', 'minute', 'dayofweek', 
             'pct_chg_on_close', 
+            'close_bucket',
             'candle_height', 'candle_body_height', 'candle_height_bps', 'candle_body_height_bps',
             'week_of_month', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr', 
             'is_green', 'pct_change_close', 
