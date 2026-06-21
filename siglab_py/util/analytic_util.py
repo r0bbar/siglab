@@ -302,6 +302,7 @@ def compute_candles_stats(
         hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
         boillenger_std_multiples_for_aggressive_moves_detect : int = 3, # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
         target_fib_level : float = 0.618,
+        level_granularity : float = 0.1, # Levels are 10% aparts
         validation_max_gaps : int = 10,
         pypy_compat : bool = True
         ):
@@ -311,8 +312,10 @@ def compute_candles_stats(
 						level_granularity=0.1
 					)
     
-    pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low']
-    pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open']
+    pd_candles['candle_height'] = pd_candles['high'] - pd_candles['low'] # always positive
+    pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open'] # sometimes negative
+    pd_candles['candle_height_bps'] = pd_candles['candle_height']/pd_candles['open']
+    pd_candles['candle_body_height_bps'] = pd_candles['candle_body_height']/pd_candles['open']
 
     '''
     market_data_gizmo inserted dummy lines --> Need exclude those or "TypeError: unorderable types for comparison": pd_btc_candles = pd_btc_candles[pd_btc_candles.close.notnull()]
@@ -340,6 +343,27 @@ def compute_candles_stats(
     pd_candles['ema_short_periods'] = close_short_periods_ewm.mean()
     pd_candles['ema_long_periods'] = close_long_periods_ewm.mean()
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
+
+    pd_candles['distance_from_ema_bps'] = (pd_candles['close'] - pd_candles['ema_close']) / pd_candles['ema_close'] * 10000 # Positive: Above EMA. Negative: Below EMA.
+
+    distance_from_ema_bps_buckets : Dict[
+                str, 
+                Dict[str,Union[float, List[float]]]
+            ] = bucket_series(
+                                                    values = pd_candles['distance_from_ema_bps'].tolist(),
+                                                    outlier_threshold_percent = 10,
+                                                    level_granularity=level_granularity
+            )
+    pd_candles['distance_from_ema_bps_bucket'] = pd_candles['distance_from_ema_bps'].apply(
+        lambda x: bucketize_val(x, distance_from_ema_bps_buckets)
+    )
+    bucket_labels = list(distance_from_ema_bps_buckets.keys())
+    pd_candles['distance_from_ema_bps_bucket'] = pd.Categorical(
+        pd_candles['distance_from_ema_bps_bucket'],
+        categories=bucket_labels,
+        ordered=True
+    )
+
     pd_candles['std'] = close_long_periods_rolling.std()
     pd_candles['std_percent'] = pd_candles['std'] / pd_candles['ema_close'] * 100
 
