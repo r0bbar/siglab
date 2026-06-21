@@ -375,14 +375,21 @@ def compute_candles_stats(
         categories=bucket_labels,
         ordered=True
     )
-
+    
     pd_candles['counter_trend_candle_height_bps'] = np.where(
-        pd_candles['distance_from_ema_bps'] < 0,
+        (
+            ((pd_candles['distance_from_ema_bps'] >= 0) & ~pd_candles['is_green']) |
+            ((pd_candles['distance_from_ema_bps'] < 0) & pd_candles['is_green'])
+        ),
         pd_candles['candle_height_bps'],
         0
     )
+    
     pd_candles['counter_trend_candle_body_height_bps'] = np.where(
-        pd_candles['distance_from_ema_bps'] < 0,
+        (
+            ((pd_candles['distance_from_ema_bps'] >= 0) & ~pd_candles['is_green']) |
+            ((pd_candles['distance_from_ema_bps'] < 0) & pd_candles['is_green'])
+        ),
         abs(pd_candles['candle_body_height_bps']),
         0
     )
