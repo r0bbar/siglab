@@ -150,33 +150,39 @@ Usage:
             - 'how_many_candles' (Step 1) your strategy_executor is loading? Are you loading more candles than your strategy actually needs?
             - how many concurrent strategy_executor, candles_ta_providers instances running on the VM?
 
-                2026-05-05 10:27:46,792 [loop_duration_sec_history]
-                2026-05-05 10:27:47,047                        Loop Duration (sec) Histogram                  
+                2026-02-23 13:46:22,185 [loop_duration_sec_history]
+                2026-02-23 13:46:22,185                        Loop Duration (sec) Histogram                  
                     ┌────────────────────────────────────────────────────────────────┐
-                23.0┤          ███                                                   │
-                    │          ███                                                   │
-                19.2┤          ███                                                   │
-                    │████      ███                                                   │
-                15.3┤████  ███████                                                   │
-                    │████  ██████████                                                │
-                11.5┤███████████████████                                             │
-                    │███████████████████                                             │
-                 7.7┤███████████████████                                             │
-                    │███████████████████                                             │
-                 3.8┤███████████████████████                                         │
-                    │█████████████████████████████   ███                         ████│
-                 0.0┤█████████████████████████████   ███                         ████│
+                62.0┤████                                                            │
+                    │████                                                            │
+                51.7┤████                                                            │
+                    │████                                                            │
+                41.3┤████                                                            │
+                    │████                                                            │
+                31.0┤████                                                            │
+                    │████                                                            │
+                20.7┤████                                                            │
+                    │███████                                                         │
+                10.3┤███████   ███                                                   │
+                    │█████████████      ███████               ████                   │
+                 0.0┤████████████████   ██████████      █████████████            ████│
                     └┬───────────────┬───────────────┬──────────────┬───────────────┬┘
-                    0.8             4.4             8.0           11.6           15.2 
-                Frequency                     Duration (sec)                          
+                    0.2             3.2             6.2            9.2           12.2 
+                Frequency                     Duration (sec)                           
 
     Step 6. Start order gateway
         Top of the script for instructions
         https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py
 
     strategy_executor logs trades in orderhist cache (csv).
+
     For post trade analysis, use orderhist_cache_viewer.ipynb https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb 
-    If you are running multiple strategy_executor instances, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. It'd also dispatch notifications upon changes in strategies statuses.
+
+    If you are running multiple strategy_executor instances, use strategy_master as your strategies dashboard (Just tail the log file), strategies snapshots listed there in tabular format. Key fields displayed:
+        * "gateway_id", "ticker", "pos_side", "pos_status", "block_entries", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed",  "pos_created", "pos_closed", "pos_tp_min_crossed", 
+        * "mid", "entry_px", "tp_min_target", "tp_max_target", "sl_price", ...
+        * "block_entry_reason", "gateway_hb"
+    It'd also dispatch notifications upon changes in strategies statuses.
 
 Debug from VSCode, launch.json:
     {
