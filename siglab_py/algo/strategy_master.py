@@ -214,8 +214,9 @@ async def main() -> None:
                     )
                 _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
                 
-
-                s_position_summaries = tabulate(pd_position_summaries, headers='keys', tablefmt='psql', showindex=False)
+                displayed_columns = pd_position_summaries.columns.tolist()
+                displayed_columns.remove('key')
+                s_position_summaries = tabulate(pd_position_summaries[displayed_columns], headers='keys', tablefmt='psql', showindex=False)
                 logger.info(s_position_summaries)
                 
                 row_hashes = pd.util.hash_pandas_object(_pd_position_summaries, index=False)
