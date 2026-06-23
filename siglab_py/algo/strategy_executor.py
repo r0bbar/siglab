@@ -1454,7 +1454,7 @@ async def main():
                         # Case 1. Local cache has position, and different from exchange
                         position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos)
                         position_break_diff_bps = position_break_diff_in_base_ccy/pos * 10000 # If you closed position via Exchange GUI for example, position_break_diff_bps will be 10000 bps, or 100%.
-                        if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
+                        if abs(position_break_diff_bps)>algo_param['max_position_break_diff_bps']:
                             block_entry_reason = f"#posbreak! Local cache has position, and different from exchange. local cache: {pos}, , pos_usdt: {pos_usdt}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}. Check partial order cancels? slicing/rounding?"
                             log(f"Block entries: {block_entry_reason}")
 
@@ -1484,7 +1484,7 @@ async def main():
                             position_break_diff_bps = round(position_from_exchange_base_ccy/param['amount_base_ccy'], 2) * 10000 if param['amount_base_ccy'] else 0
                             block_entry_reason = f"#posbreak! Exchange has position, but local cache doesn't. position_from_exchange_base_ccy: {position_from_exchange_base_ccy}, amount_base_ccy: {param['amount_base_ccy']}, position_break_diff_bps: {position_break_diff_bps:,.2f}, max_position_break_diff_bps: {algo_param['max_position_break_diff_bps']}. Check partial order cancels? slicing/rounding?"
                             log(f"Block entries: {block_entry_reason}")
-                            if position_break_diff_bps>algo_param['max_position_break_diff_bps']:
+                            if abs(position_break_diff_bps)>algo_param['max_position_break_diff_bps']:
                                 if not position_break:
                                     # Only send notification on first time break detected, don't flood the notification channel
                                     dispatch_notification(title=f"#posbreak {param['current_filename']} {param['gateway_id']} Position break! {_ticker}", message=block_entry_reason, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
