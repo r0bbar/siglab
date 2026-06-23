@@ -357,6 +357,14 @@ def compute_candles_stats(
     pd_candles['ema_close'] = pd_candles['ema_long_periods'] # Alias, shorter name
 
     pd_candles['distance_from_ema_bps'] = (pd_candles['close'] - pd_candles['ema_close']) / pd_candles['ema_close'] * 10000 # Positive: Above EMA. Negative: Below EMA.
+    pd_candles['ema_distance_from_ema_bps'] = pd_candles['distance_from_ema_bps'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    # Widening means distance_from_ema_bps is still increasing. I am using 'ema_distance_from_ema_bps' to average out the noise.
+    # If current row ema_distance_from_ema_bps > last row's ema_distance_from_ema_bps, then gap is widening. Else it's closing.
+    pd_candles['distance_from_ema_trend'] = np.where(
+        pd_candles['ema_distance_from_ema_bps'] >= pd_candles['ema_distance_from_ema_bps'].shift(1),
+        'widening',
+        'closing'
+    )
 
     distance_from_ema_bps_buckets : Dict[
                 str, 
@@ -375,7 +383,7 @@ def compute_candles_stats(
         categories=bucket_labels,
         ordered=True
     )
-    
+
     pd_candles['counter_trend_candle_height_bps'] = np.where(
         (
             ((pd_candles['distance_from_ema_bps'] >= 0) & ~pd_candles['is_green']) |
