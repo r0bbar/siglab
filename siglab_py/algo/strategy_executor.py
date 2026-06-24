@@ -1212,8 +1212,8 @@ async def main():
                     pd_position_cache['running_sl_percent_hard'] = pd_position_cache['running_sl_percent_hard'].astype('float64')
 
                 # Note: arrow.get will populate tzinfo
-                pos = position_cache_row['pos'] if position_cache_row['pos'] else 0
-                pos_usdt = position_cache_row['pos_usdt'] if position_cache_row['pos_usdt'] else 0
+                pos = position_cache_row['pos'] if position_cache_row['pos'] else 0 # For shorts, this is negative.
+                pos_usdt = position_cache_row['pos_usdt'] if position_cache_row['pos_usdt'] else 0 # For shorts, this is negative.
                 pos_status = position_cache_row['status']
 
                 if pos==0 and pos_status==PositionStatus.OPEN.name:
@@ -1460,7 +1460,7 @@ async def main():
                         # Case 1. Local cache has position, and different from exchange
                         position_break_diff_in_base_ccy = abs(position_from_exchange_base_ccy-pos)
                         position_break_diff_bps = position_break_diff_in_base_ccy/pos * 10000 # If you closed position via Exchange GUI for example, position_break_diff_bps will be 10000 bps, or 100%.
-                        if abs(position_break_diff_bps)>algo_param['max_position_break_diff_bps']:
+                        if abs(position_break_diff_bps)>algo_param['max_position_break_diff_bps'] and abs(pos_usdt)>=param['residual_pos_usdt_threshold']:
                             block_entry_reason = f"#posbreak! Local cache has position, and different from exchange. local cache: {pos}, , pos_usdt: {pos_usdt}, exchange: {position_from_exchange_base_ccy}, position_break_diff_bps: {position_break_diff_bps:,.2f}, position_break_diff_in_base_ccy: {position_break_diff_in_base_ccy}. Check partial order cancels? slicing/rounding?"
                             log(f"Block entries: {block_entry_reason}")
 
@@ -1470,16 +1470,15 @@ async def main():
 
                             position_break = True # Set to True after notification dispatched only ONCE
                             block_entries = True
-
-                            if (abs(position_from_exchange_base_ccy) *mid) <= param['residual_pos_usdt_threshold']:
-                                '''
-                                Manually closing position from Exchange GUI is one way traders can intervene, it's the atomic last resort. 
-                                We want to make sure this works very reliably: If you manually close position: strategy_executor must stop entirely.
-                                a) no further entry
-                                b) strategy_executor will not try to further close position ("reduce_only" may not work in some exchanges? brokers? Just in case ...)
-                                   This also means strategy_executor will NOT further monitor/manage your position.
-                                '''
-                                keep_looping = False
+                            
+                            '''
+                            Manually closing position from Exchange GUI is one way traders can intervene, it's the atomic last resort. 
+                            We want to make sure this works very reliably: If you manually close position: strategy_executor must stop entirely.
+                            a) no further entry
+                            b) strategy_executor will not try to further close position ("reduce_only" may not work in some exchanges? brokers? Just in case ...)
+                                This also means strategy_executor will NOT further monitor/manage your position.
+                            '''
+                            keep_looping = False
                             
                         else:
                             position_break = False # Unlike block_entries reset every loop, position_break need be reset here.
