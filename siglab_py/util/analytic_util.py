@@ -370,7 +370,7 @@ def compute_candles_stats(
                 str, 
                 Dict[str,Union[float, List[float]]]
             ] = bucket_series(
-                                                    values = pd_candles['distance_from_ema_bps'].tolist(),
+                                                    values = [ -500, -400, -300, -200, -150, -100, -75, -50, -25, 0, 25, 50, 100, 150, 200, 300, 400, 500 ], # pd_candles['distance_from_ema_bps'].tolist(),
                                                     outlier_threshold_percent = 10,
                                                     level_granularity=level_granularity
             )
