@@ -649,6 +649,7 @@ async def execute_one_position(
 
                 log(f"{position.ticker} multiplier: {multiplier}, slice_amount_in_base_ccy: {slice_amount_in_base_ccy}, rounded_slice_amount_in_base_ccy: {rounded_slice_amount_in_base_ccy}") 
 
+                # create_order expects 'amount' in number of contracts (For perpetual trading), not number in base_ccy. 
                 rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
@@ -687,7 +688,7 @@ async def execute_one_position(
                         executed_order = await exchange.create_order(
                             symbol = position.ticker,
                             type = position.order_type,
-                            amount = rounded_slice_amount_in_base_ccy,
+                            amount = rounded_slice_amount_in_base_ccy, # For perpetual trading, 'amount' is in number of contracts, not in base_ccy.
                             price = rounded_limit_price,
                             side = position.side,
                             params = order_params
@@ -714,7 +715,7 @@ async def execute_one_position(
                         executed_order = await exchange.create_order(
                             symbol = position.ticker,
                             type = position.order_type,
-                            amount = rounded_slice_amount_in_base_ccy,
+                            amount = rounded_slice_amount_in_base_ccy,  # For perpetual trading, 'amount' is in number of contracts, not in base_ccy.
                             price = rounded_limit_price, # Even for market orders, still pass price. Some exchanges may require this.
                             side = position.side,
                             params = order_params
