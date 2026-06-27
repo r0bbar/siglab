@@ -631,7 +631,7 @@ async def execute_one_position(
                 
                 if position.reduce_only and position.expected_pos_after_execution==0:
                     # Ensure clean position closure
-                    res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+                    res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
                     remaining_amount_base_ccy = res['amount_base_ccy']
                     remaining_amount = remaining_amount_base_ccy/multiplier # For perps, this is in # contracts.
                     updated_position = res['updated_position']
@@ -824,7 +824,7 @@ async def execute_one_position(
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
                         # Best effort to auto-validate:
-                        res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+                        res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
                         amount_base_ccy = res['amount_base_ccy']
                         updated_position = res['updated_position']
                         log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
@@ -1014,7 +1014,7 @@ async def execute_one_position(
 
         position.fees = position.get_fees()
         
-        res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+        res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
         amount_base_ccy = res['amount_base_ccy']
         updated_position = res['updated_position']
         if updated_position: # For spots, updated_position is null
