@@ -561,6 +561,37 @@ async def execute_one_position(
             orderbook = await exchange.fetch_order_book(symbol=ticker, limit=5)
             return orderbook
         
+        async def _fetch_position(
+            exchange : AnyExchange, 
+            ticker : str,
+            ticker_class : str,
+            multiplier : float
+        ) -> Dict[str, Union[float, None]]:
+            if ticker_class!='spot':
+                updated_position = None
+                try:
+                    updated_position = await exchange.fetch_position(symbol=position.ticker)
+                except NotSupported:
+                    positions_from_exchange = await exchange.fetch_positions()
+                    if positions_from_exchange:
+                        updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
+                        if updated_position:
+                            updated_position = updated_position[-1]
+                amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
+                amount = amount if amount else 0
+                amount_base_ccy = float(amount * multiplier)
+                    
+            else:
+                balances = await exchange.fetch_balance()
+                base_ccy : str = position.ticker.split("/")[0]
+                amount_base_ccy = balances[base_ccy]['total'] if base_ccy in balances else 0
+                updated_position = None
+
+            return {
+                'amount_base_ccy' : amount_base_ccy,
+                'updated_position' : updated_position
+            }
+
         ticker_class : str = classify_ticker(position.ticker)
 
         randomized_order_amount : float = 0
@@ -600,48 +631,17 @@ async def execute_one_position(
                 
                 if position.reduce_only and position.expected_pos_after_execution==0:
                     # Ensure clean position closure
+                    res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+                    remaining_amount_base_ccy = res['amount_base_ccy']
+                    remaining_amount = remaining_amount_base_ccy/multiplier # For perps, this is in # contracts.
+                    updated_position = res['updated_position']
+                
                     if i==last_slice_i-1:
-                        if ticker_class!='spot':
-                            updated_position = None
-                            try:
-                                updated_position = await exchange.fetch_position(symbol=position.ticker)
-                            except NotSupported:
-                                positions_from_exchange = await exchange.fetch_positions()
-                                if positions_from_exchange:
-                                    updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
-                                    if updated_position:
-                                        updated_position = updated_position[-1]
-                            remaining_amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
-                            remaining_amount_base_ccy = float(remaining_amount * multiplier)
-                                
-                        else:
-                            balances = await exchange.fetch_balance()
-                            base_ccy : str = position.ticker.split("/")[0]
-                            remaining_amount_base_ccy = balances[base_ccy]['total'] if base_ccy in balances else 0
-                            remaining_amount = remaining_amount_base_ccy
-
                         if (remaining_amount_base_ccy - _rounded_slice_amount_in_base_ccy*multiplier)<=min_amount_base_ccy:
                             # If next slice (i.e. last slice) amount less than min_amount_base_ccy, just finish it (include last slice amount) this slice
                             _rounded_slice_amount_in_base_ccy = remaining_amount
 
                     elif i==last_slice_i:
-                        if ticker_class!='spot':
-                            updated_position = None
-                            try:
-                                updated_position = await exchange.fetch_position(symbol=position.ticker)
-                            except NotSupported:
-                                positions_from_exchange = await exchange.fetch_positions()
-                                if positions_from_exchange:
-                                    updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
-                                    if updated_position:
-                                        updated_position = updated_position[-1]
-                            remaining_amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
-                                
-                        else:
-                            balances = await exchange.fetch_balance()
-                            base_ccy : str = position.ticker.split("/")[0]
-                            remaining_amount = balances[base_ccy]['total'] if base_ccy in balances else 0
-
                         rounded_slice_amount_in_base_ccy = remaining_amount
 
                 if amount_diff>=min_amount:
@@ -824,38 +824,13 @@ async def execute_one_position(
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
                         # Best effort to auto-validate:
-                        if ticker_class!='spot':
-                            updated_position = None
-                            try:
-                                updated_position = await exchange.fetch_position(symbol=position.ticker)
-                            except NotSupported:
-                                updated_position = None
-                                positions_from_exchange = await exchange.fetch_positions()
-                                if positions_from_exchange:
-                                    updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
-                                    if updated_position:
-                                        updated_position = updated_position[-1]
-
-                            log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
-                            log(f"{json.dumps(updated_position, indent=4)}")
-
-                            amount = (updated_position['contracts'] if updated_position else None) # Already in number of contracts (Not in base ccy).
-                            if amount:
-                                amount = amount * position.multiplier # Convert amount back to base ccy
-
-                                if amount != position.expected_pos_after_execution:
-                                    raise
-                            else:
-                                if position.expected_pos_after_execution!=0:
-                                    raise
-
-                        else:
-                            balances = await exchange.fetch_balance()
-                            base_ccy : str = position.ticker.split("/")[0]
-                            amount = balances[base_ccy]['total'] if base_ccy in balances else 0
-
-                            if amount != position.expected_pos_after_execution:
-                                raise
+                        res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+                        amount_base_ccy = res['amount_base_ccy']
+                        updated_position = res['updated_position']
+                        log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
+                        log(f"{json.dumps(updated_position, indent=4)}") 
+                        if i==last_slice_i and amount_base_ccy != position.expected_pos_after_execution:
+                            raise
 
                         order_update = {
                             'status' : 'closed',
@@ -1039,26 +1014,13 @@ async def execute_one_position(
 
         position.fees = position.get_fees()
         
-        if ticker_class!='spot':
-            updated_position = None
-            try:
-                updated_position = await exchange.fetch_position(symbol=position.ticker) 
-            except NotSupported:
-                positions_from_exchange = await exchange.fetch_positions()
-                if positions_from_exchange:
-                    updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
-                    if updated_position:
-                        updated_position = updated_position[-1]
+        res = await _fetch_position(position.ticker, exchange, ticker_class, multiplier)
+        amount_base_ccy = res['amount_base_ccy']
+        updated_position = res['updated_position']
+        if updated_position: # For spots, updated_position is null
             log(f"position update:")
             log(f"{json.dumps(updated_position, indent=4)}")
-
-            # After position closed, 'updated_position' can be an empty dict. hyperliquid for example.
-            amount = (updated_position['contracts'] if updated_position else 0) * position.multiplier # in base ccy
-        else:
-            balances = await exchange.fetch_balance()
-            base_ccy : str = position.ticker.split("/")[0]
-            amount = balances[base_ccy]['total']
-        position.pos = amount
+        position.pos = amount_base_ccy
 
         position.done_timestamp_ms = int(datetime.now().timestamp() * 1000)
         position.done = True
