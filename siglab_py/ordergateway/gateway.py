@@ -570,11 +570,11 @@ async def execute_one_position(
             if ticker_class!='spot':
                 updated_position = None
                 try:
-                    updated_position = await exchange.fetch_position(symbol=position.ticker)
+                    updated_position = await exchange.fetch_position(symbol=ticker)
                 except NotSupported:
                     positions_from_exchange = await exchange.fetch_positions()
                     if positions_from_exchange:
-                        updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==position.ticker ]
+                        updated_position = [ pos for pos in positions_from_exchange if pos['symbol']==ticker ]
                         if updated_position:
                             updated_position = updated_position[-1]
                 amount = (updated_position['contracts'] if updated_position else 0)  # Already in number of contracts (Not in base ccy).
@@ -583,7 +583,7 @@ async def execute_one_position(
                     
             else:
                 balances = await exchange.fetch_balance()
-                base_ccy : str = position.ticker.split("/")[0]
+                base_ccy : str = ticker.split("/")[0]
                 amount_base_ccy = balances[base_ccy]['total'] if base_ccy in balances else 0
                 updated_position = None
 
