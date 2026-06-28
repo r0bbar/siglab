@@ -825,8 +825,9 @@ async def execute_one_position(
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
                         # Best effort to auto-validate: 
-                        # If this slice already is last slice, and actual position == expected_pos_after_execution, 
-                        # then 
+                        # Should simply re-raise exception after multiple attempts to fetch_order and still failing (Could be exchange down). 
+                        # IF this slice already is last slice, and actual position == expected_pos_after_execution, 
+                        # THEN 
                         #   a) don't re-raise exception and allow the slice to complete.
                         #   b) remaining to execute == 0
                         res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
@@ -874,7 +875,15 @@ async def execute_one_position(
                             canellation_failed = False
                             cancelled_order = await exchange.cancel_order(order_id, position.ticker)
                             _remaining_amount = cancelled_order['remaining'] if 'remaining' in cancelled_order else None # warning: Some exchanges don't support remaining. CCXT generally set this to None (not zero) if this is the case.
-                            log(f"Successfully cancelled order {order_id}. remaining_amount: {_remaining_amount}")
+                            log(f"Successfully cancelled order {order_id}. remaining_amount: {_remaining_amount} as reported by exchange.")
+                            if not _remaining_amount:
+                                # Not all exchanges will fill in 'remaining' field! If _remaining_amount is None, then double check. 
+                                # We need be sure if cancelled order was completely cancelled? Or partial fills already happened? 
+                                log(f"Re-confirming order cancellation for {order_id} ...")
+                                cancelled_order_update = await _fetch_order(order_id, position.ticker, exchange) 
+		                        _remaining_amount = cancelled_order_update['remaining']
+                                log(f"Final confirmation on order cancellation for {order_id}, remaining_amount: {_remaining_amount}")
+
                             if _remaining_amount:
                                 remaining_amount = _remaining_amount
 
