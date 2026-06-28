@@ -824,14 +824,23 @@ async def execute_one_position(
                     except OrderNotFound as order_not_found_err:
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
-                        # Best effort to auto-validate:
+                        # Best effort to auto-validate: 
+                        # If this slice already is last slice, and actual position == expected_pos_after_execution, 
+                        # then 
+                        #   a) don't re-raise exception and allow the slice to complete.
+                        #   b) remaining to execute == 0
                         res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
                         amount_base_ccy = res['amount_base_ccy']
                         updated_position = res['updated_position']
                         log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
-                        log(f"{json.dumps(updated_position, indent=4)}") 
-                        if i==last_slice_i and amount_base_ccy!=position.expected_pos_after_execution:
+                        log(f"{json.dumps(updated_position, indent=4)}")
+
+                        # i==last_slice_i if a) len(slices)==1, or b) this slice indeed is the last slice. 
+                        if i!=last_slice_i:
                             raise
+                        else:
+                            if amount_base_ccy!=position.expected_pos_after_execution:
+                                raise
 
                         order_update = {
                             'status' : 'closed',
@@ -842,7 +851,7 @@ async def execute_one_position(
                             'filled' : None,
                             'amount' : None,
 
-                            'remaining' : position.expected_pos_after_execution/multiplier, # For perps, this is in number of contracts. In event fetch_order(order_id) failed, but trade actually executed!
+                            'remaining' : 0, # For perps, this is in number of contracts. In event fetch_order(order_id) failed, but trade actually executed!
                             'patch' : { # This is an estimation!
                                 'average' : mid, 
                                 'filled' : rounded_slice_amount_in_base_ccy,
@@ -858,7 +867,7 @@ async def execute_one_position(
                     position.executions[order_id] = order_update
                     executions[order_id] = order_update # This came in from REST, not ws. Thus you'd need to additionally append to "executions" which is a separate Dict.
 
-                    if order_status!='closed':
+                    if order_status!='closed' and remaining_amount:
                         log(f"Final order_update before cancel+resend: {json.dumps(order_update, indent=4)}", log_level=LogLevel.INFO)
 
                         try:
