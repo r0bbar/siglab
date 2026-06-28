@@ -830,7 +830,7 @@ async def execute_one_position(
                         updated_position = res['updated_position']
                         log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
                         log(f"{json.dumps(updated_position, indent=4)}") 
-                        if i==last_slice_i and amount_base_ccy != position.expected_pos_after_execution:
+                        if i==last_slice_i and amount_base_ccy!=position.expected_pos_after_execution:
                             raise
 
                         order_update = {
