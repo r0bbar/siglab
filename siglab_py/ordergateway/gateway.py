@@ -881,7 +881,7 @@ async def execute_one_position(
                                 # We need be sure if cancelled order was completely cancelled? Or partial fills already happened? 
                                 log(f"Re-confirming order cancellation for {order_id} ...")
                                 cancelled_order_update = await _fetch_order(order_id, position.ticker, exchange) 
-		                        _remaining_amount = cancelled_order_update['remaining']
+                                _remaining_amount = cancelled_order_update['remaining']
                                 log(f"Final confirmation on order cancellation for {order_id}, remaining_amount: {_remaining_amount}")
 
                             if _remaining_amount:
