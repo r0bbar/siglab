@@ -865,6 +865,7 @@ async def execute_one_position(
                             canellation_failed = False
                             cancelled_order = await exchange.cancel_order(order_id, position.ticker)
                             _remaining_amount = cancelled_order['remaining'] if 'remaining' in cancelled_order else None # warning: Some exchanges don't support remaining. CCXT generally set this to None (not zero) if this is the case.
+                            log(f"Successfully cancelled order {order_id}. remaining_amount: {_remaining_amount}")
                             if _remaining_amount:
                                 remaining_amount = _remaining_amount
 
