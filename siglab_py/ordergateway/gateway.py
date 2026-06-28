@@ -842,7 +842,7 @@ async def execute_one_position(
                             'filled' : None,
                             'amount' : None,
 
-                            'remaining' : position.expected_pos_after_execution, # In event fetch_order(order_id) failed, but trade actually executed!
+                            'remaining' : position.expected_pos_after_execution/multiplier # For perps, this is in # contracts. In event fetch_order(order_id) failed, but trade actually executed!
                             'patch' : { # This is an estimation!
                                 'average' : mid, 
                                 'filled' : rounded_slice_amount_in_base_ccy,
