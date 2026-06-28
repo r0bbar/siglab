@@ -874,8 +874,12 @@ async def execute_one_position(
                         try:
                             canellation_failed = False
                             cancelled_order = await exchange.cancel_order(order_id, position.ticker)
-                            _remaining_amount = cancelled_order['remaining'] if 'remaining' in cancelled_order else None # warning: Some exchanges don't support remaining. CCXT generally set this to None (not zero) if this is the case.
+                            # warning: Some exchanges don't support remaining. CCXT generally set this to None (not zero) if this is the case.
+                            # If exchange's cancel_order API don't support 'remaining', CCXT generally set 'remaining 'to None
+                            _remaining_amount = cancelled_order['remaining'] if 'remaining' in cancelled_order else None 
                             log(f"Successfully cancelled order {order_id}. remaining_amount: {_remaining_amount} as reported by exchange.")
+                            # if _remaining_amount==None for sure need double check if full cancellation or partial fills.
+                            # if _remaining_amount==0, generally it means the order was fully filled, in which case, we don't need recheck. But just be on safe side, we still recheck. 
                             if not _remaining_amount:
                                 # Not all exchanges will fill in 'remaining' field! If _remaining_amount is None, then double check. 
                                 # We need be sure if cancelled order was completely cancelled? Or partial fills already happened? 
