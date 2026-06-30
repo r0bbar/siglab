@@ -83,6 +83,7 @@ param : Dict = {
 
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
+    "selected_fields_for_notification" : [ "gateway_id", "base_ccy",  "pos_side", "pos_status", "block_entries" ],
     "selected_fields_for_notification_attachment" : [ "gateway_id", "ticker", "pos_side", "pos_status", "block_entries", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed",  "pos_created", "pos_closed", "pos_tp_min_crossed", "mid", "entry_px", "tp_min_target", "tp_max_target", "sl_price" ],
 
     'notification' : {
@@ -220,7 +221,7 @@ async def main() -> None:
                 s_position_summaries = tabulate(pd_position_summaries[displayed_columns], headers='keys', tablefmt='psql', showindex=False)
                 logger.info(s_position_summaries)
                 
-                row_hashes = pd.util.hash_pandas_object(_pd_position_summaries, index=False)
+                row_hashes = pd.util.hash_pandas_object(pd_position_summaries[param["selected_fields_for_notification"]], index=False)
                 message_hash = hashlib.sha256(row_hashes.values).hexdigest()
                 logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
                 if message_hash!=prev_message_hash:
