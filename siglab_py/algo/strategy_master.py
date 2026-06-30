@@ -199,7 +199,8 @@ async def main() -> None:
                             else:
                                 print(f"Gateway HB not found. Expected gateway_hb_topic: {gateway_hb_topic}.")
 
-                            position_summary['key_for_notification'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']} {position_summary['pos_side']} {position_summary['pos_status']} {position_summary['pos_side']} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
+                            position_summary['key1_for_notification'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']}"
+                            position_summary['key2_for_notification'] = f"{position_summary['pos_side']} {position_summary['pos_status']} {position_summary['pos_side']} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
                             
                             position_summaries.append(position_summary)
 
@@ -213,7 +214,7 @@ async def main() -> None:
                         ascending=[True, True],
                         inplace=True
                     )
-                _pd_position_summaries = pd_position_summaries[['key_for_notification']]
+                _pd_position_summaries = pd_position_summaries[['key1_for_notification', 'key2_for_notification']]
                 
                 displayed_columns = pd_position_summaries.columns.tolist()
                 displayed_columns.remove('key')
