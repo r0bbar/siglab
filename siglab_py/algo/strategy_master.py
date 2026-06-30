@@ -199,9 +199,8 @@ async def main() -> None:
                             else:
                                 print(f"Gateway HB not found. Expected gateway_hb_topic: {gateway_hb_topic}.")
 
-                            position_summary['instance'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']}"
-                            position_summary['instance_status'] = f"{position_summary['pos_side'] if position_summary['pos_side']!='UNDEFINED' else '---'} {position_summary['pos_status'] if position_summary['pos_status']!='UNDEFINED' else '---'} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
-                            
+                            position_summary['instance_status'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']}: {position_summary['pos_side'] if position_summary['pos_side']!='UNDEFINED' else '---'} {position_summary['pos_status'] if position_summary['pos_status']!='UNDEFINED' else '---'} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
+
                             position_summaries.append(position_summary)
 
                 except Exception as key_err:
@@ -214,7 +213,7 @@ async def main() -> None:
                         ascending=[True, True],
                         inplace=True
                     )
-                _pd_position_summaries = pd_position_summaries[['instance', 'instance_status']]
+                _pd_position_summaries = pd_position_summaries[['instance_status']]
                 
                 displayed_columns = pd_position_summaries.columns.tolist()
                 displayed_columns.remove('key')
