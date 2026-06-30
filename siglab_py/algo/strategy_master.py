@@ -12,6 +12,7 @@ from dateutil import parser
 import argparse
 import json
 import re
+from re import Pattern
 import pandas as pd
 import hashlib
 from tabulate import tabulate
