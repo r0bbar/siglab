@@ -30,6 +30,8 @@ from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
+
+from siglab_py.util.misc_util import get_public_ip
 from siglab_py.util.retry_util import retry
 from siglab_py.util.datetime_util import parse_trading_window
 from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
@@ -259,6 +261,7 @@ Debug from VSCode, launch.json:
         1. #posbreak
         2. #entry/#exit in notifications and ENTRY/EXIT in log
         3. #tpmincross
+        4. #ipchange
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -785,6 +788,9 @@ async def main():
     fh.setFormatter(formatter)     
     logger.addHandler(fh)
 
+    public_ip : str = get_public_ip()
+    log(f"public_ip: {public_ip}")
+
     '''
     DO NOT LOG 'param' after secrets (apikey, secret, passphrase) decrypted!!!
     Just to be safe, we do this more explicitly below.
@@ -1048,6 +1054,21 @@ async def main():
                 
                 log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}, today_dayofweek: {today_dayofweek}")
                 
+                if get_public_ip()!=public_ip:
+                    block_entries = True
+                    keep_looping = False
+                    block_entry_reason = f"#ipchange IP address changed. Startup IP: {public_ip}, current IP: {get_public_ip()}"
+                    log(f"Block entries: {block_entry_reason}")
+
+                    dispatch_notification(
+                        title=f"#ipchange {param['current_filename']} {param['gateway_id']} IP changed!?", 
+                        message=block_entry_reason, 
+                        footer=param['notification']['footer'], 
+                        params=notification_params, 
+                        log_level=LogLevel.CRITICAL, 
+                        logger=logger
+                    )
+
                 if param['trading_window_start'] and param['trading_window_end']:
                     trading_window : Dict[str, str] = {
                         'start' : param['trading_window_start'],
