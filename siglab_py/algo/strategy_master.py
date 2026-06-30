@@ -83,7 +83,6 @@ param : Dict = {
 
     # regex corresponding to position_topic.
     "position_topic_regex" : r"^position_.*", 
-    "selected_fields_for_notification" : [ "gateway_id", "base_ccy",  "pos_side", "pos_status", "block_entries" ],
     "selected_fields_for_notification_attachment" : [ "gateway_id", "ticker", "pos_side", "pos_status", "block_entries", "pnl_live_bps", "max_unreal_live_bps", "sl_trailing_min_threshold_crossed",  "pos_created", "pos_closed", "pos_tp_min_crossed", "mid", "entry_px", "tp_min_target", "tp_max_target", "sl_price" ],
 
     'notification' : {
@@ -200,6 +199,8 @@ async def main() -> None:
                             else:
                                 print(f"Gateway HB not found. Expected gateway_hb_topic: {gateway_hb_topic}.")
 
+                            position_summary['key_for_notification'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']} {position_summary['pos_side']} {position_summary['pos_status']} {position_summary['pos_side']} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
+                            
                             position_summaries.append(position_summary)
 
                 except Exception as key_err:
@@ -212,7 +213,7 @@ async def main() -> None:
                         ascending=[True, True],
                         inplace=True
                     )
-                _pd_position_summaries = pd_position_summaries[param["selected_fields_for_notification"]]
+                _pd_position_summaries = pd_position_summaries[['key_for_notification']]
                 
                 displayed_columns = pd_position_summaries.columns.tolist()
                 displayed_columns.remove('key')
