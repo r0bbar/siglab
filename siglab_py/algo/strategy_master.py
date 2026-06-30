@@ -200,7 +200,7 @@ async def main() -> None:
                                 print(f"Gateway HB not found. Expected gateway_hb_topic: {gateway_hb_topic}.")
 
                             position_summary['instance'] = f"{position_summary['gateway_id']} {position_summary['base_ccy']}"
-                            position_summary['instance_status'] = f"{position_summary['pos_side']} {position_summary['pos_status']} {position_summary['pos_side']} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
+                            position_summary['instance_status'] = f"{position_summary['pos_side'] if position_summary['pos_side']!='UNDEFINED' else '---'} {position_summary['pos_status'] if position_summary['pos_status']!='UNDEFINED' else '---'} {position_summary['block_entries']} {position_summary['pnl_live_bps']} bps"
                             
                             position_summaries.append(position_summary)
 
