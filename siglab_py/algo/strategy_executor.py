@@ -1054,21 +1054,6 @@ async def main():
                 
                 log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}, today_dayofweek: {today_dayofweek}")
                 
-                if get_public_ip()!=public_ip:
-                    block_entries = True
-                    keep_looping = False
-                    block_entry_reason = f"#ipchange IP address changed. Startup IP: {public_ip}, current IP: {get_public_ip()}"
-                    log(f"Block entries: {block_entry_reason}")
-
-                    dispatch_notification(
-                        title=f"#ipchange {param['current_filename']} {param['gateway_id']} IP changed!?", 
-                        message=block_entry_reason, 
-                        footer=param['notification']['footer'], 
-                        params=notification_params, 
-                        log_level=LogLevel.CRITICAL, 
-                        logger=logger
-                    )
-
                 if param['trading_window_start'] and param['trading_window_end']:
                     trading_window : Dict[str, str] = {
                         'start' : param['trading_window_start'],
