@@ -93,9 +93,9 @@ launch.json for Debugging from VSCode:
                         "--users_filter", "SomeBody",
                         "--start_date", "2025-03-01",
                         "--message_keywords_filter", "exploit, attack, hack, breach, compromise, stolen, leak, security incident, phishing, social engineer, withdrawals freeze, frozen",
-                        "--slack_info_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_critial_url", "https://hooks.slack.com/services/xxx",
-                        "--slack_alert_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_info_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_critical_url", "https://hooks.slack.com/services/xxx",
+                        "--notification_alert_url", "https://hooks.slack.com/services/xxx",
                     ],
             }
         ]
