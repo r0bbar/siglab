@@ -261,7 +261,6 @@ Debug from VSCode, launch.json:
         1. #posbreak
         2. #entry/#exit in notifications and ENTRY/EXIT in log
         3. #tpmincross
-        4. #ipchange
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
