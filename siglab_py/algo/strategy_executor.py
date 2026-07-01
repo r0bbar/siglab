@@ -2569,6 +2569,9 @@ async def main():
                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                     
             except Exception as loop_err:
+                err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
+                log(err_msg, log_level=LogLevel.ERROR)
+
                 duplicate_error = False
                 ts = datetime.now().timestamp()
 
@@ -2592,9 +2595,7 @@ async def main():
 
                     if len(generic_errors[error_key])%1000==0:
                         generic_errors.pop(error_key)
-
-                err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
-                log(err_msg, log_level=LogLevel.ERROR)
+                
                 if not duplicate_error:
                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
