@@ -306,6 +306,7 @@ param : Dict = {
     'startup_scripts_dir_path' : None,
 
     'max_num_connectivity_errors' : 50,
+    'max_num_unique_error_per_sec' : 0.01,
 
     'housekeep_filename_regex_list' : [ 
         "lo_candles_entry_.*\.csv",
@@ -1027,6 +1028,7 @@ async def main():
         columns_type_initialized : bool = False
 
         connectivity_errors = []
+        generic_errors = {}
 
         while keep_looping:
             try:
@@ -2567,9 +2569,34 @@ async def main():
                     dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error.", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                     
             except Exception as loop_err:
+                duplicate_error = False
+                ts = datetime.now().timestamp()
+
+                tb = traceback.extract_tb(loop_err.__traceback__)
+                last_frame = tb[-1] if tb else None
+                error_key = f"{type(loop_err).__name__}:{last_frame.lineno}" if last_frame else type(loop_err).__name__
+                
+                if error_key not in generic_errors:
+                    generic_errors[error_key] = [ ts ]
+
+                else:
+                    generic_errors[error_key].append(ts)
+
+                    num_errors_of_this_category = len(generic_errors[error_key])
+                    first_occurrence  = generic_errors[error_key][0]
+                    elapsed_since_first_sec = ts - first_occurrence
+                    message_per_sec = num_errors_of_this_category / elapsed_since_first_sec if elapsed_since_first_sec>0 else 0 # For example, two messages in three min (180 sec) elapsed. That's 0.01111. two messages in five min is 0.0067.
+
+                    if message_per_sec>param['max_num_unique_error_per_sec']:
+                        duplicate_error = True
+
+                    if len(generic_errors[error_key])%1000==0:
+                        generic_errors.pop(error_key)
+
                 err_msg = f"Error: {loop_err} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}"
                 log(err_msg, log_level=LogLevel.ERROR)
-                dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
+                if not duplicate_error:
+                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} error. {_ticker}", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.ERROR, logger=logger)
                 
             finally:
                 if (not block_entries or pos!=0):
