@@ -1033,6 +1033,7 @@ async def main():
         columns_type_initialized : bool = False
 
         command_trigger_update : bool = False
+        command_block : bool = False
 
         connectivity_errors = []
         generic_errors = {}
@@ -1152,6 +1153,26 @@ async def main():
 
                     if any([ command for command in filtered_commands if command['command']=='status']):
                         command_trigger_update = True
+
+                    block_command = [ command for command in filtered_commands if command['command']=='block' ]
+                    block_command = block_command[-1] if any(block_command) else None
+                    unblock_command = [ command for command in filtered_commands if command['command']=='unblock' ]
+                    unblock_command = unblock_command[-1] if any(unblock_command) else None
+                    if block_command and not unblock_command:
+                        command_block = True
+
+                    elif not block_command and unblock_command:
+                        command_block = False
+
+                    elif block_command and unblock_command:
+                        if unblock_command['msg_timestamp_ms']>block_command['msg_timestamp_ms']:
+                            command_block = False
+                        else:
+                            command_block = True
+
+                    if command_block:
+                        block_entries = True
+                        block_entry_reason = f"Command block"
 
                 key = _ticker # aliases
 
