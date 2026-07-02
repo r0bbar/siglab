@@ -276,6 +276,8 @@ async def main() -> None:
                         finally:
                             commands.clear()
                     
+                    dispatch_notification(title=f"{param['current_filename']} {param['channel_name']} Incoming commands!", message=commands, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+
                     if param['alert_wav_path'] and sys.platform == 'win32':
                         import winsound
                         for _ in range(param['num_shouts']):
