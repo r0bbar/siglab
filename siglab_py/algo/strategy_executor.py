@@ -1721,7 +1721,7 @@ async def main():
                     'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
 
                     'block_entry_reason' : block_entry_reason if block_entry_reason else "---", # Lengthy, leave it to last
-                    'command_trigger_update' : command_trigger_update
+                    'command_trigger_update' : command_trigger_update # Indicates to strategy_master if this update is a command triggered adhoc update.
                 }
 
                 if (
