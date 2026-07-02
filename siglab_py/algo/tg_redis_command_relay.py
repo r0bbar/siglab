@@ -210,7 +210,7 @@ async def main() -> None:
             while True:
                 since = datetime.now() - timedelta(minutes=1)
                 print(f"{datetime.now()} fetching channel messages ...")
-                async for message in client.iter_messages(channel_entity, offset_date=since, limit=10):
+                async for message in client.iter_messages(channel_entity, offset_date=since, limit=10): # Looks TG lags can > 1 minute
                     s_message = f"{message.date} {message.sender.title} {message.text}"
 
                     full_hash_key = f"{param['hash_key']}{datetime.now().strftime('%Y%m%d')}" # "%Y%m%d %H%M%S" is format string if you want yyyyMMdd HH:MM:SS. Here we take only "yyyyMMdd MM", avoiding HH so there's no confusion if it's running on UTC machine, or otherwise.
