@@ -231,13 +231,13 @@ async def main() -> None:
                         command_tokens = [ token for token in command_tokens if token ]
                         message_hash = command_tokens[0]
                         
-                        if (
-                            message_hash==expected_hash # verify message/sender is valid.
-                        ):
-                            seen_hash = hashlib.sha256(f"{int(message.date.timestamp())}{message.text}".encode()).hexdigest()
-                            if seen_hash not in seen_hashes: # Guard against duplicates, REPLAY attacks
-                                seen_hashes.append(seen_hash)
+                        seen_hash = hashlib.sha256(f"{int(message.date.timestamp())}{message.text}".encode()).hexdigest()
+                        if seen_hash not in seen_hashes: # Guard against duplicates, REPLAY attacks
+                            seen_hashes.append(seen_hash)
 
+                            if (
+                                message_hash==expected_hash # verify message/sender is valid.
+                            ):
                                 target = command_tokens[1]
                                 command = command_tokens[2]
 
@@ -257,13 +257,13 @@ async def main() -> None:
                                     print(f"message discarded, command '{command}' not registered in commands_filter: {s_message}")
                                     
                             else:
-                                print(f"message discarded, already processed: {s_message}")
-
+                                err_msg = f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}"
+                                print(err_msg)
+                                dispatch_notification(title=f"{param['current_filename']} {param['channel_name']} Invalid message hash", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+                        
                         else:
-                            err_msg = f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}"
-                            print(err_msg)
-                            dispatch_notification(title=f"{param['current_filename']} {param['channel_name']} Invalid message hash", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
-
+                            print(f"message discarded, already processed: {s_message}")
+                            
                 if commands:
                     log(f"Commands received:")
                     log(f"{pformat(commands, indent=2, width=100)}")
