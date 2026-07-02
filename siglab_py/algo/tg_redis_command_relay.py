@@ -83,7 +83,7 @@ param: Dict[str, Any] = {
     'message_keywords_filter': [],
     'alert_wav_path' : r"", # Example, d:\sounds\terrible.wav. If left blank, no sound will be played.
     "num_shouts" : 5, # How many times 'alert_wav_path' is played
-    "loop_freq_ms" : 1000,
+    "loop_freq_ms" : 5000,
     'current_filename' : current_filename,
 
     'notification' : {
@@ -280,7 +280,7 @@ async def main() -> None:
                         for _ in range(param['num_shouts']):
                             winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                         
-                await asyncio.sleep(1) # So long you wait one sec, TG wont block your subsequent call 15 sec!
+                await asyncio.sleep(int(param['loop_freq_ms']/1000)) # So long you wait one sec, TG wont block your subsequent call 15 sec!
 
         except Exception as e:
             log(f"Oops {str(e)} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", LogLevel.ERROR)
