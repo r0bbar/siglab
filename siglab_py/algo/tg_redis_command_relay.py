@@ -81,7 +81,7 @@ param: Dict[str, Any] = {
     'api_hash': os.getenv('TELEGRAM_API_HASH', 'xxx'),
     'phone': os.getenv('TELEGRAM_PHONE', '+XXXYYYYYYYY'),
     'message_keywords_filter': [],
-    'alert_wav_path' : r"d:\sounds\terrible.wav",
+    'alert_wav_path' : r"", # Example, d:\sounds\terrible.wav. If left blank, no sound will be played.
     "num_shouts" : 5, # How many times 'alert_wav_path' is played
     "loop_freq_ms" : 1000,
     'current_filename' : current_filename,
