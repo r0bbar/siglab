@@ -1032,6 +1032,8 @@ async def main():
 
         columns_type_initialized : bool = False
 
+        command_trigger_update : bool = False
+
         connectivity_errors = []
         generic_errors = {}
 
@@ -1050,6 +1052,8 @@ async def main():
                 
                 block_entries = False # We don't reset position_break to False here, as we use it to determine if it's first time break detected. If it is, only then we send notification.
                 block_entry_reason = None
+
+                command_trigger_update = False
 
                 dt_targettz = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
                 today_dayofweek = dt_targettz.weekday()
@@ -1141,10 +1145,13 @@ async def main():
                     commands = json.loads(command_messages)
                     filtered_commands = [ 
                                 command for command in commands 
-                                if (datetime.now().timestamp() - int(command['timestamp_ms']/1000) <= 15) and (command['target']=='all' or command['target']==param['gateway_id']) 
+                                if (datetime.now().timestamp() - int(command['recv_timestamp_ms']/1000) <= 15) and (command['target']=='all' or command['target']==param['gateway_id']) 
                             ]
                     print("filtered_commands: ")
                     print(filtered_commands)
+
+                    if any([ command for command in filtered_commands if command['command']=='status']):
+                        command_trigger_update = True
 
                 key = _ticker # aliases
 
@@ -1713,7 +1720,8 @@ async def main():
                     'max_pain_percent_notional' : float(max_pain_percent_notional) if max_pain_percent_notional else "---",
                     'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
 
-                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---" # Lengthy, leave it to last
+                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---", # Lengthy, leave it to last
+                    'command_trigger_update' : command_trigger_update
                 }
 
                 if (
