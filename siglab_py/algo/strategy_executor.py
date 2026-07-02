@@ -1161,14 +1161,51 @@ async def main():
                     if block_command and not unblock_command:
                         command_block = True
 
+                        dispatch_notification(
+                            title=f"{param['current_filename']} {param['gateway_id']} #block", 
+                            message=block_command, 
+                            footer=param['notification']['footer'], 
+                            params=notification_params, 
+                            log_level=LogLevel.CRITICAL, 
+                            logger=logger
+                        )
+
                     elif not block_command and unblock_command:
                         command_block = False
+
+                        dispatch_notification(
+                            title=f"{param['current_filename']} {param['gateway_id']} #unblock", 
+                            message=unblock_command, 
+                            footer=param['notification']['footer'], 
+                            params=notification_params, 
+                            log_level=LogLevel.CRITICAL, 
+                            logger=logger
+                        )
 
                     elif block_command and unblock_command:
                         if unblock_command['msg_timestamp_ms']>block_command['msg_timestamp_ms']:
                             command_block = False
+
+                            dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #unblock", 
+                                message=unblock_command, 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
+
                         else:
                             command_block = True
+
+                            dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #block", 
+                                message=block_command, 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
                     else:
                         pass # NO CHANGE! No recent commands issued? Prev commands remembered by variable 'command_block' initialized to False before the loop.
 
