@@ -1051,7 +1051,8 @@ async def main():
                 utc_now_tzaware : datetime = utc_now.replace(tzinfo=timezone.utc)
                 dt_now : datetime = datetime.now()
                 
-                block_entries = False # We don't reset position_break to False here, as we use it to determine if it's first time break detected. If it is, only then we send notification.
+                # command_block is remembered across iterations of the main while loop.
+                block_entries = False if not command_block else True
                 block_entry_reason = None
 
                 command_trigger_update = False
