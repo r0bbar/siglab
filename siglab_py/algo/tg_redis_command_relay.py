@@ -105,7 +105,7 @@ param: Dict[str, Any] = {
             'host': 'localhost',
             'port': 6379,
             'db': 0,
-            'ttl_ms': 1000 * 60
+            'ttl_ms': 1000 * 15
         }
     }
 }
@@ -206,11 +206,12 @@ async def main() -> None:
             channel_entity = await client.get_entity(param['channel_invite_url']) 
             log(f"channel: {channel_entity.id}")
             
+            commands = []
             while True:
                 since = datetime.now() - timedelta(minutes=1)
                 print(f"{datetime.now()} fetching channel messages ...")
                 async for message in client.iter_messages(channel_entity, offset_date=since, limit=10):
-                    # print(f"{message.date} {message.sender_id}: {message.text}")
+                    s_message = f"{message.date} {message.sender.title} {message.text}"
 
                     full_hash_key = f"{param['hash_key']}{datetime.now().strftime('%Y%m%d')}" # "%Y%m%d %H%M%S" is format string if you want yyyyMMdd HH:MM:SS. Here we take only "yyyyMMdd MM", avoiding HH so there's no confusion if it's running on UTC machine, or otherwise.
                     expected_hash = hashlib.sha256(full_hash_key.encode()).hexdigest()
@@ -233,7 +234,7 @@ async def main() -> None:
                         if (
                             message_hash==expected_hash # verify message/sender is valid.
                         ):
-                            seen_hash = hashlib.sha256(f"{message_hash}{int(message.date.timestamp())}{message.text}".encode()).hexdigest()
+                            seen_hash = hashlib.sha256(f"{int(message.date.timestamp())}{message.text}".encode()).hexdigest()
                             if seen_hash not in seen_hashes: # Guard against duplicates, REPLAY attacks
                                 seen_hashes.append(seen_hash)
 
@@ -247,24 +248,34 @@ async def main() -> None:
                                         'target' : target,
                                         'command' : command,
                                     }
+                                    commands.append(incoming)
+                                else:
+                                    print(f"message discarded, command '{command}' not registered in commands_filter: {s_message}")
+                                    
+                            else:
+                                print(f"message discarded, already processed: {s_message}")
 
-                                    print(f"{pformat(incoming, indent=2, width=100)}")
-                                    
-                                    if redis_client:
-                                        try:
-                                            publish_topic = f"{param['mds']['topics']['command']}"
-                                            redis_client.set(name=publish_topic, value=json.dumps(incoming).encode('utf-8'), ex=param['mds']['redis']['ttl_ms'] // 1000)
-                                            log(f"Published message {message.id} to Redis topic {publish_topic}", LogLevel.INFO)
-                                        except Exception as e:
-                                            log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
-                                    
-                                    if param['alert_wav_path'] and sys.platform == 'win32':
-                                        import winsound
-                                        for _ in range(param['num_shouts']):
-                                            winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                         else:
-                            print(f"message_hash {message_hash} not matching expected_hash {expected_hash}, message discarded.")
+                            print(f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}")
 
+                log(f"Commands received:")
+                log(f"{pformat(commands, indent=2, width=100)}")
+                                    
+                if redis_client:
+                    try:
+                        publish_topic = f"{param['mds']['topics']['command']}"
+                        redis_client.set(name=publish_topic, value=json.dumps(commands).encode('utf-8'), ex=param['mds']['redis']['ttl_ms'] // 1000)
+                        log(f"Published message {message.id} to Redis topic {publish_topic}", LogLevel.INFO)
+                    except Exception as e:
+                        log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
+                    finally:
+                        commands.clear()
+                
+                if param['alert_wav_path'] and sys.platform == 'win32':
+                    import winsound
+                    for _ in range(param['num_shouts']):
+                        winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
+                        
                 await asyncio.sleep(1) # So long you wait one sec, TG wont block your subsequent call 15 sec!
 
         except Exception as e:
