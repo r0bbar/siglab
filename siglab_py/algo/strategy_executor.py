@@ -261,6 +261,7 @@ Debug from VSCode, launch.json:
         1. #posbreak
         2. #entry/#exit in notifications and ENTRY/EXIT in log
         3. #tpmincross
+        4. #block/#unblock/#terminate are commands overrides
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -1154,6 +1155,18 @@ async def main():
 
                     if any([ command for command in filtered_commands if command['command']=='status']):
                         command_trigger_update = True
+
+                    if any([ command for command in filtered_commands if command['command']=='terminate']):
+                        keep_looping = False
+
+                        dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #terminate", 
+                                message="Terminate command received! Exiting!", 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
                     
                     block_command = [ command for command in filtered_commands if command['command']=='block' ]
                     block_command = block_command[-1] if any(block_command) else None
