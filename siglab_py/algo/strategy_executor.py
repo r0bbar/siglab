@@ -261,6 +261,7 @@ Debug from VSCode, launch.json:
         1. #posbreak
         2. #entry/#exit in notifications and ENTRY/EXIT in log
         3. #tpmincross
+        4. #block/#unblock/#terminate are commands overrides
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -336,6 +337,8 @@ param : Dict = {
             "position_topic" : None,
             
             "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
+
+            'command': 'tg_command'
         },
         'redis' : {
             'host' : 'localhost',
@@ -837,6 +840,8 @@ async def main():
     lo_candles_w_ta_topic : str = param['mds']['topics']['lo_candles_w_ta_topic']
     orderbook_topic : str = param['mds']['topics']['orderbook_topic']
 
+    command_topic : str = param['mds']['topics']['command']
+
     hi_candles_provider_topic : str = param['mds']['topics']['hi_candles_provider_topic']
     lo_candles_provider_topic : str = param['mds']['topics']['lo_candles_provider_topic']
     orderbooks_provider_topic : str = param['mds']['topics']['orderbooks_provider_topic']
@@ -854,6 +859,7 @@ async def main():
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"position_topic: {position_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
+    log(f"command_topic: {command_topic}")
 
     algo_param = param # aliases
 
@@ -1027,6 +1033,9 @@ async def main():
 
         columns_type_initialized : bool = False
 
+        command_trigger_update : bool = False
+        command_block : bool = False # CAUTION: Don't re-initialize every loop!
+
         connectivity_errors = []
         generic_errors = {}
 
@@ -1043,8 +1052,11 @@ async def main():
                 utc_now_tzaware : datetime = utc_now.replace(tzinfo=timezone.utc)
                 dt_now : datetime = datetime.now()
                 
-                block_entries = False # We don't reset position_break to False here, as we use it to determine if it's first time break detected. If it is, only then we send notification.
-                block_entry_reason = None
+                # command_block is remembered across iterations of the main while loop.
+                block_entries = False if not command_block else True
+                block_entry_reason = None if not command_block else f"Command block"
+
+                command_trigger_update = False
 
                 dt_targettz = datetime.fromtimestamp(dt_now.timestamp(), tz=ZoneInfo(param['rolldate_tz']))
                 today_dayofweek = dt_targettz.weekday()
@@ -1129,6 +1141,96 @@ async def main():
                         ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
                         if datetime.now().timestamp()<ticker_change_cutoff_sec:
                             _ticker = old_ticker
+
+                command_messages = redis_client.get(command_topic)
+                if command_messages:
+                    command_messages = command_messages.decode('utf-8')
+                    commands = json.loads(command_messages)
+                    filtered_commands = [ 
+                                command for command in commands 
+                                if (datetime.now().timestamp() - int(command['recv_timestamp_ms']/1000) <= 15) and (command['target']=='all' or command['target']==param['gateway_id']) 
+                            ]
+                    print("filtered_commands: ")
+                    print(filtered_commands)
+
+                    if any([ command for command in filtered_commands if command['command']=='status']):
+                        command_trigger_update = True
+
+                    if any([ command for command in filtered_commands if command['command']=='terminate']):
+                        keep_looping = False
+
+                        dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #terminate", 
+                                message="Terminate command received! Exiting!", 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
+                    
+                    block_command = [ command for command in filtered_commands if command['command']=='block' ]
+                    block_command = block_command[-1] if any(block_command) else None
+                    unblock_command = [ command for command in filtered_commands if command['command']=='unblock' ]
+                    unblock_command = unblock_command[-1] if any(unblock_command) else None
+                    if block_command and not unblock_command:
+                        if not command_block:
+                            dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #block", 
+                                message=block_command, 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
+
+                        command_block = True
+
+                    elif not block_command and unblock_command:
+                        if command_block:
+                            dispatch_notification(
+                                title=f"{param['current_filename']} {param['gateway_id']} #unblock", 
+                                message=unblock_command, 
+                                footer=param['notification']['footer'], 
+                                params=notification_params, 
+                                log_level=LogLevel.CRITICAL, 
+                                logger=logger
+                            )
+
+                        command_block = False
+
+                    elif block_command and unblock_command:
+                        if unblock_command['msg_timestamp_ms']>block_command['msg_timestamp_ms']:
+                            if command_block:
+                                dispatch_notification(
+                                    title=f"{param['current_filename']} {param['gateway_id']} #unblock", 
+                                    message=unblock_command, 
+                                    footer=param['notification']['footer'], 
+                                    params=notification_params, 
+                                    log_level=LogLevel.CRITICAL, 
+                                    logger=logger
+                                )
+
+                            command_block = False
+
+                        else:
+                            command_block = True
+
+                            if not command_block:
+                                dispatch_notification(
+                                    title=f"{param['current_filename']} {param['gateway_id']} #block", 
+                                    message=block_command, 
+                                    footer=param['notification']['footer'], 
+                                    params=notification_params, 
+                                    log_level=LogLevel.CRITICAL, 
+                                    logger=logger
+                                )
+
+                    else:
+                        pass # NO CHANGE! No recent commands issued? Prev commands remembered by variable 'command_block' initialized to False before the loop.
+
+                    if command_block:
+                        block_entries = True
+                        block_entry_reason = f"Command block"
 
                 key = _ticker # aliases
 
@@ -1697,7 +1799,8 @@ async def main():
                     'max_pain_percent_notional' : float(max_pain_percent_notional) if max_pain_percent_notional else "---",
                     'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
 
-                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---" # Lengthy, leave it to last
+                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---", # Lengthy, leave it to last
+                    'command_trigger_update' : command_trigger_update # Indicates to strategy_master if this update is a command triggered adhoc update.
                 }
 
                 if (

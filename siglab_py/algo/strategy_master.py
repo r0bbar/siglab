@@ -209,6 +209,8 @@ async def main() -> None:
                     logger.error(f"{key_err}")
 
             if position_summaries:
+                any_command_trigger_update = any([ update for update in position_summaries if update['command_trigger_update'] ])
+
                 pd_position_summaries = pd.DataFrame(position_summaries)
                 pd_position_summaries.sort_values(
                         by=['ticker', 'gateway_id'],
@@ -224,12 +226,12 @@ async def main() -> None:
                 
                 row_hashes = pd.util.hash_pandas_object(pd_position_summaries[param["selected_fields_for_notification"]], index=False)
                 message_hash = hashlib.sha256(row_hashes.values).hexdigest()
-                logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
-                if message_hash!=prev_message_hash:
+                # logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
+                if any_command_trigger_update or message_hash!=prev_message_hash:
                     prev_message_hash = message_hash
 
                     dispatch_notification(
-                                        title=f"#position {param['current_filename']}", 
+                                        title=f"#position {param['current_filename']} {'(force update)' if any_command_trigger_update else ''}", 
                                         message=_pd_position_summaries, 
                                         footer=param['notification']['footer'], 
                                         params=notification_params, 
