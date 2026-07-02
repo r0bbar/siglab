@@ -265,7 +265,7 @@ async def main() -> None:
                     try:
                         publish_topic = f"{param['mds']['topics']['command']}"
                         redis_client.set(name=publish_topic, value=json.dumps(commands).encode('utf-8'), ex=param['mds']['redis']['ttl_ms'] // 1000)
-                        log(f"Published message {message.id} to Redis topic {publish_topic}", LogLevel.INFO)
+                        log(f"Published {len(commands)} commands to Redis topic {publish_topic}", LogLevel.INFO)
                     except Exception as e:
                         log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
                     finally:
