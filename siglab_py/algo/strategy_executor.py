@@ -1033,7 +1033,7 @@ async def main():
         columns_type_initialized : bool = False
 
         command_trigger_update : bool = False
-        command_block : bool = False
+        command_block : bool = False # CAUTION: Don't re-initialize every loop!
 
         connectivity_errors = []
         generic_errors = {}
@@ -1153,7 +1153,7 @@ async def main():
 
                     if any([ command for command in filtered_commands if command['command']=='status']):
                         command_trigger_update = True
-
+                    
                     block_command = [ command for command in filtered_commands if command['command']=='block' ]
                     block_command = block_command[-1] if any(block_command) else None
                     unblock_command = [ command for command in filtered_commands if command['command']=='unblock' ]
@@ -1169,6 +1169,8 @@ async def main():
                             command_block = False
                         else:
                             command_block = True
+                    else:
+                        pass # NO CHANGE! No recent commands issued? Prev commands remembered by variable 'command_block' initialized to False before the loop.
 
                     if command_block:
                         block_entries = True
