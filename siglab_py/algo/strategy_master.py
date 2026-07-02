@@ -231,7 +231,7 @@ async def main() -> None:
                     prev_message_hash = message_hash
 
                     dispatch_notification(
-                                        title=f"#position {param['current_filename']}", 
+                                        title=f"#position {param['current_filename']} {'(force update)' if any_command_trigger_update else ''}", 
                                         message=_pd_position_summaries, 
                                         footer=param['notification']['footer'], 
                                         params=notification_params, 
