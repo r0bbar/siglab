@@ -243,7 +243,7 @@ async def main() -> None:
 
                                 if command in param['commands_filter'] or not param['commands_filter']:
                                     incoming = {
-                                        'tg_timestamp_ms' : int(message.date.timestamp() *1000), # TG can lag by > 60 sec
+                                        'msg_timestamp_ms' : int(message.date.timestamp() *1000), # TG can lag by > 60 sec
                                         'recv_timestamp_ms' : int(datetime.now().timestamp() *1000),
                                         'sender_id' : message.sender.title,
                                         'target' : target,
