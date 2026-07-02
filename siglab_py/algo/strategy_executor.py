@@ -1053,7 +1053,7 @@ async def main():
                 
                 # command_block is remembered across iterations of the main while loop.
                 block_entries = False if not command_block else True
-                block_entry_reason = None
+                block_entry_reason = None if not command_block else f"Command block"
 
                 command_trigger_update = False
 
@@ -1211,7 +1211,7 @@ async def main():
                                     log_level=LogLevel.CRITICAL, 
                                     logger=logger
                                 )
-                                
+
                     else:
                         pass # NO CHANGE! No recent commands issued? Prev commands remembered by variable 'command_block' initialized to False before the loop.
 
