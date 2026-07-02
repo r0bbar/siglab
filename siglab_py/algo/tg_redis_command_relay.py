@@ -249,6 +249,9 @@ async def main() -> None:
                                         'command' : command,
                                     }
                                     commands.append(incoming)
+                                    
+                                    print(f"registered command: {s_message}")
+
                                 else:
                                     print(f"message discarded, command '{command}' not registered in commands_filter: {s_message}")
                                     
@@ -258,23 +261,24 @@ async def main() -> None:
                         else:
                             print(f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}")
 
-                log(f"Commands received:")
-                log(f"{pformat(commands, indent=2, width=100)}")
-                                    
-                if redis_client:
-                    try:
-                        publish_topic = f"{param['mds']['topics']['command']}"
-                        redis_client.set(name=publish_topic, value=json.dumps(commands).encode('utf-8'), ex=param['mds']['redis']['ttl_ms'] // 1000)
-                        log(f"Published {len(commands)} commands to Redis topic {publish_topic}", LogLevel.INFO)
-                    except Exception as e:
-                        log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
-                    finally:
-                        commands.clear()
-                
-                if param['alert_wav_path'] and sys.platform == 'win32':
-                    import winsound
-                    for _ in range(param['num_shouts']):
-                        winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
+                if commands:
+                    log(f"Commands received:")
+                    log(f"{pformat(commands, indent=2, width=100)}")
+                                        
+                    if redis_client:
+                        try:
+                            publish_topic = f"{param['mds']['topics']['command']}"
+                            redis_client.set(name=publish_topic, value=json.dumps(commands).encode('utf-8'), ex=param['mds']['redis']['ttl_ms'] // 1000)
+                            log(f"Published {len(commands)} commands to Redis topic {publish_topic}", LogLevel.INFO)
+                        except Exception as e:
+                            log(f"Failed to publish to Redis: {str(e)}", LogLevel.ERROR)
+                        finally:
+                            commands.clear()
+                    
+                    if param['alert_wav_path'] and sys.platform == 'win32':
+                        import winsound
+                        for _ in range(param['num_shouts']):
+                            winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                         
                 await asyncio.sleep(1) # So long you wait one sec, TG wont block your subsequent call 15 sec!
 
