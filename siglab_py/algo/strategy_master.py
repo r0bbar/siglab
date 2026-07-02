@@ -224,7 +224,7 @@ async def main() -> None:
                 
                 row_hashes = pd.util.hash_pandas_object(pd_position_summaries[param["selected_fields_for_notification"]], index=False)
                 message_hash = hashlib.sha256(row_hashes.values).hexdigest()
-                logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
+                # logger.info(f"message_hash: {message_hash}, prev_message_hash: {prev_message_hash}. Change? {message_hash!=prev_message_hash}")
                 if message_hash!=prev_message_hash:
                     prev_message_hash = message_hash
 
