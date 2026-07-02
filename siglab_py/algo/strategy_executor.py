@@ -336,6 +336,8 @@ param : Dict = {
             "position_topic" : None,
             
             "full_economic_calendars_topic" : "economic_calendars_full_$SOURCE$",
+
+            'command': 'tg_command'
         },
         'redis' : {
             'host' : 'localhost',
@@ -837,6 +839,8 @@ async def main():
     lo_candles_w_ta_topic : str = param['mds']['topics']['lo_candles_w_ta_topic']
     orderbook_topic : str = param['mds']['topics']['orderbook_topic']
 
+    command_topic : str = param['mds']['topics']['command']
+
     hi_candles_provider_topic : str = param['mds']['topics']['hi_candles_provider_topic']
     lo_candles_provider_topic : str = param['mds']['topics']['lo_candles_provider_topic']
     orderbooks_provider_topic : str = param['mds']['topics']['orderbooks_provider_topic']
@@ -854,6 +858,7 @@ async def main():
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
     log(f"position_topic: {position_topic}")
     log(f"full_economic_calendars_topic: {full_economic_calendars_topic}")
+    log(f"command_topic: {command_topic}")
 
     algo_param = param # aliases
 
@@ -1129,6 +1134,17 @@ async def main():
                         ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
                         if datetime.now().timestamp()<ticker_change_cutoff_sec:
                             _ticker = old_ticker
+
+                command_messages = redis_client.get(command_topic)
+                if command_messages:
+                    command_messages = command_messages.decode('utf-8')
+                    commands = json.loads(command_messages)
+                    filtered_commands = [ 
+                                command for command in commands 
+                                if (datetime.now().timestamp() - int(command['timestamp_ms']/1000) <= 15) and (command['target']=='all' or command['target']==param['gateway_id']) 
+                            ]
+                    print("filtered_commands: ")
+                    print(filtered_commands)
 
                 key = _ticker # aliases
 
