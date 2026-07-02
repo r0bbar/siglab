@@ -260,7 +260,9 @@ async def main() -> None:
                                 print(f"message discarded, already processed: {s_message}")
 
                         else:
-                            print(f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}")
+                            err_msg = f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}"
+                            print(err_msg)
+                            dispatch_notification(title=f"{param['current_filename']} {param['channel_name']} Invalid message hash", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
 
                 if commands:
                     log(f"Commands received:")
