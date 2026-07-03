@@ -479,6 +479,7 @@ def compute_candles_stats(
     pd_candles['ema_cross_last'] = np.select(conditions, choices, default=None) # type: ignore
     pd_candles.loc[bullish_ema_crosses, 'ema_cross'] = 'bullish'
     pd_candles.loc[bearish_ema_crosses, 'ema_cross'] = 'bearish'
+    pd_candles['num_ema_cross'] = pd_candles['ema_cross'].rolling(window=sliding_window_how_many_candles).count()
 
     pd_candles['max_short_periods'] = close_short_periods_rolling.max()
     pd_candles['max_long_periods'] = close_long_periods_rolling.max()

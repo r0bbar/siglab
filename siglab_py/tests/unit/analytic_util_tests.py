@@ -118,7 +118,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'log_return', 'interval_hist_vol', 'annualized_hist_vol',
             'chop_against_ema', 
             'ema_volume_short_periods', 'ema_volume_long_periods', 
-            'ema_cross', 'ema_cross_last', 'ema_bullish_cross_last_id', 'ema_bearish_cross_last_id',
+            'ema_cross', 'ema_cross_last', 'ema_bullish_cross_last_id', 'ema_bearish_cross_last_id','num_ema_cross',
             'max_short_periods', 'max_long_periods', 'idmax_short_periods', 'idmax_long_periods', 'min_short_periods', 'min_long_periods', 'idmin_short_periods', 'idmin_long_periods', 
             'max_candle_body_height_percent_long_periods', 'idmax_candle_body_height_percent_long_periods',
             'min_candle_body_height_percent_long_periods', 'idmin_candle_body_height_percent_long_periods',
