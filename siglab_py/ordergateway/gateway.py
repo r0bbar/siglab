@@ -861,7 +861,7 @@ async def execute_one_position(
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
                         '''
-                        Sometimes, due to Exchange implementation, they throw OOrderNotFound exception even if order is executed.
+                        Sometimes, due to Exchange implementation, they throw OrderNotFound exception even if order is executed.
                         
                         Example, Hyperliquid
                             https://github.com/ccxt/ccxt/issues/27113
