@@ -862,7 +862,12 @@ async def execute_one_position(
                         
                         '''
                         Sometimes, due to Exchange implementation, they throw OOrderNotFound exception even if order is executed.
+                        
+                        Example, Hyperliquid
+                            https://github.com/ccxt/ccxt/issues/27113
+
                         You can confirm by manually checking Exchange UI that order was actually executed successfully!
+                        
                         So below is best effort validation, given fetch_order failed, what else can you do? 
                         Obviously you can poll Exchange for current position, loop a number of times until it matches expectation, or not! 
                         '''
