@@ -114,6 +114,8 @@ param : Dict = {
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
 
+    parser.add_argument("--instance_name", help="Instance name", default=None)
+
     parser.add_argument("--loop_freq_ms", help="Loop delays. Default: 60000ms or 60sec", default=60000)
 
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
@@ -121,6 +123,8 @@ def parse_args():
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
 
     args = parser.parse_args()
+
+    param['instance_name'] = args.instance_name.strip().lower() if args.instance_name else ""
 
     param['loop_freq_ms'] = int(args.loop_freq_ms)
     
@@ -231,7 +235,7 @@ async def main() -> None:
                     prev_message_hash = message_hash
 
                     dispatch_notification(
-                                        title=f"#position {param['current_filename']} {'(force update)' if any_command_trigger_update else ''}", 
+                                        title=f"#position {param['current_filename']} {param['instance_name']} {'(force update)' if any_command_trigger_update else ''}", 
                                         message=_pd_position_summaries, 
                                         footer=param['notification']['footer'], 
                                         params=notification_params, 

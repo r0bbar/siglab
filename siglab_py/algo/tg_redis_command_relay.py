@@ -139,6 +139,9 @@ def log(message: str, log_level: LogLevel = LogLevel.INFO) -> None:
 
 def parse_args():
     parser = argparse.ArgumentParser() # type: ignore
+
+    parser.add_argument("--instance_name", help="Instance name", default=None)
+
     parser.add_argument("--api_id", help="TG api_id", default=None)
     parser.add_argument("--api_hash", help="TG api_hash", default=None)
     parser.add_argument("--hash_key", help="[part] of secret used to generate expected hash which should be included as first token of incoming message.", default=None)
@@ -152,6 +155,8 @@ def parse_args():
 
     args = parser.parse_args()
     
+    param['instance_name'] = args.instance_name.strip().lower() if args.instance_name else ""
+
     param['api_id'] = args.api_id
     param['api_hash'] = args.api_hash
     param['hash_key'] = args.hash_key
@@ -259,7 +264,7 @@ async def main() -> None:
                             else:
                                 err_msg = f"message discarded, message_hash {message_hash} not matching expected_hash {expected_hash}: {s_message}"
                                 print(err_msg)
-                                dispatch_notification(title=f"{param['current_filename']} {param['channel_name']} Invalid message hash", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
+                                dispatch_notification(title=f"{param['current_filename']} {param['instance_name']} {param['channel_name']} Invalid message hash", message=err_msg, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger) # type: ignore
                         
                         else:
                             print(f"message discarded, already processed: {s_message}")
