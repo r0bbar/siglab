@@ -629,12 +629,12 @@ async def execute_one_position(
                 
                 res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
                 current_amount_base_ccy = res['amount_base_ccy'] # Current position before i-th slice dispatched
+                updated_position = res['updated_position']
 
                 if position.reduce_only and position.expected_pos_after_execution==0:
                     # Ensure clean position closure
                     remaining_amount_base_ccy = current_amount_base_ccy
                     remaining_amount = remaining_amount_base_ccy/multiplier # For perps, this is in # contracts.
-                    updated_position = res['updated_position']
                 
                     if i==last_slice_i-1:
                         # If next slice is last slice ...
@@ -655,7 +655,7 @@ async def execute_one_position(
                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
                 target_amount_base_ccy = current_amount_base_ccy + rounded_slice_amount_in_base_ccy*multiplier # Expected/target position (in base ccy, not # contracts) if slice executed successfully/fully.
-                log(f"side: {position.side}, current_amount_base_ccy: {current_amount_base_ccy} (Current position in base ccy), target_amount_base_ccy: {target_amount_base_ccy} (This is expected position size in base ccy. It's always >0, even for shorts.)")
+                log(f"side: {position.side}, current_amount_base_ccy: {current_amount_base_ccy} (Current position in base ccy), target_amount_base_ccy: {target_amount_base_ccy} (This is expected position size in base ccy, after current slice executed. It's always >0, even for shorts.)")
 
                 if rounded_slice_amount_in_base_ccy==0:
                     log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
