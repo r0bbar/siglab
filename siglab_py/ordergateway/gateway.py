@@ -8,7 +8,7 @@ from enum import Enum
 import argparse
 import time
 from datetime import datetime, timedelta
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union, Any, Optional
 import hashlib
 from collections import deque
 import logging
@@ -591,6 +591,34 @@ async def execute_one_position(
                 'amount_base_ccy' : amount_base_ccy,
                 'updated_position' : updated_position
             }
+        
+        async def _wait_for_slice_completion(
+            exchange : AnyExchange, 
+            ticker : str,
+            ticker_class : str,
+            multiplier : float,
+            expected_amount_base_ccy,
+
+            max_retry : int = 60,
+            sleep_between_retries_sec : int = 1
+        ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+            i : int = 0
+            current_amount_base_ccy = 0
+            res = None
+            while current_amount_base_ccy!=current_amount_base_ccy or i<max_retry:
+                try:
+                    res = _fetch_position(exchange=exchange, ticker=ticker, ticker_class=ticker_class, multiplier=multiplier)
+
+                    current_amount_base_ccy = res['amount_base_ccy']
+                    if current_amount_base_ccy==expected_amount_base_ccy:
+                        return (True, res)
+                    
+                except Exception as fetch_position_err:
+                    print(f"fetch_position_err: {str(fetch_position_err)}")
+                finally: 
+                    asyncio.sleep(sleep_between_retries_sec)
+
+            return (False, None)
             
         ticker_class : str = classify_ticker(position.ticker)
 
@@ -654,7 +682,11 @@ async def execute_one_position(
                 rounded_slice_amount_in_base_ccy = float(rounded_slice_amount_in_base_ccy) if rounded_slice_amount_in_base_ccy else 0
                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy if rounded_slice_amount_in_base_ccy>min_amount else min_amount
 
-                target_amount_base_ccy = current_amount_base_ccy + rounded_slice_amount_in_base_ccy*multiplier # Expected/target position (in base ccy, not # contracts) if slice executed successfully/fully.
+                # Expected/target position (in base ccy, not # contracts) if slice executed successfully/fully.
+                if not position.reduce_only:
+                    target_amount_base_ccy = current_amount_base_ccy + rounded_slice_amount_in_base_ccy*multiplier 
+                else:
+                    target_amount_base_ccy = current_amount_base_ccy - rounded_slice_amount_in_base_ccy*multiplier # Given current_amount_base_ccy always positive number (even for shorts), for unwinds, it's reducing the target: Thus minus.
                 log(f"side: {position.side}, current_amount_base_ccy: {current_amount_base_ccy} (Current position in base ccy), target_amount_base_ccy: {target_amount_base_ccy} (This is expected position size in base ccy, after current slice executed. It's always >0, even for shorts.)")
 
                 if rounded_slice_amount_in_base_ccy==0:
@@ -828,24 +860,26 @@ async def execute_one_position(
                     except OrderNotFound as order_not_found_err:
                         log(f"fetch_order failed for order_id: {order_id}, {exchange.name} complaining: {order_not_found_err}. Sometimes exchanges explain OrderNotFound but trade actually executed. Please verify.")
                         
-                        # Best effort to auto-validate: 
-                        # Should simply re-raise exception after multiple attempts to fetch_order and still failing (Could be exchange down). 
-                        # IF this slice already is last slice, and actual position == expected_pos_after_execution, 
-                        # THEN 
-                        #   a) don't re-raise exception and allow the slice to complete.
-                        #   b) remaining to execute == 0
-                        res = await _fetch_position(exchange, position.ticker, ticker_class, multiplier)
+                        '''
+                        Sometimes, due to Exchange implementation, they throw OOrderNotFound exception even if order is executed.
+                        You can confirm by manually checking Exchange UI that order was actually executed successfully!
+                        So below is best effort validation, given fetch_order failed, what else can you do? 
+                        Obviously you can poll Exchange for current position, loop a number of times until it matches expectation, or not! 
+                        '''
+                        slice_executed, res = _wait_for_slice_completion(
+                            exchange=exchange,
+                            ticker=position.ticker,
+                            ticker_class=ticker_class,
+                            multiplier=multiplier,
+                            expected_amount_base_ccy=target_amount_base_ccy # This is always a positive number, even for shorts.
+                            )
+                        if not slice_executed:
+                            raise
+
                         amount_base_ccy = res['amount_base_ccy']
                         updated_position = res['updated_position']
                         log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
                         log(f"{json.dumps(updated_position, indent=4)}")
-
-                        # i==last_slice_i if a) len(slices)==1, or b) this slice indeed is the last slice. 
-                        if i!=last_slice_i:
-                            raise
-                        else:
-                            if amount_base_ccy!=position.expected_pos_after_execution:
-                                raise
 
                         order_update = {
                             'status' : 'closed',
