@@ -874,11 +874,16 @@ async def execute_one_position(
                             expected_amount_base_ccy=target_amount_base_ccy # This is always a positive number, even for shorts.
                             )
                         if not slice_executed:
+                            '''
+                            This is bad if order not executed successfully.
+                            scenario 1. Orders for entry failed (Not too bad, if failed completely means you just missed an opportunity.)
+                            scenario 2. Orders for unwind failed (Very bad, it means your directional exposure remains. Question is: How your strategy will be handling this?)
+                            '''
                             raise
 
                         amount_base_ccy = res['amount_base_ccy']
                         updated_position = res['updated_position']
-                        log(f"expected_pos_after_execution: {position.expected_pos_after_execution}, position update after order_not_found_err:")
+                        log(f"position update after order_not_found_err:")
                         log(f"{json.dumps(updated_position, indent=4)}")
 
                         order_update = {
