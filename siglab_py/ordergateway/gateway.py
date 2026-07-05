@@ -65,7 +65,7 @@ Usage:
     --order_amount_randomize_max_pct adds small variance to sliced order amount (Default max 10% on sliced amount) to cover your track in order executions, this is useful especially when executing bigger orders during quieter hours.
     
     --notification_info_url/notification_critical_url/notification_alert_url: If configured gateway will dispatch notifications to Discord
-    --privacy_first: Y (default) or N. If set to Y, Discord notification will mask dollar amounts, only bps and percentages will be included in notifications. 
+    --privacy_first: Y (default) or N. If set to Y, Discord notification will mask dollar amounts, only bps and percentages will be included in notifications. One exception is OrderNotFound error notification: It's a particularly important notification if execution failed and you're unsure if order actually executed or there's a genuine gap between expectation and actual position where trader need to respond.
 
     Any complex json that's not easy to feed thru command line args?
             For example, Lighter DEX exchange instantiation specification.
@@ -878,16 +878,18 @@ async def execute_one_position(
                             multiplier=multiplier,
                             expected_amount_base_ccy=target_amount_base_ccy # This is always a positive number, even for shorts.
                             )
+                        amount_base_ccy = res['amount_base_ccy']
+                        updated_position = res['updated_position']
                         if not slice_executed:
                             '''
                             This is bad if order not executed successfully.
                             scenario 1. Orders for entry failed (Not too bad, if failed completely means you just missed an opportunity.)
                             scenario 2. Orders for unwind failed (Very bad, it means your directional exposure remains. Question is: How your strategy will be handling this?)
                             '''
-                            raise
-
-                        amount_base_ccy = res['amount_base_ccy']
-                        updated_position = res['updated_position']
+                            # This is not respecting param['privacy_first'], it's a particularly important message.
+                            err_msg = f"#ordernotfound Execution failed after OrderNotFound!!! target_amount_base_ccy: {target_amount_base_ccy} (Expected), amount_base_ccy: {amount_base_ccy} (Actual), reduce_only: {position.reduce_only}"
+                            log(err_msg)
+                            raise ValueError(err_msg) from order_not_found_err
                         log(f"position update after order_not_found_err:")
                         log(f"{json.dumps(updated_position, indent=4)}")
 
