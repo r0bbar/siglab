@@ -83,7 +83,7 @@ param: Dict[str, Any] = {
     'message_keywords_filter': [],
     'alert_wav_path' : r"", # Example, d:\sounds\terrible.wav. If left blank, no sound will be played.
     "num_shouts" : 5, # How many times 'alert_wav_path' is played
-    "loop_freq_ms" : 5000,
+    "loop_freq_ms" : 30000,
     'current_filename' : current_filename,
 
     'notification' : {
@@ -215,7 +215,7 @@ async def main() -> None:
             while True:
                 since = datetime.now() - timedelta(minutes=1)
                 print(f"{datetime.now()} fetching channel messages ...")
-                async for message in client.iter_messages(channel_entity, offset_date=since, limit=10): # Looks TG lags can > 1 minute
+                async for message in client.iter_messages(channel_entity, offset_date=since, limit=10): # Looks TG lags can > 1 minute, depending on location
                     s_message = f"{message.date} {message.sender.title} {message.text}"
 
                     full_hash_key = f"{param['hash_key']}{datetime.now().strftime('%Y%m%d')}" # "%Y%m%d %H%M%S" is format string if you want yyyyMMdd HH:MM:SS. Here we take only "yyyyMMdd MM", avoiding HH so there's no confusion if it's running on UTC machine, or otherwise.
@@ -288,10 +288,10 @@ async def main() -> None:
                         for _ in range(param['num_shouts']):
                             winsound.PlaySound(param['alert_wav_path'], winsound.SND_FILENAME)
                         
-                await asyncio.sleep(int(param['loop_freq_ms']/1000)) # So long you wait one sec, TG wont block your subsequent call 15 sec!
-
         except Exception as e:
             log(f"Oops {str(e)} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}", LogLevel.ERROR)
+        finally:
+            await asyncio.sleep(int(param['loop_freq_ms']/1000)) # So long you wait one sec, TG wont block your subsequent call 15 sec!
 
 if __name__ == '__main__':
     try:
