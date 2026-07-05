@@ -888,7 +888,7 @@ async def execute_one_position(
                             '''
                             # This is not respecting param['privacy_first'], it's a particularly important message.
                             err_msg = f"#ordernotfound Execution failed after OrderNotFound!!! target_amount_base_ccy: {target_amount_base_ccy} (Expected), amount_base_ccy: {amount_base_ccy} (Actual), reduce_only: {position.reduce_only}"
-                            log(err_msg)
+                            log(err_msg, log_level=LogLevel.ERROR)
                             raise ValueError(err_msg) from order_not_found_err
                         log(f"position update after order_not_found_err:")
                         log(f"{json.dumps(updated_position, indent=4)}")
