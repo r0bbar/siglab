@@ -246,7 +246,7 @@ async def main() -> None:
                                 target = command_tokens[1]
                                 command = command_tokens[2]
 
-                                if command in param['commands_filter'] or not param['commands_filter']:
+                                if command in param['commands_filter'] or not param['commands_filter']: # Guard against potential attack: Only user defined commands are accepted. It won't be processed otherwise.
                                     incoming = {
                                         'msg_timestamp_ms' : int(message.date.timestamp() *1000), # TG can lag by > 60 sec
                                         'recv_timestamp_ms' : int(datetime.now().timestamp() *1000),
