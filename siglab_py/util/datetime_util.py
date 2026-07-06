@@ -5,6 +5,11 @@ from typing import Dict
 US_EASTERN = zoneinfo.ZoneInfo("America/New_York")
 UTC = timezone.utc
 
+'''
+Be careful with Daylight Saving changes and US NY Cash Open
+    Summer (EDT, DST is Active) (2nd Sun Mar - 1st Sun Nov) UTC offset -4, US Cash open at UTC 13:30
+    Winter (Standard/EST, DST is Inactive)(1st Sun Nov - 2nd Sun Mar) UTC offset -5, US Cash open at UTC 14:30
+'''
 def is_us_dst() -> bool:
     """Returns True if the US is currently in Daylight Saving Time (EDT)."""
     return datetime.now(UTC).astimezone(US_EASTERN).dst() != timedelta(0)
