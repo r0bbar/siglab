@@ -1,5 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import zoneinfo
 from typing import Dict
+
+US_EASTERN = zoneinfo.ZoneInfo("America/New_York")
+UTC = timezone.utc
+
+def is_us_dst() -> bool:
+    """Returns True if the US is currently in Daylight Saving Time (EDT)."""
+    return datetime.now(UTC).astimezone(US_EASTERN).dst() != timedelta(0)
 
 def parse_trading_window(
             today : datetime,
