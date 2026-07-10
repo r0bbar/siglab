@@ -2023,7 +2023,7 @@ async def main():
                         pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
                         pd_lo_candles_w_ta.to_csv(f"lo_candles_{_ticker.replace(':','').replace('/','')}.csv")
                         
-                    TargetStrategy.stage_strat_specific_preentry_data(
+                    remarks = TargetStrategy.stage_strat_specific_preentry_data(
                         algo_param = algo_param,
                         pd_hi_candles_w_ta = pd_hi_candles_w_ta,
                         pd_lo_candles_w_ta = pd_lo_candles_w_ta,
