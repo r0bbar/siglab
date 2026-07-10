@@ -2023,7 +2023,7 @@ async def main():
                         pd_hi_candles_w_ta.to_csv(f"hi_candles_{_ticker.replace(':','').replace('/','')}.csv")
                         pd_lo_candles_w_ta.to_csv(f"lo_candles_{_ticker.replace(':','').replace('/','')}.csv")
                         
-                    remarks = TargetStrategy.stage_strat_specific_preentry_data(
+                    preentry_updates = TargetStrategy.stage_strat_specific_preentry_data(
                         algo_param = algo_param,
                         pd_hi_candles_w_ta = pd_hi_candles_w_ta,
                         pd_lo_candles_w_ta = pd_lo_candles_w_ta,
@@ -2038,6 +2038,10 @@ async def main():
                         
                         strategy_specific_data_cache = strategy_specific_data_cache
                     )
+                    if preentry_updates:
+                        prettyprint = pformat(preentry_updates, indent=2, width=100)
+                        log(prettyprint, LogLevel.CRITICAL)
+                        dispatch_notification(title=f"#preentry_cache_updates {param['current_filename']} {param['gateway_id']} {_ticker}", message=preentry_updates, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                     # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                     _all_indicators = {}
