@@ -25,13 +25,15 @@ class StrategyBase(ABC):
         dt_targettz : datetime,
 
         strategy_specific_data_cache : Dict[str, Any]
-    ):
+    ) -> List[str]:
         '''
         a. pd_hi_candles_w_ta and pd_lo_candles_w_ta are candles from strategy_executor. 
         b. ob is order book.
         Strategy specific data pre-processing can be done here: Stick them into data_cache where needed.
+        
+        Return a List[str] remarks if any, otherwise null. 
         '''
-        pass
+        return None
 
     @staticmethod
     def reversal(
