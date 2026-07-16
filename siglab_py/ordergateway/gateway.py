@@ -871,7 +871,7 @@ async def execute_one_position(
                         So below is best effort validation, given fetch_order failed, what else can you do? 
                         Obviously you can poll Exchange for current position, loop a number of times until it matches expectation, or not! 
                         '''
-                        slice_executed, res = _wait_for_slice_completion(
+                        slice_executed, res = await _wait_for_slice_completion(
                             exchange=exchange,
                             ticker=position.ticker,
                             ticker_class=ticker_class,
