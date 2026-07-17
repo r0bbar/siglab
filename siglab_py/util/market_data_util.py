@@ -463,7 +463,7 @@ def timestamp_to_datetime_cols(
     pd_candles['dayofweek'] = pd_candles['datetime'].dt.dayofweek  # type: ignore dayofweek: Monday is 0 and Sunday is 6
 
     pd_candles['week_of_month'] = pd_candles['timestamp_ms'].apply(
-        lambda x: timestamp_to_week_of_month(int(x/1000))
+        lambda x: timestamp_to_week_of_month(x)
     )
 
     pd_candles['apac_trading_hr'] = pd_candles['timestamp_ms'].apply(
