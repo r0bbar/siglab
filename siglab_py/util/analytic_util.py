@@ -833,6 +833,9 @@ def compute_candles_stats(
     bearish_indices = pd.Series(pd_candles.index.where(pd_candles['macd_cross'] == -1), index=pd_candles.index).astype('Int64')
     pd_candles['macd_bullish_cross_last_id'] = bullish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
     pd_candles['macd_bearish_cross_last_id'] = bearish_indices.rolling(window=pd_candles.shape[0], min_periods=1).max().astype('Int64')
+
+    pd_candles['nums_intervals_since_last_cross'] = pd_candles.index - pd_candles[['macd_bullish_cross_last_id', 'macd_bearish_cross_last_id']].max(axis=1)
+
     conditions = [
         (pd_candles['macd_bullish_cross_last_id'].notna() & 
         pd_candles['macd_bearish_cross_last_id'].notna() &
