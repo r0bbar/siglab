@@ -1470,6 +1470,11 @@ def run_scenario(
                             if unrealized_pnl_live<max_pain:
                                 max_pain = unrealized_pnl_live
                                 for trade in this_ticker_open_trades:
+                                    # Cap max_pain to sl_percent_hard, it'd be confusing otherwise
+                                    max_pain = max(
+                                        current_position_usdt * running_sl_percent_hard/100,
+                                        max_pain
+                                    )
                                     trade['max_pain'] = max_pain # unrealized_pnl_live is set to unrealized_pnl_live_pessimistic!
 
                         if unrealized_pnl_live<0 and max_unrealized_pnl_live>0:
