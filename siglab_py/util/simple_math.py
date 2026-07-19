@@ -258,7 +258,7 @@ def bucket_series(
 
     for key in buckets:
         bucket = buckets[key]
-        assert(len([x for x in bucket['values'] if x<bucket['min'] or x>bucket['max']])==0) # type: ignore
+        assert(len([x for x in bucket['values'] if round(x, label_rounding_decimals)<bucket['min'] or round(x, label_rounding_decimals)>bucket['max']])==0) # type: ignore
 
     return buckets
 
