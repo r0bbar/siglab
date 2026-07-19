@@ -88,7 +88,8 @@ def compute_adjacent_levels(
 def bucket_series(
     values : List[float],
     outlier_threshold_percent : float = 0,
-    level_granularity : float = 0.1 # 0.1 = 10%
+    level_granularity : float = 0.1, # 0.1 = 10%
+    label_rounding_decimals : int = 3
 ) -> Dict[
             str, 
             Dict[str,Union[float, List[float]]]
@@ -141,13 +142,13 @@ def bucket_series(
         }
         for interval in intervals:
             buckets[f"{round_to_sigfigs(last_interval)} - {round_to_sigfigs(interval)}"] = {
-                'min' : last_interval,
-                'max' : interval,
+                'min' : round(last_interval, label_rounding_decimals),
+                'max' : round(interval, label_rounding_decimals),
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
             }
             last_interval = interval
         buckets[f">1"] = {
-                'min' : last_interval,
+                'min' : round(last_interval, label_rounding_decimals),
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=1 ]
         }
@@ -166,13 +167,13 @@ def bucket_series(
         }
         for interval in intervals:
             buckets[f"{round_to_sigfigs(last_interval)} - {round_to_sigfigs(interval)}"] = {
-                'min' : last_interval,
-                'max' : interval,
+                'min' : round(last_interval, label_rounding_decimals),
+                'max' : round(interval, label_rounding_decimals),
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
             }
             last_interval = interval
         buckets[f">1"] = {
-                'min' : last_interval,
+                'min' : round(last_interval, label_rounding_decimals),
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=1 ]
         }
@@ -197,7 +198,7 @@ def bucket_series(
             }
             last_interval = interval
         buckets[f">100"] = {
-                'min' : last_interval,
+                'min' : round(last_interval, label_rounding_decimals),
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=100 ]
         }
@@ -216,13 +217,13 @@ def bucket_series(
         }
         for interval in intervals:
             buckets[f"{round_to_sigfigs(last_interval)} : {round_to_sigfigs(interval)}"] = {
-                'min' : last_interval,
-                'max' : interval,
+                'min' : round(last_interval, label_rounding_decimals),
+                'max' : round(interval, label_rounding_decimals),
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
             }
             last_interval = interval
         buckets[f">100"] = {
-                'min' : last_interval,
+                'min' : round(last_interval, label_rounding_decimals),
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=100 ]
         }
@@ -244,13 +245,13 @@ def bucket_series(
         }
         for interval in intervals:
             buckets[f"{round_to_sigfigs(last_interval)} : {round_to_sigfigs(interval)}"] = {
-                'min' : last_interval,
-                'max' : interval,
+                'min' : round(last_interval, label_rounding_decimals),
+                'max' : round(interval, label_rounding_decimals),
                 'values' : [ x for x in values if x>=last_interval and x<interval ]
             }
             last_interval = interval
         buckets[f"> {round_to_sigfigs(range_max)}"] = {
-                'min' : last_interval,
+                'min' : round(last_interval, label_rounding_decimals),
                 'max' : float("inf"),
                 'values' : [ x for x in values if x>=range_max ]
         }
