@@ -14,9 +14,9 @@ def is_us_dst() -> bool:
     """Returns True if the US is currently in Daylight Saving Time (EDT)."""
     return datetime.now(UTC).astimezone(US_EASTERN).dst() != timedelta(0)
 
-def is_us_cash_open_effective() -> bool:
-    utc_now : datetime = datetime.now(UTC)
-
+def is_us_cash_open_effective(
+    utc_now : datetime = datetime.now(UTC) # utc_now is passed as optional arg so for backtests, you can pass in historical time
+) -> bool:
     if utc_now.hour in [13,14,15]:
         # initial half hour chaos after US NY Cash open: ET 9:30am to 10am. 
         if is_us_dst(): 
