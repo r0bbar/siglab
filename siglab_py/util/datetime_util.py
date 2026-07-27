@@ -10,16 +10,18 @@ Be careful with Daylight Saving changes and US NY Cash Open
     Summer (EDT, DST is Active) (2nd Sun Mar - 1st Sun Nov) UTC offset -4, US Cash open at UTC 13:30
     Winter (Standard/EST, DST is Inactive)(1st Sun Nov - 2nd Sun Mar) UTC offset -5, US Cash open at UTC 14:30
 '''
-def is_us_dst() -> bool:
+def is_us_dst(
+    utc_now : datetime = datetime.now(UTC) # utc_now is passed as optional arg so for backtests, you can pass in historical time    
+) -> bool:
     """Returns True if the US is currently in Daylight Saving Time (EDT)."""
-    return datetime.now(UTC).astimezone(US_EASTERN).dst() != timedelta(0)
+    return utc_now.astimezone(US_EASTERN).dst() != timedelta(0)
 
 def is_us_cash_open_effective(
     utc_now : datetime = datetime.now(UTC) # utc_now is passed as optional arg so for backtests, you can pass in historical time
 ) -> bool:
     if utc_now.hour in [13,14,15]:
         # initial half hour chaos after US NY Cash open: ET 9:30am to 10am. 
-        if is_us_dst(): 
+        if is_us_dst(utc_now): 
             if utc_now.hour>=13 and utc_now.hour<=14:
                 return True
         else:
