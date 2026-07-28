@@ -857,6 +857,8 @@ def compute_candles_stats(
     pd_candles.loc[bullish_macd_crosses, 'macd_cross'] = 'bullish'
     pd_candles.loc[bearish_macd_crosses, 'macd_cross'] = 'bearish'
 
+    pd_candles['macd_segment_id'] = (pd_candles['macd_cross'].notna()).cumsum()
+
     if not pypy_compat:
         calculate_slope(
             pd_data=pd_candles,
