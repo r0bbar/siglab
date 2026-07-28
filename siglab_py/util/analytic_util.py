@@ -859,6 +859,55 @@ def compute_candles_stats(
 
     pd_candles['macd_segment_id'] = (pd_candles['macd_cross'].notna()).cumsum()
 
+    def _classify_macd_divergence(
+        pd_candles : pd.DataFrame
+    ):
+        grouped = pd_candles.groupby('macd_segment_id').agg({
+            'close': ['min', 'max'],
+            'macd': ['min', 'max'],
+            'macd_cross_last': 'last'
+        })
+        grouped.columns = ['price_low', 'price_high', 'macd_low', 'macd_high', 'regime']
+        
+        prev_price_low  = grouped['price_low'].shift(1)
+        prev_price_high = grouped['price_high'].shift(1)
+        prev_macd_low   = grouped['macd_low'].shift(1)
+        prev_macd_high  = grouped['macd_high'].shift(1)
+        
+        is_bullish = grouped['regime'] == 'bullish'
+        is_bearish = grouped['regime'] == 'bearish'
+        
+        cond_normal_bull = (
+            is_bullish &
+            (grouped['price_low'] < prev_price_low) &
+            (grouped['macd_low'] > prev_macd_low)
+        )
+        cond_hidden_bull = (
+            is_bullish &
+            (grouped['price_low'] > prev_price_low) &
+            (grouped['macd_low'] < prev_macd_low)
+        )
+        cond_normal_bear = (
+            is_bearish &
+            (grouped['price_high'] > prev_price_high) &
+            (grouped['macd_high'] < prev_macd_high)
+        )
+        cond_hidden_bear = (
+            is_bearish &
+            (grouped['price_high'] < prev_price_high) &
+            (grouped['macd_high'] > prev_macd_high)
+        )
+        
+        conditions = [cond_normal_bull, cond_normal_bear, cond_hidden_bull, cond_hidden_bear]
+        choices = ['normal_bullish_divergence', 'normal_bearish_divergence',
+                'hidden_bullish_divergence', 'hidden_bearish_divergence']
+        grouped['macd_divergence'] = np.select(conditions, choices, default=None)
+        
+        merged = pd_candles.merge(grouped[['macd_divergence']], left_on='macd_segment_id', right_index=True, how='left')
+        pd_candles['macd_divergence'] = merged['macd_divergence']
+        
+    _classify_macd_divergence(pd_candles)
+
     if not pypy_compat:
         calculate_slope(
             pd_data=pd_candles,
