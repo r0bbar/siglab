@@ -1165,9 +1165,6 @@ def run_scenario(
                         current_position_usdt_sell = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='sell'])
                         current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
                         
-                        this_ticker_current_position_usdt_buy = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='buy'])
-                        this_ticker_current_position_usdt_sell = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='sell'])
-
                         this_ticker_historical_tp = tp_by_ticker[ticker]
                         this_ticker_historical_stops = sl_by_ticker[ticker]
 
@@ -1200,15 +1197,15 @@ def run_scenario(
 
                         # In single legged trading, we either long or short for a particular ticker at any given moment
                         assert(
-                            (this_ticker_current_position_usdt_buy>=0 and this_ticker_current_position_usdt_sell==0) 
-                            or (this_ticker_current_position_usdt_buy==0 and this_ticker_current_position_usdt_sell>=0))
+                            (current_position_usdt_buy>=0 and current_position_usdt_sell==0) 
+                            or (current_position_usdt_buy==0 and current_position_usdt_sell>=0))
                         
-                        if this_ticker_current_position_usdt_buy>0:
+                        if current_position_usdt_buy>0:
                             this_ticker_open_positions_side = 'buy'
-                            this_ticker_current_position_usdt = this_ticker_current_position_usdt_buy
-                        elif this_ticker_current_position_usdt_sell>0:
+                            this_ticker_current_position_usdt = current_position_usdt_buy
+                        elif current_position_usdt_sell>0:
                             this_ticker_open_positions_side = 'sell'
-                            this_ticker_current_position_usdt = this_ticker_current_position_usdt_sell
+                            this_ticker_current_position_usdt = current_position_usdt_sell
                         else:
                             this_ticker_open_positions_side = 'flat'
                             this_ticker_current_position_usdt = 0
@@ -1220,8 +1217,6 @@ def run_scenario(
                             'current_position_usdt_sell' : current_position_usdt_sell,
                             'current_position_usdt' : current_position_usdt,
                             'this_ticker_open_trades' : this_ticker_open_trades,
-                            'this_ticker_current_position_usdt_buy' : this_ticker_current_position_usdt_buy,
-                            'this_ticker_current_position_usdt_sell' : this_ticker_current_position_usdt_sell,
                             'this_ticker_open_positions_side' : this_ticker_open_positions_side,
                             'this_ticker_current_position_usdt' : this_ticker_current_position_usdt,
                             'max_trade_age_ms' : max_trade_age_ms,
@@ -1236,8 +1231,6 @@ def run_scenario(
                     current_position_usdt_sell = current_positions_info['current_position_usdt_sell']
                     current_position_usdt = current_positions_info['current_position_usdt']
                     this_ticker_open_trades = current_positions_info['this_ticker_open_trades']
-                    this_ticker_current_position_usdt_buy = current_positions_info['this_ticker_current_position_usdt_buy']
-                    this_ticker_current_position_usdt_sell = current_positions_info['this_ticker_current_position_usdt_sell']
                     this_ticker_open_positions_side = current_positions_info['this_ticker_open_positions_side']
                     this_ticker_current_position_usdt = current_positions_info['this_ticker_current_position_usdt']
                     max_trade_age_ms = current_positions_info['max_trade_age_ms']
@@ -1594,8 +1587,6 @@ def run_scenario(
                                 current_position_usdt_sell = current_positions_info['current_position_usdt_sell']
                                 current_position_usdt = current_positions_info['current_position_usdt']
                                 this_ticker_open_trades = current_positions_info['this_ticker_open_trades']
-                                this_ticker_current_position_usdt_buy = current_positions_info['this_ticker_current_position_usdt_buy']
-                                this_ticker_current_position_usdt_sell = current_positions_info['this_ticker_current_position_usdt_sell']
                                 this_ticker_open_positions_side = current_positions_info['this_ticker_open_positions_side']
                                 this_ticker_current_position_usdt = current_positions_info['this_ticker_current_position_usdt']
                                 max_sl_trade_age_ms = current_positions_info['max_sl_trade_age_ms']
