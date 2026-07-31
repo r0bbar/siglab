@@ -1157,13 +1157,16 @@ def run_scenario(
 
                     # POSITION NOTIONAL MARKING lo_low, lo_high. pessimistic!
                     def _refresh_current_position(timestamp_ms):
+                        # BTC, ETH, SOL..etc major pairs typically 24x7, less liquid pairs, newly listed, RWAs are typically more spotty.
+                        mark_price = lo_open if not math.isnan(lo_open) else prev_close 
+
                         this_ticker_open_trades = open_trades_by_ticker[ticker]
-                        current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
-                        current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
+                        current_position_usdt_buy = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='buy'])
+                        current_position_usdt_sell = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='sell'])
                         current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
                         
-                        this_ticker_current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
-                        this_ticker_current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
+                        this_ticker_current_position_usdt_buy = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='buy'])
+                        this_ticker_current_position_usdt_sell = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='sell'])
 
                         this_ticker_historical_tp = tp_by_ticker[ticker]
                         this_ticker_historical_stops = sl_by_ticker[ticker]
@@ -1923,7 +1926,9 @@ def run_scenario(
                                 all_canvas, 
                                 algo_param
                             )
-                    
+
+                prev_close = lo_close
+
             sorted_filtered_tickers.clear()
             sorted_filtered_tickers = None
 
