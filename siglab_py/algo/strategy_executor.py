@@ -1406,8 +1406,13 @@ async def main():
                 max_pnl_potential_bps = position_cache_row['max_pnl_potential_bps']
                 close_px = position_cache_row['close_px']
 
+                kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+
                 # targets adjustments: Potential parameter changes after re-start with existing position
-                if position_cache_row['tp_min_percent']!=algo_param['tp_min_percent']:
+                if position_cache_row['tp_min_percent']!=tp_min_percent:
                     log(f"Parameter changed? position_cache_row['tp_min_percent']: {position_cache_row['tp_min_percent']}, algo_param['tp_min_percent']: {algo_param['tp_min_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
 
@@ -1415,13 +1420,13 @@ async def main():
                         any_target_adj = True
                         original_tp_min_target = tp_min_target
                         if pos_side == OrderSide.BUY:
-                            tp_min_target = entry_px * (1 + algo_param['tp_min_percent']/100)
+                            tp_min_target = entry_px * (1 + tp_min_percent/100)
                         else:
-                            tp_min_target = entry_px * (1 - algo_param['tp_min_percent']/100)
+                            tp_min_target = entry_px * (1 - tp_min_percent/100)
                         pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_target
                         log(f"tp_min_target adjusted from parameter change, original_tp_min_target: {original_tp_min_target}, updated tp_min_target: {tp_min_target}")
 
-                if position_cache_row['tp_max_percent']!=algo_param['tp_max_percent']:
+                if position_cache_row['tp_max_percent']!=tp_max_percent:
                     log(f"Parameter changed? position_cache_row['tp_max_percent']: {position_cache_row['tp_max_percent']}, algo_param['tp_max_percent']: {algo_param['tp_max_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
 
@@ -1429,9 +1434,9 @@ async def main():
                         any_target_adj = True
                         orignal_tp_max_target = tp_max_target
                         if pos_side == OrderSide.BUY:
-                            tp_max_target = entry_px * (1 + algo_param['tp_max_percent']/100)
+                            tp_max_target = entry_px * (1 + tp_max_percent/100)
                         else:
-                            tp_max_target = entry_px * (1 - algo_param['tp_max_percent']/100)
+                            tp_max_target = entry_px * (1 - tp_max_percent/100)
                         pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_target
                         pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = algo_param['tp_max_percent'] * 100
 
@@ -2146,8 +2151,11 @@ async def main():
                                 tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
                                 Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
                                 '''
-                                tp_max_percent : float  = param['tp_max_percent']
-                                tp_min_percent : float  = param['tp_min_percent'] # adjusted by trailing_stop_threshold_eval_func
+                                kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                                trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                                tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                                tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+                                
                                 tp_minmax_ratio = tp_min_percent/tp_max_percent
                                 if pnl_potential_bps and pnl_potential_bps<tp_max_percent:
                                     tp_max_percent = pnl_potential_bps/100
