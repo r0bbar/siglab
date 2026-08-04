@@ -2297,6 +2297,11 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
+
+                                # Evaluated by trailing_stop_threshold_eval_func, just after allow_entry_final before ENTRY, not just reading off algo_param 
+                                pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
+                                pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
+
                                 pd_position_cache.loc[position_cache_row.name, 'entry_px'] = entry_px
                                 pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_price
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_price
