@@ -2040,6 +2040,8 @@ async def main():
                         lo_row_tm1 = lo_row_tm1,
 
                         dt_targettz = dt_targettz,
+
+                        this_ticker_open_trades = this_ticker_open_trades,
                         
                         strategy_specific_data_cache = strategy_specific_data_cache
                     )

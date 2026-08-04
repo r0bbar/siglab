@@ -24,6 +24,8 @@ class StrategyBase(ABC):
 
         dt_targettz : datetime,
 
+        this_ticker_open_trades : List[Dict],
+
         strategy_specific_data_cache : Dict[str, Any]
     ) -> Dict[str, str]:
         '''
