@@ -1412,7 +1412,7 @@ async def main():
                 tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
                 # targets adjustments: Potential parameter changes after re-start with existing position
-                if position_cache_row['tp_min_percent']!=tp_min_percent:
+                if round(position_cache_row['tp_min_percent'], 3)!=round(tp_min_percent, 3):
                     log(f"Parameter changed? position_cache_row['tp_min_percent']: {position_cache_row['tp_min_percent']}, algo_param['tp_min_percent']: {algo_param['tp_min_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent
 
@@ -1426,7 +1426,7 @@ async def main():
                         pd_position_cache.loc[position_cache_row.name, 'tp_min_target'] = tp_min_target
                         log(f"tp_min_target adjusted from parameter change, original_tp_min_target: {original_tp_min_target}, updated tp_min_target: {tp_min_target}")
 
-                if position_cache_row['tp_max_percent']!=tp_max_percent:
+                if round(position_cache_row['tp_max_percent'], 3)!=round(tp_max_percent, 3):
                     log(f"Parameter changed? position_cache_row['tp_max_percent']: {position_cache_row['tp_max_percent']}, algo_param['tp_max_percent']: {algo_param['tp_max_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent
 
@@ -1442,7 +1442,7 @@ async def main():
 
                         log(f"tp_max_percent adjusted from parameter change, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
 
-                if position_cache_row['sl_hard_percent']!=algo_param['sl_hard_percent']:
+                if round(position_cache_row['sl_hard_percent'], 3)!=round(algo_param['sl_hard_percent'], 3):
                     log(f"Parameter changed? position_cache_row['sl_hard_percent']: {position_cache_row['sl_hard_percent']}, algo_param['sl_hard_percent']: {algo_param['sl_hard_percent']}")
                     pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = algo_param['sl_hard_percent']
 
