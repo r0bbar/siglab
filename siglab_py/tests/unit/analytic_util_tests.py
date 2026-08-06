@@ -137,7 +137,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'rsi', 'rsi_bucket', 'ema_rsi', 'rsi_max', 'rsi_idmax', 'rsi_min', 'rsi_idmin', 'rsi_trend', 'rsi_trend_from_highs', 'rsi_trend_from_lows', 'rsi_divergence',
             'typical_price', 
             'money_flow', 'money_flow_positive', 'money_flow_negative', 'positive_flow_sum', 'negative_flow_sum', 'money_flow_ratio', 'mfi', 'mfi_bucket',
-            'macd', 'signal', 'macd_minus_signal', 'macd_cross', 'macd_bullish_cross_last_id', 'macd_bearish_cross_last_id', 'nums_intervals_since_last_cross', 'macd_cross_last', 'macd_segment_id', 'macd_divergence',
+            'macd', 'signal', 'macd_minus_signal', 'macd_cross', 'macd_bullish_cross_last_id', 'macd_bearish_cross_last_id', 'nums_intervals_since_last_cross', 'macd_cross_last', 'macd_cross_open', 'macd_segment_id', 'macd_divergence',
             'fib_0.618_short_periods', 'fib_0.618_long_periods', 
             'gap_close_vs_ema', 'gap_close_vs_ema_percent',
             'close_above_or_below_ema', 

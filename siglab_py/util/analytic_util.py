@@ -857,6 +857,8 @@ def compute_candles_stats(
     pd_candles.loc[bullish_macd_crosses, 'macd_cross'] = 'bullish'
     pd_candles.loc[bearish_macd_crosses, 'macd_cross'] = 'bearish'
 
+    pd_candles['macd_cross_open'] = pd_candles['open'].where(pd_candles['macd_cross'].notna()).ffill() # Open price at MACD cross
+
     pd_candles['macd_segment_id'] = (pd_candles['macd_cross'].notna()).cumsum()
 
     def _classify_macd_divergence(
