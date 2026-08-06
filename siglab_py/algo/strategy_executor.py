@@ -2160,8 +2160,12 @@ async def main():
                                 
                                 tp_minmax_ratio = tp_min_percent/tp_max_percent
                                 if pnl_potential_bps and pnl_potential_bps<tp_max_percent:
-                                    tp_max_percent = pnl_potential_bps/100
-                                    tp_min_percent = tp_minmax_ratio * tp_max_percent
+                                    _tp_max_percent = pnl_potential_bps/100
+                                    _tp_min_percent = tp_minmax_ratio * tp_max_percent
+                                    log(f"pnl_potential_bps {int(pnl_potential_bps)} is less than tp_max_percent? Check allow_entry_final target_price calc vs logic in trailing_stop_threshold_eval. Adjusting tp_max_percent from {tp_max_percent} to {_tp_max_percent}. tp_min_percent from {tp_min_percent} to {_tp_min_percent}.")
+                                    tp_max_percent = _tp_max_percent
+                                    tp_min_percent = _tp_min_percent
+
                                 # log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, pnl_potential_bps: {pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
                                 
                                 kwargs = {k: v for k, v in locals().items() if k in order_notional_adj_func_params}
