@@ -1692,7 +1692,7 @@ async def main():
                                 .tail(param['reversal_num_intervals']) \
                                 .values.tolist()
                                 
-                        trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in trailing_candles]
+                        trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in pd_lo_candles_w_ta.tail(param['reversal_num_intervals']+1).values.tolist()]
                         logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}")
                         
                     else:
