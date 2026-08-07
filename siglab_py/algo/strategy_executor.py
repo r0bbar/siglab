@@ -1693,6 +1693,7 @@ async def main():
                                 .values.tolist()
                                 
                         trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in trailing_candles]
+                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}")
                         
                     else:
                         lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
