@@ -2044,7 +2044,9 @@ async def main():
 
                         this_ticker_open_trades = this_ticker_open_trades,
                         
-                        strategy_specific_data_cache = strategy_specific_data_cache
+                        strategy_specific_data_cache = strategy_specific_data_cache,
+
+                        exchange = exchange
                     )
                     if preentry_updates:
                         prettyprint = pformat(preentry_updates, indent=2, width=100)

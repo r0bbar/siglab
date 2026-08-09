@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Union
 import pandas as pd
 
 from siglab_py.constants import OrderSide 
+from siglab_py.exchanges.any_exchange import AnyExchange
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
@@ -26,7 +27,9 @@ class StrategyBase(ABC):
 
         this_ticker_open_trades : List[Dict],
 
-        strategy_specific_data_cache : Dict[str, Any]
+        strategy_specific_data_cache : Dict[str, Any],
+
+        exchange : AnyExchange
     ) -> Dict[str, str]:
         '''
         a. pd_hi_candles_w_ta and pd_lo_candles_w_ta are candles from strategy_executor. 
