@@ -1832,6 +1832,7 @@ async def main():
                         local_maxima = x['local_maxima']
                         if local_maxima:
                             point_of_control = f'hi_volume_profile, {bucket_key} volume: {int(volume):,}'
+                            log("#poc")
                             log(point_of_control)
 
                     for x in lo_volume_profile:
@@ -1840,6 +1841,7 @@ async def main():
                         local_maxima = x['local_maxima']
                         if local_maxima:
                             point_of_control = f'lo_volume_profile, {bucket_key} volume: {int(volume):,}'
+                            log("#poc")
                             log(point_of_control)
 
                 pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
