@@ -468,13 +468,13 @@ def timestamp_to_datetime_cols(
     )
 
     pd_candles['apac_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "APAC" in timestamp_to_active_trading_regions(int(x/1000))
+        lambda x: "APAC" in timestamp_to_active_trading_regions(x)
     )
     pd_candles['emea_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "EMEA" in timestamp_to_active_trading_regions(int(x/1000))
+        lambda x: "EMEA" in timestamp_to_active_trading_regions(x)
     )
     pd_candles['amer_trading_hr'] = pd_candles['timestamp_ms'].apply(
-        lambda x: "AMER" in timestamp_to_active_trading_regions(int(x/1000))
+        lambda x: "AMER" in timestamp_to_active_trading_regions(x)
     )
 
     pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'] - pd_candles['timestamp_ms'].shift(1)
