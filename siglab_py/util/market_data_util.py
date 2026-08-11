@@ -831,6 +831,22 @@ def fetch_candles(
                                                                                 ]
                 pd_candles.loc[mask_invalid_candles, "volume"] = 0.0
 
+        # Mark trading sessions open/close
+        for reg in ['apac', 'emea', 'amer']:
+            th = f'{reg}_trading_hr'
+            start_mask = pd_candles[th] & ~pd_candles[th].shift(1).fillna(False)
+            end_mask = pd_candles[th] & ~pd_candles[th].shift(-1).fillna(False)
+            starts = pd_candles.loc[start_mask, ['timestamp_ms', 'open']].reset_index(drop=True)
+            ends = pd_candles.loc[end_mask, ['timestamp_ms', 'close']].reset_index(drop=True)
+            n = min(len(starts), len(ends))
+            sessions = starts.iloc[:n].assign(end_ts=ends['timestamp_ms'].values[:n], close=ends['close'].values[:n])
+            if len(starts) > n:
+                sessions = pd.concat([sessions, starts.iloc[n:].assign(end_ts=np.nan, close=np.nan)], ignore_index=True)
+            tmp = pd.merge_asof(pd_candles[['timestamp_ms']].reset_index(drop=True), sessions.rename(columns={'start_ts': 'timestamp_ms'}), on='timestamp_ms', direction='backward')
+            pd_candles[f'{reg}_session_open'] = tmp['open'].values
+            pd_candles[f'{reg}_session_close'] = np.where((tmp['end_ts'].notna()) & (tmp['end_ts'] <= pd_candles['timestamp_ms'].values), tmp['close'], np.nan)
+            mask = (pd_candles['timestamp_ms'] - tmp['timestamp_ms']) > 86400000 # 86400000 is 24 hours in milliseconds (24 × 60 × 60 × 1000).
+            
     return exchange_candles # type: ignore
 
 '''
