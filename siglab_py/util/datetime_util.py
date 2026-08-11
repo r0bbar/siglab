@@ -25,7 +25,7 @@ BST runs from the last Sunday in March to the last Sunday in October.
 During BST, UTC offset is +1; during GMT (winter), UTC offset is +0.
 '''
 def is_lse_dst(
-    utc_now: datetime = datetime.now(timezone.UTC)
+    utc_now: datetime = datetime.now(UTC)
 ) -> bool:
     return utc_now.astimezone(LONDON).dst() != timedelta(0)
 
@@ -33,7 +33,7 @@ def is_lse_dst(
 Returns True if Central Europe is currently on Daylight Saving Time (CEST).
 '''
 def is_cet_dst(
-    utc_now: datetime = datetime.now(timezone.UTC)
+    utc_now: datetime = datetime.now(UTC)
 ) -> bool: 
     return utc_now.astimezone(CET).dst() != timedelta(0)
 
