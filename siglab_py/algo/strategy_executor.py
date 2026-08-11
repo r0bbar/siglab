@@ -33,7 +33,7 @@ from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
 
 from siglab_py.util.misc_util import get_public_ip
 from siglab_py.util.retry_util import retry
-from siglab_py.util.datetime_util import parse_trading_window
+from siglab_py.util.datetime_util import parse_trading_window, timestamp_to_active_trading_regions 
 from siglab_py.util.simple_math import compute_adjacent_levels, round_to_sigfigs
 from siglab_py.util.simple_str import is_int_string, is_float_string
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
@@ -1065,8 +1065,10 @@ async def main():
                 delta_hour = int(
                                     (dt_targettz.replace(tzinfo=None) - dt_now).total_seconds()/3600
                                 )
+
+                active_trading_regions = timestamp_to_active_trading_regions(dt_now.timestamp()*1000)
                 
-                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}, today_dayofweek: {today_dayofweek}")
+                log(f"rolldate_tz: {param['rolldate_tz']}, dt_now (local): {dt_now}, dt_targettz: {dt_targettz}, delta_hour: {delta_hour}, today_dayofweek: {today_dayofweek}, active_trading_regions: {active_trading_regions}")
                 
                 if param['trading_window_start'] and param['trading_window_end']:
                     trading_window : Dict[str, str] = {
