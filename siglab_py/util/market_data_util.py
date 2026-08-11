@@ -26,6 +26,7 @@ from yahoofinancials import YahooFinancials
 import yfinance as yf
 
 from siglab_py.util.retry_util import retry
+from siglab_py.util.datetime_util import timestamp_to_active_trading_regions 
 from siglab_py.exchanges.futubull import Futubull
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.exchanges.deribit import Deribit, DeribitAsync
@@ -485,53 +486,6 @@ def timestamp_to_datetime_cols(
         num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
         assert(num_rows_with_expected_gap/pd_candles.shape[0] > (100 - validation_max_gaps) / 100)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
-
-'''
-APAC (Asia-Pacific) Trading Hours
-    UTC 21:00 - 09:00 (approximate range)
-    Major financial centers: Tokyo, Hong Kong, Singapore, Sydney
-
-EMEA (Europe, Middle East, Africa) Trading Hours
-    UTC 07:00 - 16:00 (approximate range)
-    Major financial centers: London, Frankfurt, Paris, Zurich, Dubai
-
-US Trading Hours
-    UTC 13:00 - 22:00 (approximate range)
-    Major financial centers: New York, Chicago
-    Key markets: NYSE, NASDAQ
-
-utcnow and utcfromtimestamp been deprecated in Python 3.12 
-https://www.pythonmorsels.com/converting-to-utc-time/
-
-Example, UTC 23:00 is 3rd hour in APAC trading session
-    utc_hour = 23
-    i = get_regions_trading_utc_hours()['APAC'].index(utc_hour)
-    assert(i==2)
-'''
-def get_regions_trading_utc_hours():
-    return {
-        'APAC' : [21,22,23,0,1,2,3,4,5,6,7,8,9],
-        'EMEA' : [7,8,9,10,11,12,13,14,15,16],
-        'AMER' : [13,14,15,16,17,18,19,20,21,22]
-    }
-			
-def timestamp_to_active_trading_regions(
-        timestamp_ms : int
-) -> List[str]:
-    active_trading_regions : List[str] = []
-
-    dt_utc = datetime.fromtimestamp(int(timestamp_ms / 1000), tz=timezone.utc)
-    utc_hour = dt_utc.hour
-    if utc_hour in get_regions_trading_utc_hours()['APAC']:
-        active_trading_regions.append("APAC") 
-
-    if utc_hour in get_regions_trading_utc_hours()['EMEA']:
-        active_trading_regions.append("EMEA")
-
-    if utc_hour in get_regions_trading_utc_hours()['AMER']:
-        active_trading_regions.append("AMER")
-
-    return active_trading_regions
 
 def timestamp_to_week_of_month(timestamp_ms: int) -> int:
     """
