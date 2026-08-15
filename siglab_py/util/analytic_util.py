@@ -550,6 +550,52 @@ def compute_candles_stats(
     pd_candles.loc[:,'atr_up_bps'] = pd_candles['atr_up']/pd_candles['ema_close'] *10000
     pd_candles.loc[:,'atr_down_bps'] = pd_candles['atr_down']/pd_candles['ema_close'] *10000
 
+    # ADX https://www.investopedia.com/articles/trading/07/adx-trend-indicator.asp
+    # 0-20   Absent or Weak Trend
+    # 20-50	 Trending
+    # 50-75	 Strong Trend
+    # 75-100 Very Strong Trend
+    def wilder_smooth(series: pd.Series, period: int) -> pd.Series:
+        if period <= 0:
+            raise ValueError("period must be > 0")
+        n = len(series)
+        if n < period:
+            # Not enough data; return NaNs
+            return pd.Series(np.nan, index=series.index)
+        
+        alpha = 1.0 / period
+        ewm = series.ewm(alpha=alpha, adjust=False).mean()
+        pivot = period - 1
+        init_avg = series.iloc[:period].mean()
+        correction = init_avg - ewm.iloc[pivot]
+        result = ewm.copy()
+        indices = np.arange(pivot, n)
+        decay = (1 - alpha) ** (indices - pivot)
+        result.iloc[pivot:] = ewm.iloc[pivot:] + correction * decay
+        result.iloc[:pivot] = np.nan
+        return result
+    high, low = pd_candles['high'], pd_candles['low']
+    up_move = high - high.shift(1)
+    down_move = low.shift(1) - low
+
+    plus_DM = pd.Series(
+        np.where((up_move > down_move) & (up_move > 0), up_move, 0.0),
+        index=pd_candles.index
+    )
+    minus_DM = pd.Series(
+        np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
+        index=pd_candles.index
+    )
+    smoothed_plus_DM = wilder_smooth(plus_DM, sliding_window_how_many_candles)
+    smoothed_minus_DM = wilder_smooth(minus_DM, sliding_window_how_many_candles)
+    smoothed_atr = wilder_smooth(pd_candles['tr'], sliding_window_how_many_candles)
+    plus_DI = 100 * smoothed_plus_DM / smoothed_atr
+    minus_DI = 100 * smoothed_minus_DM / smoothed_atr
+    di_sum = plus_DI + minus_DI
+    di_diff = (plus_DI - minus_DI).abs()
+    dx = 100 * di_diff / di_sum
+    pd_candles['adx'] = wilder_smooth(dx, sliding_window_how_many_candles)
+
     # Choppiness Index is simply normalized "sum(ATR) relative to range of a sliding window".
     tr_sum = pd_candles['tr'].rolling(window=int(sliding_window_how_many_candles)).sum()
     r_up_sum = pd_candles['r_up'].rolling(window=int(sliding_window_how_many_candles)).sum()
