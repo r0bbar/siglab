@@ -203,6 +203,8 @@ def instantiate_exchange(
             exchange
         )
 
+    exchange.name = exchange_name
+
     return exchange # type: ignore
 
 async def async_instantiate_exchange(
@@ -427,6 +429,8 @@ async def async_instantiate_exchange(
     except Exception as swallow_this_error:
         pass
     '''
+
+    exchange.name = exchange_name
 
     return exchange
 
