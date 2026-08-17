@@ -6,7 +6,7 @@ import pandas as pd
 from siglab_py.constants import OrderSide 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import fetch_candles, instantiate_exchange
-from siglab_py.util.analytic_util import compute_volume_profile, compute_candles_stats
+from siglab_py.util.analytic_util import compute_candles_stats, compute_volume_profile, compute_value_area
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
@@ -51,29 +51,35 @@ class StrategyBase(ABC):
         adx = last_row['adx']
         atr_bps = last_row['atr_bps']
         
-        volume_profile_3m = compute_volume_profile(
+        volume_profile_1 = compute_volume_profile(
                             pd_candles = pd_candles,
                             level_granularity = 0.1, # i.e. 10%
                             ohlc = 'close'
                         )
-        volume_profile_1m = compute_volume_profile(
+        va_1 = compute_value_area(volume_profile_1, value_area_pct=0.70)
+
+        volume_profile_2 = compute_volume_profile(
                             pd_candles = pd_candles.iloc[-volume_profile_2_num_intervals:],
                             level_granularity = 0.1, # i.e. 10%
                             ohlc = 'close'
                         )
-        volume_profile_1w = compute_volume_profile(
+        va_2 = compute_value_area(volume_profile_2, value_area_pct=0.70)
+
+        volume_profile_3 = compute_volume_profile(
                             pd_candles = pd_candles.iloc[-volume_profile_3_num_intervals:],
                             level_granularity = 0.1, # i.e. 10%
                             ohlc = 'close'
                         )
+
+        va_3 = compute_value_area(volume_profile_3, value_area_pct=0.70)
         
         return {
             'adx' : adx, # trending vs rangebound
             'atr_bps' : atr_bps, # volatility measures
             'volume_profiles' : {   # @todo: previous APAC, London, US session range 
-                'volume_profile_1' : volume_profile_3m,
-                'volume_profile_2' : volume_profile_1m,
-                'volume_profile_3' : volume_profile_1w
+                '1' : va_1,
+                '2' : va_2,
+                '3' : va_3
             },
             'evaluation_timestamp_ms' : int(datetime.now().timestamp() *1000)
         }
