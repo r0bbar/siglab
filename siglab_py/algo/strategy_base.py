@@ -49,7 +49,7 @@ class StrategyBase(ABC):
             )
         last_row =  pd_candles.iloc[-1]
         adx = last_row['adx']
-        atr = last_row['atr']
+        atr_bps = last_row['atr_bps']
         
         volume_profile_3m = compute_volume_profile(
                             pd_candles = pd_candles,
@@ -69,7 +69,7 @@ class StrategyBase(ABC):
         
         return {
             'adx' : adx, # trending vs rangebound
-            'atr' : atr, # volatility measures
+            'atr_bps' : atr_bps, # volatility measures
             'volume_profiles' : {   # @todo: previous APAC, London, US session range 
                 'volume_profile_1' : volume_profile_3m,
                 'volume_profile_2' : volume_profile_1m,
