@@ -48,8 +48,8 @@ class StrategyBase(ABC):
                 pypy_compat=True
             )
         last_row =  pd_candles.iloc[-1]
-        adx = last_row['adx']
-        atr_bps = last_row['atr_bps']
+        adx = round(last_row['adx'], 2)
+        atr_bps = round(last_row['atr_bps'], 2)
         
         volume_profile_1 = compute_volume_profile(
                             pd_candles = pd_candles,
