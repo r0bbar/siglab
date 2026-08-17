@@ -1,15 +1,81 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Union
 import pandas as pd
 
 from siglab_py.constants import OrderSide 
 from siglab_py.exchanges.any_exchange import AnyExchange
+from siglab_py.util.market_data_util import fetch_candles
+from siglab_py.util.analytic_util import compute_volume_profile, compute_candles_stats
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
         pass
-    
+
+    '''
+    strategy_executor already supply pd_hi_candles_w_ta and pd_lo_candles_w_ta with TA precompuited, and also hi_volume_profile, lo_volume_profile.
+    These can be referenced from lambdas.
+    So why we need a "Trading Context"?
+    Generally pd_hi_candles_w_ta and pd_lo_candles_w_ta are calculated with smaller number of bars due to performance constraints.
+    "Trading Context" is evaluated over a much longer period of time, the motivation is to give a "Bird eye" view of trading environment to strategies.
+    "evaluate_trading_context" can be invoked from "stage_strat_specific_preentry_data" (Generally overridden in strategy sub classes) on say daily basis during quiet hours (Check "evaluation_timestamp_ms"), and when there's no open position.
+    '''
+    @staticmethod
+    def evaluate_trading_context(
+        exchange : AnyExchange,
+        ticker : str,
+        start_ts : int = (datetime.now() + timedelta(days=-30)).timestamp(), # Default three months ago. Also timestamp in seconds (not in ms).
+        end_ts : int = datetime.now().timestamp(),
+        candle_size : str = '1h',
+        sliding_window_how_many_candles : int = 24*7, # Default: TAs are calculated using one week sliding window
+        volume_profile_2_num_intervals : int = 24*30,
+        volume_profile_3_num_intervals : int = 24*7
+    ):
+        pd_candles: Union[pd.DataFrame, None] = fetch_candles(
+            start_ts,
+            end_ts,
+            exchange=exchange,
+            normalized_symbols = [ ticker ],
+            candle_size = candle_size
+        )[ticker]
+        
+        compute_candles_stats(
+                pd_candles=pd_candles,
+                boillenger_std_multiples=2,
+                sliding_window_how_many_candles=sliding_window_how_many_candles, 
+                pypy_compat=True
+            )
+        last_row =  pd_candles.iloc[-1]
+        adx = last_row['adx']
+        atr = last_row['atr']
+        
+        volume_profile_3m = compute_volume_profile(
+                            pd_candles = pd_candles,
+                            level_granularity = 0.1, # i.e. 10%
+                            ohlc = 'close'
+                        )
+        volume_profile_1m = compute_volume_profile(
+                            pd_candles = pd_candles.iloc[-volume_profile_2_num_intervals:],
+                            level_granularity = 0.1, # i.e. 10%
+                            ohlc = 'close'
+                        )
+        volume_profile_1w = compute_volume_profile(
+                            pd_candles = pd_candles.iloc[-volume_profile_3_num_intervals:],
+                            level_granularity = 0.1, # i.e. 10%
+                            ohlc = 'close'
+                        )
+        
+        return {
+            'adx' : adx, # trending vs rangebound
+            'atr' : atr, # volatility measures
+            'volume_profiles' : {   # @todo: previous APAC, London, US session range 
+                'volume_profile_1' : volume_profile_3m,
+                'volume_profile_2' : volume_profile_1m,
+                'volume_profile_3' : volume_profile_1w
+            },
+            'evaluation_timestamp_ms' : int(datetime.now().timestamp() *1000)
+        }
+
     @staticmethod
     def stage_strat_specific_preentry_data(
         algo_param : Dict,
