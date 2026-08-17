@@ -5,7 +5,7 @@ import pandas as pd
 
 from siglab_py.constants import OrderSide 
 from siglab_py.exchanges.any_exchange import AnyExchange
-from siglab_py.util.market_data_util import fetch_candles
+from siglab_py.util.market_data_util import fetch_candles, instantiate_exchange
 from siglab_py.util.analytic_util import compute_volume_profile, compute_candles_stats
 
 class StrategyBase(ABC):
@@ -22,7 +22,7 @@ class StrategyBase(ABC):
     '''
     @staticmethod
     def evaluate_trading_context(
-        exchange : AnyExchange,
+        exchange_name : str,
         ticker : str,
         start_ts : int = (datetime.now() + timedelta(days=-30)).timestamp(), # Default three months ago. Also timestamp in seconds (not in ms).
         end_ts : int = datetime.now().timestamp(),
@@ -31,6 +31,8 @@ class StrategyBase(ABC):
         volume_profile_2_num_intervals : int = 24*30,
         volume_profile_3_num_intervals : int = 24*7
     ):
+        exchange = instantiate_exchange(exchange_name)
+
         pd_candles: Union[pd.DataFrame, None] = fetch_candles(
             start_ts,
             end_ts,
