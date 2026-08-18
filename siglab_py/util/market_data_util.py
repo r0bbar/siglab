@@ -539,138 +539,6 @@ https://polygon.io/docs/stocks
 class PolygonMarketDataProvider:
     pass
 
-class NASDAQExchange:
-    def __init__(self, data_dir : Union[str, None]) -> None:
-        if data_dir:
-            self.data_dir = data_dir
-        else:
-            self.data_dir = Path(__file__).resolve().parents[2] / "data/nasdaq" 
-
-    def fetch_ohlcv(
-        self,
-        symbol : str,
-        since : int,
-        timeframe : str,
-        limit : int = 1
-    ) -> List:
-        pd_candles = self.fetch_candles(
-            symbols=[symbol],
-            start_ts=int(since/1000),
-            end_ts=None,
-            candle_size=timeframe
-        )[symbol]
-        if pd_candles is not None:
-            return pd_candles.values.tolist()
-        else:
-            return []
-    
-    def fetch_candles(
-        self,
-        start_ts,
-        end_ts,
-        symbols,
-        candle_size
-    ) -> Dict[str, Union[pd.DataFrame, None]]:
-        exchange_candles : Dict[str, Union[pd.DataFrame, None]] = {}
-
-        start_date = datetime.fromtimestamp(start_ts)
-        end_date = datetime.fromtimestamp(end_ts) if end_ts else None
-        start_date_str = start_date.strftime('%Y-%m-%d')
-        end_date_str = end_date.strftime('%Y-%m-%d') if end_date else None
-        local_tz = datetime.now().astimezone().tzinfo
-
-        for symbol in symbols:
-            # CSV from NASDAQ: https://www.nasdaq.com/market-activity/quotes/historical
-            pd_daily_candles = pd.read_csv(f"{self.data_dir}\\NASDAQ_hist_{symbol.replace('^','')}.csv")
-            pd_daily_candles.rename(columns={'Date' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close/Last' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True)
-            pd_daily_candles['open'] = pd_daily_candles['open'].astype(str).str.replace('$','')
-            pd_daily_candles['high'] = pd_daily_candles['high'].astype(str).str.replace('$','')
-            pd_daily_candles['low'] = pd_daily_candles['low'].astype(str).str.replace('$','')
-            pd_daily_candles['close'] = pd_daily_candles['close'].astype(str).str.replace('$','')
-            pd_daily_candles['datetime']= pd.to_datetime(pd_daily_candles['datetime'])
-            pd_daily_candles['timestamp_ms'] = pd_daily_candles.datetime.values.astype(np.int64) // 10 ** 6  # type: ignore
-            pd_daily_candles['symbol'] = symbol
-            pd_daily_candles['exchange'] = 'nasdaq'
-            fix_column_types(pd_daily_candles)
-
-            if candle_size=="1h":
-                # Fill forward (i.e. you dont actually have hourly candles)
-                start = pd_daily_candles["datetime"].min().normalize()
-                end = pd_daily_candles["datetime"].max().normalize() + pd.Timedelta(days=1)
-                hourly_index = pd.date_range(start=start, end=end, freq="h") # FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.
-                pd_hourly_candles = pd.DataFrame({"datetime": hourly_index})
-                pd_hourly_candles = pd.merge_asof(
-                    pd_hourly_candles.sort_values("datetime"),
-                    pd_daily_candles.sort_values("datetime"),
-                    on="datetime",
-                    direction="backward"
-                )
-
-                # When you fill foward, a few candles before start date can have null values (open, high, low, close, volume ...)
-                first_candle_dt = pd_hourly_candles[(~pd_hourly_candles.close.isna())  & (pd_hourly_candles['datetime'].dt.time == pd.Timestamp('00:00:00').time())].iloc[0]['datetime']  # type: ignore
-                pd_hourly_candles = pd_hourly_candles[pd_hourly_candles.datetime>=first_candle_dt]
-                exchange_candles[symbol] = pd_hourly_candles
-
-            elif candle_size=="1d":
-                exchange_candles[symbol] = pd_daily_candles
-
-        return exchange_candles
-
-class YahooExchange:
-    def fetch_ohlcv(
-        self,
-        symbol : str,
-        since : int,
-        timeframe : str,
-        limit : int = 1
-    ) -> List:
-        pd_candles = self.fetch_candles(
-            symbols=[symbol],
-            start_ts=int(since/1000),
-            end_ts=None,
-            candle_size=timeframe
-        )[symbol]
-        if pd_candles is not None:
-            return pd_candles.values.tolist()
-        else:
-            return []
-
-    def fetch_candles(
-        self,
-        start_ts,
-        end_ts,
-        symbols,
-        candle_size
-    ) -> Dict[str, Union[pd.DataFrame, None]]:
-        exchange_candles : Dict[str, Union[pd.DataFrame, None]] = {}
-
-        start_date = datetime.fromtimestamp(start_ts)
-        end_date = datetime.fromtimestamp(end_ts)
-        start_date_str = start_date.strftime('%Y-%m-%d')
-        end_date_str = end_date.strftime('%Y-%m-%d')
-        local_tz = datetime.now().astimezone().tzinfo
-
-        for symbol in symbols:
-            # From yf, "DateTime" in UTC
-            # The requested range must be within the last 730 days. Otherwise API will return empty DataFrame.
-            pd_candles = yf.download(tickers=symbol, start=start_date_str, end=end_date_str, interval=candle_size)
-            pd_candles.reset_index(inplace=True) # type: ignore
-            pd_candles.rename(columns={ 'Date' : 'datetime', 'Datetime' : 'datetime', 'Open': 'open', 'High': 'high', 'Low': 'low', 'Close' : 'close', 'Adj Close' : 'adj_close', 'Volume' : 'volume' }, inplace=True) # type: ignore
-            pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']) # type: ignore
-            if pd_candles['datetime'].dt.tz is None: # type: ignore
-                pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime']).dt.tz_localize('UTC') # type: ignore
-            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_convert(local_tz) # type: ignore
-            pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)  # type: ignore
-            pd_candles['timestamp_ms'] = pd_candles.datetime.values.astype(np.int64) // 10**6 # type: ignore
-            pd_candles = pd_candles.sort_values(by=['timestamp_ms'], ascending=[True]) # type: ignore
-            
-            fix_column_types(pd_candles)
-            pd_candles['symbol'] = symbol
-            pd_candles['exchange'] = 'yahoo'
-            exchange_candles[symbol] = pd_candles
-
-        return exchange_candles
-
 def aggregate_candles(
     interval : str,
     pd_candles : pd.DataFrame
@@ -764,33 +632,7 @@ def fetch_candles(
     if end_ts>datetime.now().timestamp():
         end_ts = int(datetime.now().timestamp())
 
-    if type(exchange) is YahooExchange:
-        exchange_candles = exchange.fetch_candles(
-                            start_ts=start_ts,
-                            end_ts=end_ts,
-                            symbols=normalized_symbols,
-                            candle_size=candle_size
-                        )
-    elif type(exchange) is NASDAQExchange:
-        exchange_candles = exchange.fetch_candles(
-                            start_ts=start_ts,
-                            end_ts=end_ts,
-                            symbols=normalized_symbols,
-                            candle_size=candle_size
-                        )
-    elif type(exchange) is Futubull:
-        exchange_candles = exchange.fetch_candles(
-                            start_ts=start_ts,
-                            end_ts=end_ts,
-                            symbols=normalized_symbols,
-                            candle_size=candle_size
-                        )
-        for symbol in exchange_candles:
-            pd_candles = exchange_candles[symbol]
-            if not pd_candles is None:
-                fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
-                
-    elif issubclass(exchange.__class__, CcxtExchange):
+    if issubclass(exchange.__class__, CcxtExchange):
         exchange_candles = _fetch_candles_ccxt(
             start_ts=start_ts,
             end_ts=end_ts,
@@ -802,11 +644,24 @@ def fetch_candles(
             validation_max_gaps=validation_max_gaps,
             logger=logger
         )
-    if num_intervals!=1:
-        for symbol in exchange_candles:
-            if not exchange_candles[symbol] is None:
-                exchange_candles[symbol] = aggregate_candles(candle_size, exchange_candles[symbol]) #  type: ignore
+    
+    elif type(exchange) is Futubull:
+            exchange_candles = exchange.fetch_candles(
+                                start_ts=start_ts,
+                                end_ts=end_ts,
+                                symbols=normalized_symbols,
+                                candle_size=candle_size
+                            )
+            for symbol in exchange_candles:
+                pd_candles = exchange_candles[symbol]
+                if not pd_candles is None:
+                    fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
 
+    if num_intervals!=1:
+            for symbol in exchange_candles:
+                if not exchange_candles[symbol] is None:
+                    exchange_candles[symbol] = aggregate_candles(candle_size, exchange_candles[symbol]) #  type: ignore
+                    
     # For invalid rows missing timestamps, o/h/l/c/v, fill forward close, set volume to zero.
     for symbol in exchange_candles:
         pd_candles = exchange_candles[symbol]
