@@ -19,7 +19,27 @@ from futu import *
 
 # @unittest.skip("Skip all integration tests.")
 class MarketDataUtilTests(unittest.TestCase):
-    
+    def test_fetch_candles_polygonio(self):
+        POLYGON_API_KEY = "xxxxx"
+        rate_limit_ms : int = 12*1000 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls). For paid subscriptions, set this to zero.
+        polygonio = PolygonMarketDataProvider(api_key=POLYGON_API_KEY, rate_limit_ms=rate_limit_ms)
+        symbol = 'SNDK'
+        dt_start : datetime = datetime.now() + timedelta(days=-1)
+        start_ts = dt_start.timestamp()
+        end_ts = datetime.now().timestamp()
+        candle_size = '1h'
+        limit = 5000
+        pd_candles: Union[pd.DataFrame, None] = polygonio.fetch_candles(symbols=[symbol], start_ts=start_ts, end_ts=end_ts, candle_size='1h', limit=limit)[symbol]
+        
+        assert pd_candles is not None
+
+        if pd_candles is not None:
+            assert len(pd_candles) > 0, "No candles returned."
+            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'week_of_month', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'}
+            assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
+            assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
+            assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
+
     def test_fetch_candles_ccxt(self):
         start_date : datetime = datetime(2024,1,1)
         end_date : datetime = datetime(2024,12,31)

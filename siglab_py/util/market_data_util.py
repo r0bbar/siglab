@@ -1,6 +1,6 @@
 import logging
 import tzlocal
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import time
 from dateutil import parser
 from typing import List, Dict, Union, NoReturn, Any, Tuple
@@ -15,6 +15,7 @@ from tabulate import tabulate
 import inspect
 
 import feedparser # RSS feed parser
+from massive import RESTClient as PolygonRestClient # polygon.io: pip install -U massive
 from ccxt.base.exchange import Exchange as CcxtExchange
 import ccxt
 import ccxt.pro as ccxtpro
@@ -484,11 +485,12 @@ def timestamp_to_datetime_cols(
     pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'] - pd_candles['timestamp_ms'].shift(1)
     
     # Depending on asset, minutes bar may have gaps
-    timestamp_ms_gap_median = pd_candles['timestamp_ms_gap'].median()
-    NUM_MS_IN_1HR = 60*60*1000
-    if timestamp_ms_gap_median>=NUM_MS_IN_1HR:
-        num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
-        assert(num_rows_with_expected_gap/pd_candles.shape[0] > (100 - validation_max_gaps) / 100)
+    if validation_max_gaps: # if validation_max_gaps set to None, skip validation 
+        timestamp_ms_gap_median = pd_candles['timestamp_ms_gap'].median()
+        NUM_MS_IN_1HR = 60*60*1000
+        if timestamp_ms_gap_median>=NUM_MS_IN_1HR:
+            num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
+            assert(num_rows_with_expected_gap/pd_candles.shape[0] > (100 - validation_max_gaps) / 100)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
 
 def timestamp_to_week_of_month(timestamp_ms: int) -> int:
@@ -533,11 +535,116 @@ def interval_to_ms(interval : str) -> int:
 
     return interval_ms
 
+def candle_size_to_interval_sec(candle_size : str) -> int:
+    increment = 1
+    num_intervals = int(candle_size.replace(candle_size[-1],''))
+    interval_type = candle_size[-1]
+    single_interval_ms = interval_to_ms(interval_type)
+    return num_intervals * int(single_interval_ms/1000)
+
 '''
-https://polygon.io/docs/stocks
+API doc https://polygon.io/docs
+API Pricing https://massive.com/pricing
+Dashboard https://massive.com/dashboard
 '''
 class PolygonMarketDataProvider:
-    pass
+    def __init__(
+        self, 
+        api_key : Union[str, None] = None,
+        rate_limit_ms : int = 12*1000 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls)
+    ):
+        self.rest_client = PolygonRestClient(api_key=api_key)
+        self.rate_limit_ms = rate_limit_ms
+
+    def fetch_ohlcv(
+        self,
+        symbol : str,
+        since : int, # in sec
+        timeframe : str = '1h',
+        limit : int = 5000, # default 5k, maximum 50k
+     ) -> List:
+        multiplier : int = int(timeframe.replace(timeframe[-1], ""))
+        from_timestamp_ms : int = int(since * 1000)
+        to_timestamp_ms : int = int(from_timestamp_ms + limit * multiplier * interval_to_ms(timeframe[-1]))
+        # polygon.io _timeframe enumeration: minute, hour, day, week, month, quarter, year
+        if timeframe[-1]=="d":
+            _timeframe = "day"
+        if timeframe[-1]=="h":
+            _timeframe = "hour"
+        elif timeframe[-1]=="m":
+            _timeframe = "minute"
+        else:
+            _timeframe = "hour"
+
+        '''
+        polygon.io from_/to accept two formats:
+            a) Date string, example: "2026-01-01", or even "2026-01-01T14:30:00Z" (ISO 8601 string)
+            b) timestamp in ms
+        '''
+        candles = []
+        for agg in self.rest_client.list_aggs(ticker=symbol, multiplier=multiplier, timespan=_timeframe, from_=from_timestamp_ms, to=to_timestamp_ms, limit=limit):
+            timestamp_ms = agg.timestamp
+            open = agg.open
+            high = agg.high
+            low = agg.low
+            close = agg.close
+            volume = agg.volume
+            candles.append(
+                (timestamp_ms, open, high, low, close, volume)
+            )
+            time.sleep(int(self.rate_limit_ms/1000))
+
+        return candles
+
+    def fetch_candles(
+        self,
+        start_ts, # in sec
+        end_ts, # in sec
+        symbols,
+        candle_size : str = '1h',
+        limit : int = 5000,
+        validation_max_gaps : int = 10,
+        logger = None
+    ) -> Dict[str, Union[pd.DataFrame, None]]:
+        rsp = {}
+
+        num_tickers = len(symbols)
+        i = 0
+        for ticker in symbols:
+            all_candles = []
+            
+            this_cutoff = start_ts
+            while this_cutoff<end_ts:
+                _ticker = ticker # @todo: This allows for ticker changes mapping later on
+
+                if logger:
+                    logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
+
+                candles = self.fetch_ohlcv(symbol=_ticker, since=this_cutoff, timeframe=candle_size, limit=limit)
+                if candles and len(candles)>0:
+                    all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
+
+                    record_ts = max([int(record[0]) for record in candles])
+                    record_ts_str : str = str(record_ts)
+                    if len(record_ts_str)==13:
+                        record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
+                    
+                    this_cutoff = record_ts  + candle_size_to_interval_sec(candle_size)
+                else:
+                    this_cutoff += candle_size_to_interval_sec(candle_size)
+
+            i+=1
+
+            columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
+            pd_all_candles = pd.DataFrame([ [ "polygon.io", ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
+            fix_column_types(pd_candles=pd_all_candles, validation_max_gaps=validation_max_gaps)
+            pd_all_candles['pct_chg_on_close'] = pd_all_candles['close'].pct_change()
+
+            rsp[ticker] = pd_all_candles
+
+        rsp[ticker] = pd_all_candles
+
+        return rsp
 
 def aggregate_candles(
     interval : str,
