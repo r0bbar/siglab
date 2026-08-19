@@ -457,7 +457,7 @@ def parse_args():
     parser.add_argument("--fees_ccy", help="If you're trading crypto, CEX fees USDT, DEX fees USDC in many cases. Default None, in which case gateway won't aggregatge fees from executions for you.", default=None)
     parser.add_argument("--wait_fill_threshold_ms", help="Limit orders will be cancelled if not filled within this time. Remainder will be sent off as market order.", default=15000)
     parser.add_argument("--exit_wait_fill_threshold_ms", help="exit_wait_fill_threshold_ms is for exits. We have a separate settings because generally for entries you have more time to wait around than exits. If not specified, default is 1000 ms.", default=1000)
-    parser.add_argument("--max_slippage_from_ref_price_bps", help"max_slippage_from_ref_price_bps is for max slippage control at the point when order is dispatched to gateway and gateway executing the first slice. It's enforced on gateway side. This is for ENTRIES only. For EXITS, generally you just want to get out. Default: None (i.e. Not enforced)", default=None)
+    parser.add_argument("--max_slippage_from_ref_price_bps", help="max_slippage_from_ref_price_bps is for max slippage control at the point when order is dispatched to gateway and gateway executing the first slice. It's enforced on gateway side. This is for ENTRIES only. For EXITS, generally you just want to get out. Default: None (i.e. Not enforced)", default=None)
     
     parser.add_argument("--tp_min_percent", help="For trailing stops. Min TP in percent, i.e. No TP until pnl at least this much.", default=None)
     parser.add_argument("--tp_max_percent", help="For trailing stops. Max TP in percent, i.e. Price target", default=None)
