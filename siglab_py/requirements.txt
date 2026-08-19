@@ -12,6 +12,7 @@ boto3
 web3
 ccxt
 ccxtpro
+massive
 feedparser
 futu-api
 plotext
