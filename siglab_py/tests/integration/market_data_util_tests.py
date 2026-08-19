@@ -21,12 +21,14 @@ from futu import *
 class MarketDataUtilTests(unittest.TestCase):
     def test_fetch_candles_polygonio(self):
         POLYGON_API_KEY = "xxxxx"
-        rate_limit_ms : int = 12*1000 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls). For paid subscriptions, set this to zero.
+        rate_limit_ms : int = 10 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls). For paid subscriptions, set this to zero.
         polygonio = PolygonMarketDataProvider(api_key=POLYGON_API_KEY, rate_limit_ms=rate_limit_ms)
         symbol = 'SNDK'
-        dt_start : datetime = datetime.now() + timedelta(days=-1)
+        # dt_start : datetime = datetime.now() + timedelta(days=-1)
+        dt_start = datetime(datetime.now().year,1,1)
         start_ts = dt_start.timestamp()
-        end_ts = datetime.now().timestamp()
+        dt_end = datetime.now() + timedelta(minutes=-60) # Depending on your plan, you may not have realtime data. If you try fetch data up to the minute, error: Your plan doesn't include this data timeframe.
+        end_ts = dt_end.timestamp()
         candle_size = '1h'
         limit = 5000
         pd_candles: Union[pd.DataFrame, None] = polygonio.fetch_candles(symbols=[symbol], start_ts=start_ts, end_ts=end_ts, candle_size='1h', limit=limit)[symbol]
