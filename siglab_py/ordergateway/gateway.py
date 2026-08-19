@@ -699,10 +699,22 @@ async def execute_one_position(
                 bids = [ bid[0] for bid in orderbook['bids'] ]
                 best_bid = max(bids)
                 if position.side=='buy':
-                    limit_price : float= best_ask * (1 + position.leg_room_bps/10000)
+                    limit_price : float = best_ask * (1 + position.leg_room_bps/10000)
                 else:
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
                 mid = (best_bid + best_ask)/2
+
+                # Enforce position.max_slippage_from_ref_price_bps, this logic is for: a) Entries only, b) Only checked first slice
+                if i==0 and not position.reduce_only:
+                    if position.max_slippage_from_ref_price_bps and position.ref_price:
+                        if position.side=='buy':
+                            if mid > position.ref_price * (1 + position.max_slippage_from_ref_price_bps/10000):
+                                raise Exception(f"ENTRY aborted. mid: {mid}, ref_price: {position.ref_price}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}")
+
+                        else:
+                            if mid < position.ref_price * (1 - position.max_slippage_from_ref_price_bps/10000):
+                                raise Exception(f"ENTRY aborted. mid: {mid}, ref_price: {position.ref_price}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}")
+                        
                     
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
@@ -1178,6 +1190,8 @@ async def work(
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
                                         wait_fill_threshold_ms=order['wait_fill_threshold_ms'] if order['wait_fill_threshold_ms']>0 else param['wait_fill_threshold_ms'],
+                                        ref_price=order['ref_price'],
+                                        max_slippage_from_ref_price_bps=order['max_slippage_from_ref_price_bps'],
                                         non_unified_params=order['non_unified_params'],
                                         uid=order['uid']
                                     )
