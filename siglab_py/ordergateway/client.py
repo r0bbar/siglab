@@ -95,6 +95,8 @@ class DivisiblePosition(Order):
         fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1,
+        ref_price : float = None,
+        max_slippage_from_ref_price_bps : int = None, 
         non_unified_params : Dict[str, Union[str, float, bool]] = {},
         expected_pos_after_execution : float = None,
         uid : str = None
@@ -116,6 +118,8 @@ class DivisiblePosition(Order):
 
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
+        self.ref_price = ref_price
+        self.max_slippage_from_ref_price_bps = max_slippage_from_ref_price_bps
         self.multiplier = 1
         self.filled_amount : Union[float, None] = None
         self.average_cost : Union[float, None] = None
@@ -413,6 +417,8 @@ class DivisiblePosition(Order):
         rv = super().to_dict()
         rv['slices'] = self.slices
         rv['wait_fill_threshold_ms'] = self.wait_fill_threshold_ms
+        rv['ref_price'] = self.ref_price
+        rv['max_slippage_from_ref_price_bps'] = self.max_slippage_from_ref_price_bps
         rv['executions'] = self.executions
         rv['filled_amount'] = self.filled_amount
         rv['average_cost'] = self.average_cost
