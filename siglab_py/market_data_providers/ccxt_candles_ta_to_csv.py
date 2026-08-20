@@ -125,12 +125,6 @@ def parse_args():
     parser.add_argument("--symbol", help="symbol, CEX example BTC/USDT for spot. BTC/USDT:USDT for perpetuals. Many DEXes offer USDC pairs.", default="BTC/USDT:USDT")
     parser.add_argument("--start_date", help="Format: %Y-%m-%d %H:%M:%S", default=None)
     parser.add_argument("--end_date", help="Format: %Y-%m-%d %H:%M:%S", default=None)
-
-    '''
-    Enums here: 
-    https://openapi.futunn.com/futu-api-doc/en/quote/quote.html#66
-    https://openapi.futunn.com/futu-api-doc/en/trade/trade.html#9434
-    '''
     parser.add_argument("--default_type", help="Depends on exchange. Very often, spot, linear/swap for perpetuals. Have a look at gateway.py instantiate_exchange https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py", default="linear")
 
     parser.add_argument("--compute_ta", help="Compute technical indicators?. Y or N (default).", default='N')
