@@ -708,14 +708,19 @@ async def execute_one_position(
                 if i==0 and not position.reduce_only:
                     if position.max_slippage_from_ref_price_bps and position.ref_price:
                         if position.side=='buy':
-                            if mid > position.ref_price * (1 + position.max_slippage_from_ref_price_bps/10000):
-                                raise Exception(f"ENTRY aborted. mid: {mid}, ref_price: {position.ref_price}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}")
+                            price_cap = position.ref_price * (1 + position.max_slippage_from_ref_price_bps/10000)
+                            price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}"
+                            if mid < price_cap: # If price already moved up, don't chase long trade
+                                raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                            log(f"{price_cap_check_msg}. ENTRY may proceed.")
 
                         else:
-                            if mid < position.ref_price * (1 - position.max_slippage_from_ref_price_bps/10000):
-                                raise Exception(f"ENTRY aborted. mid: {mid}, ref_price: {position.ref_price}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}")
-                        
-                    
+                            price_cap = position.ref_price * (1 - position.max_slippage_from_ref_price_bps/10000)
+                            price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {max_slippage_from_ref_price_bps}"
+                            if mid > price_cap: # If price already moved down, don't chase short trade
+                                raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                            log(f"{price_cap_check_msg}. ENTRY may proceed.")
+                            
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
                 
