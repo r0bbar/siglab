@@ -710,14 +710,14 @@ async def execute_one_position(
                         if position.side=='buy':
                             price_cap = position.ref_price * (1 + position.max_slippage_from_ref_price_bps/10000)
                             price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                            if mid < price_cap: # If price already moved up, don't chase long trade
+                            if mid > price_cap: # If price already moved up, don't chase long trade
                                 raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
                             log(f"{price_cap_check_msg}. ENTRY may proceed.")
 
                         else:
                             price_cap = position.ref_price * (1 - position.max_slippage_from_ref_price_bps/10000)
                             price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                            if mid > price_cap: # If price already moved down, don't chase short trade
+                            if mid < price_cap: # If price already moved down, don't chase short trade
                                 raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
                             log(f"{price_cap_check_msg}. ENTRY may proceed.")
                             
