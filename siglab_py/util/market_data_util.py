@@ -752,7 +752,7 @@ def fetch_candles(
             logger=logger
         )
     
-    elif type(exchange) is Futubull:
+    elif type(exchange) is Futubull or type(exchange) is PolygonMarketDataProvider:
             exchange_candles = exchange.fetch_candles(
                                 start_ts=start_ts,
                                 end_ts=end_ts,
