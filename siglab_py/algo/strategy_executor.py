@@ -2194,7 +2194,7 @@ async def main():
                                         slices = param['slices'],
                                         wait_fill_threshold_ms = param['wait_fill_threshold_ms'],
                                         ref_price = mid,
-                                        max_slippage_from_ref_price_bps = tp_min_percent * 100 * (param['max_slippage_percent_tp_min']/100),
+                                        max_slippage_from_ref_price_bps = tp_min_percent * 100 * (param['max_slippage_percent_tp_min']/100) if 'max_slippage_percent_tp_min' and param['max_slippage_percent_tp_min'] in param else None,
                                         fees_ccy=param['fees_ccy'],
                                         expected_pos_after_execution=(pos + target_order_notional)
                                     )
