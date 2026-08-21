@@ -2105,7 +2105,7 @@ def run_all_scenario(
                                                                                         num_candles_limit=algo_param['num_candles_limit'],
                                                                                         logger=logger,
                                                                                         cache_dir=algo_param['cache_candles'],
-                                                                                        list_ts_field=exchanges[0].options['list_ts_field'] if 'list_ts_field' in exchanges[0].options else None
+                                                                                        list_ts_field=exchanges[0].options['list_ts_field'] if hasattr(exchanges[0], "option") and 'list_ts_field' in exchanges[0].options else None
                                                                                         )
                 
                 pd_ref_candles_fast : pd.DataFrame = ref_candles[reference_ticker]
@@ -2208,7 +2208,7 @@ def run_all_scenario(
                                                                                                 num_candles_limit=algo_param['num_candles_limit'],
                                                                                                 logger=logger,
                                                                                                 cache_dir=algo_param['cache_candles'],
-                                                                                                list_ts_field=exchange.options['list_ts_field']
+                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None
                                                                                                 )
                                 pd_hi_candles : pd.DataFrame = hi_candles[ticker]
                                 logger.info(f"pd_hi_candles fetched: {ticker} {pd_hi_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
@@ -2276,7 +2276,7 @@ def run_all_scenario(
                                                                                                 num_candles_limit=algo_param['num_candles_limit'],
                                                                                                 logger=logger,
                                                                                                 cache_dir=algo_param['cache_candles'],
-                                                                                                list_ts_field=exchange.options['list_ts_field']
+                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None
                                                                                                 )
                                 pd_lo_candles : pd.DataFrame = lo_candles[ticker]
                                 logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
