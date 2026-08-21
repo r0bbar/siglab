@@ -9,6 +9,7 @@ aiohttp
 pandas
 numpy
 boto3
+websockets
 web3
 ccxt
 ccxtpro
