@@ -624,10 +624,12 @@ def compute_candles_stats(
     '''
     if not hurst_exp_window_how_many_candles:
         hurst_exp_window_how_many_candles = (sliding_window_how_many_candles if sliding_window_how_many_candles>=125 else 125)
-    pd_candles['hurst_exp'] = pd_candles['close'].rolling(
-        window=hurst_exp_window_how_many_candles
-        ).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
-
+    try:
+        pd_candles['hurst_exp'] = pd_candles['close'].rolling(
+            window=hurst_exp_window_how_many_candles
+            ).apply(lambda x: compute_Hc(x, kind='price', simplified=True)[0])
+    except Exception:
+        pd_candles['hurst_exp'] = None
 
     # Boillenger https://www.quantifiedstrategies.com/python-bollinger-band-trading-strategy/
     pd_candles.loc[:,'boillenger_upper'] = (pd_candles['sma_long_periods'] if not boillenger_ema else pd_candles['ema_long_periods']) + pd_candles['std'] * boillenger_std_multiples
