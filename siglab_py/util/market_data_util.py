@@ -801,6 +801,7 @@ def fetch_candles(
             # Mark trading sessions open/close
             for reg in ['apac', 'emea', 'amer']:
                 th = f'{reg}_trading_hr'
+                pd_candles[th] = pd_candles[th].fillna(False).astype(bool) # tradfi data such column can null all null, need ensure it's casted into boolean column
                 start_mask = pd_candles[th] & ~pd_candles[th].shift(1).fillna(False)
                 end_mask = pd_candles[th] & ~pd_candles[th].shift(-1).fillna(False)
                 starts = pd_candles.loc[start_mask, ['timestamp_ms', 'open']].reset_index(drop=True)
