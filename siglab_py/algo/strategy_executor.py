@@ -1376,7 +1376,7 @@ async def main():
                 This condition is to block re-entry on same candle.
                 lo_row_timestamp_ms is timestamp_ms of latest lo row, which is initialized to zero on start.
                 '''
-                if pos_status==PositionStatus.CLOSED.name and lo_row_timestamp_ms!=0:
+                if pos_closed and pos_status==PositionStatus.CLOSED.name and lo_row_timestamp_ms!=0:
                     total_ms_elapsed_since_lo_interval_rolled = int((datetime.now().timestamp()*1000 - lo_row_timestamp_ms))
                     log(f"total_ms_elapsed_since_lo_interval_rolled: {total_ms_elapsed_since_lo_interval_rolled:,} (~{int(total_ms_elapsed_since_lo_interval_rolled/1000/60):,} min)")
                     if (total_ms_elapsed_since_lo_interval_rolled < lo_interval_ms) and (pos_closed.timestamp()*1000)>lo_row_timestamp_ms:
