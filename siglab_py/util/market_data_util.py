@@ -560,7 +560,7 @@ class PolygonMarketDataProvider:
     def fetch_ohlcv(
         self,
         symbol : str,
-        since : int, # in sec
+        since : int, # in ms
         timeframe : str = '1h',
         limit : int = 5000, # default 5k, maximum 50k
      ) -> List:
@@ -621,7 +621,7 @@ class PolygonMarketDataProvider:
                 if logger:
                     logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
 
-                candles = self.fetch_ohlcv(symbol=_ticker, since=this_cutoff, timeframe=candle_size, limit=limit)
+                candles = self.fetch_ohlcv(symbol=_ticker, since=int(this_cutoff*1000), timeframe=candle_size, limit=limit)
                 if candles and len(candles)>0:
                     all_candles = all_candles + [[ int(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]) ] for x in candles if x[1] and x[2] and x[3] and x[4] and x[5] ]
 
