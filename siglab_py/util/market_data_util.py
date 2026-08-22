@@ -810,11 +810,11 @@ def fetch_candles(
                 sessions = starts.iloc[:n].assign(end_ts=ends['timestamp_ms'].values[:n], close=ends['close'].values[:n])
                 if len(starts) > n:
                     sessions = pd.concat([sessions, starts.iloc[n:].assign(end_ts=np.nan, close=np.nan)], ignore_index=True)
-                tmp = pd.merge_asof(pd_candles[['timestamp_ms']].reset_index(drop=True), sessions.rename(columns={'start_ts': 'timestamp_ms'}), on='timestamp_ms', direction='backward')
+                pd_candles = pd_candles.sort_values('timestamp_ms').reset_index(drop=True)
+                tmp = pd.merge_asof(pd_candles[['timestamp_ms']].reset_index(drop=True), sessions.rename(columns={'timestamp_ms': 'start_ts'}), left_on='timestamp_ms', right_on='start_ts', direction='backward')
                 pd_candles[f'{reg}_session_open'] = tmp['open'].values
                 pd_candles[f'{reg}_session_close'] = np.where((tmp['end_ts'].notna()) & (tmp['end_ts'] <= pd_candles['timestamp_ms'].values), tmp['close'], np.nan)
-                mask = (pd_candles['timestamp_ms'] - tmp['timestamp_ms']) > 86400000 # 86400000 is 24 hours in milliseconds (24 × 60 × 60 × 1000).
-            
+                
     return exchange_candles # type: ignore
 
 '''
