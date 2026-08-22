@@ -2158,7 +2158,7 @@ def run_all_scenario(
         
         all_exchange_candles : Dict[str, Dict[str, Dict[str, pd.DataFrame]]] = {}
         for exchange in exchanges:
-            markets = exchange.load_markets()
+            markets = exchange.load_markets() if hasattr(exchanges[0], "markets") else None # tradfi exchanges not necessarily implement load_markets like CCXT exchanges
             if exchange.name not in all_exchange_candles:
                 all_exchange_candles[exchange.name]  = {} 
 
@@ -2168,7 +2168,7 @@ def run_all_scenario(
                     tickers = list(markets.keys())
 
                 for ticker in tickers:
-                    if ticker not in markets:
+                    if markets and ticker not in markets:
                         err_msg = f"{ticker}: {'no longer in markets'}"
                         logger.error(err_msg)
                         delisted.append(ticker)
