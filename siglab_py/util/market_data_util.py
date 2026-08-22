@@ -565,7 +565,7 @@ class PolygonMarketDataProvider:
         limit : int = 5000, # default 5k, maximum 50k
      ) -> List:
         multiplier : int = int(timeframe.replace(timeframe[-1], ""))
-        from_timestamp_ms : int = int(since * 1000)
+        from_timestamp_ms : int = int(since)
         to_timestamp_ms : int = int(from_timestamp_ms + limit * multiplier * interval_to_ms(timeframe[-1]))
         # polygon.io _timeframe enumeration: minute, hour, day, week, month, quarter, year
         if timeframe[-1]=="d":
