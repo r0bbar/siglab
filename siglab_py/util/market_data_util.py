@@ -553,6 +553,7 @@ class PolygonMarketDataProvider:
         api_key : Union[str, None] = None,
         rate_limit_ms : int = 12*1000 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls)
     ):
+        self.name = "polygonio"
         self.rest_client = PolygonRestClient(api_key=api_key)
         self.rate_limit_ms = rate_limit_ms
 
