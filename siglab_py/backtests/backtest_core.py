@@ -560,7 +560,7 @@ def fetch_cycle_ath_atl(
     
     while start_ts < end_ts:
         try:
-            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since=start_ts, limit=100)
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=start_ts, limit=100)
             if not ohlcv:
                 break
             all_ohlcv.extend(ohlcv)
