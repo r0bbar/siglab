@@ -120,9 +120,7 @@ def parse_args():
     parser.add_argument("--notification_info_url", help="Webhook url for INFO", default=None)
     parser.add_argument("--notification_critical_url", help="Webhook url for CRITICAL", default=None)
     parser.add_argument("--notification_alert_url", help="Webhook url for ALERT", default=None)
-
-    parser.add_argument("--pass_aiohttp_session", help=" Set to True, if you run on Windows, and error after exchange instantiate but first CCXT calls such as load_markets: aiodns.error.DNSError: (11, 'Could not contact DNS servers'). Y or N (default).", default='N')
-
+    
     args, additional_args = parser.parse_known_args()
 
     param['exchange_name'] = args.exchange_name
@@ -160,15 +158,14 @@ async def main():
         secret=None,
         passphrase=None,
         default_type=param['default_type'],
-        rate_limit_ms=param['rate_limit_ms'],
-        pass_aiohttp_session=param['pass_aiohttp_session']
+        rate_limit_ms=param['rate_limit_ms']
     )
     if exchange:
         loop_counter = 0
         while True:
             try:
                 end_date = datetime.now()
-                start_date = end_date + timedelta(days=-90)
+                start_date = end_date + timedelta(days=-param['num_days'])
 
                 tickers_summary : List[Dict[str, Union[str, float]]] = []
 
