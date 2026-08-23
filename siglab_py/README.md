@@ -61,7 +61,9 @@ TAs computed (This is an expanding list):
 
 [**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
 
-[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers (Yahoo Finance for example) - With sliding window implementation, as all exchanges restrict how many candles you can get in a single fetch. It optionally support back dated ticker changes, for example XAUT/USDT:USDT to XAU/USDT:USDT from OKX on 15 Jan 2026. User need supply 'ticker_change_map'. **Example on Usage?** [market_data_util_tests.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/integration/market_data_util_tests.py)
+[market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers. **fetch_candles** uses a sliding window technique fetching say 100 candles each batch from start to end. This is because all exchanges restrict how many candles you can get in a single fetch. It optionally support back dated ticker changes, for example XAUT/USDT:USDT to XAU/USDT:USDT from OKX on 15 Jan 2026. User need supply 'ticker_change_map'. **Example on Usage?** [market_data_util_tests.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/integration/market_data_util_tests.py)
+
+For **crypto**, candles and live order books are free. You just need setup API keys. For tradfi RWAs, **siglab_py** integrated with [polygon.io](polygon.io). Many exchanges listed popular RWAs (QQQ, SPCX, SNDK, AMZN, TSLA, XAU, XAG... list goes on) by 2026.The caveat is: History is shallow (well it only goes back to 2026). By integrating with [polygon.io](polygon.io), you have years of candles for back tests that would otherwise be unavailable.
 
 ```
 from siglab_py.util.market_data_util import fetch_candles
