@@ -652,38 +652,26 @@ def aggregate_candles(
     pd_candles : pd.DataFrame
 ) -> pd.DataFrame:
     if interval[-1]=='m':
-        # 'm' for pandas means months!
         interval = interval.replace('m','min')
-    pd_candles.set_index('datetime', inplace=True)
+    pd_candles['datetime_utc'] = pd.to_datetime(pd_candles['datetime_utc'])
+    pd_candles.set_index('datetime_utc', inplace=True)
     pd_candles_aggregated = pd_candles.resample(interval).agg({
         'exchange' : 'first',
         'symbol' : 'first',
-        'timestamp_ms' : 'first',
-        
         'open': 'first',
         'high': 'max',
         'low': 'min',
         'close': 'last',
         'volume': 'sum',
-
-        'datetime_utc' : 'first',
-        'year' : 'first',
-        'month' : 'first',
-        'day' : 'first',
-        'hour' : 'first',
-        'minute' : 'first',
-        'dayofweek' : 'first',
-        'week_of_month' : 'first',
-
-        'apac_trading_hr' : 'first',
-        'emea_trading_hr' : 'first',
-        'amer_trading_hr' : 'first',
-
-        'pct_chg_on_close' : 'sum',
-
     })
-    pd_candles.reset_index(inplace=True)
     pd_candles_aggregated.reset_index(inplace=True)
+    pd_candles_aggregated['timestamp_ms'] = (
+        pd_candles_aggregated['datetime_utc'].astype('int64') // 10**6
+    )
+    timestamp_to_datetime_cols(pd_candles_aggregated)
+    pd_candles_aggregated['pct_chg_on_close'] = pd_candles_aggregated['close'].pct_change()
+    pd_candles.reset_index(inplace=True)
+    
     return pd_candles_aggregated
     
 def fetch_historical_price(
@@ -775,6 +763,17 @@ def fetch_candles(
         pd_candles = exchange_candles[symbol]
         
         if pd_candles is not None:
+            pd_candles = pd_candles[
+                [
+                    'exchange', 'symbol', 
+                    'timestamp_ms', 'datetime_utc', 'datetime', 
+                    'open', 'high', 'low', 'close', 'volume', 
+                    'pct_chg_on_close', 
+                    'year', 'month', 'day', 'hour', 'minute', 'dayofweek', 'week_of_month', 
+                    'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'
+                ]
+            ]
+
             mask_invalid_candles = pd_candles["timestamp_ms"].isna()
             if mask_invalid_candles.any():
                 pd_invalid_candles = pd_candles[mask_invalid_candles]
