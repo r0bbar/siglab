@@ -23,7 +23,13 @@ class MarketDataUtilTests(unittest.TestCase):
         POLYGON_API_KEY = "xxxxx"
         rate_limit_ms : int = 10 # For free tiers, it's very restrictive 5 calls per minute (or 12 sec between calls). For paid subscriptions, set this to zero.
         polygonio = PolygonMarketDataProvider(api_key=POLYGON_API_KEY, rate_limit_ms=rate_limit_ms)
-        symbol = 'SNDK'
+        '''
+        Examples,
+            stocks      SNDK, TLSA, AMZN, QQQ ... etc
+            forex       C:EURUSD
+            commodities C:XAGUSD (silver), C:XAUUSD (gold)
+        '''
+        symbol = 'C:XAGUSD'
         # dt_start : datetime = datetime.now() + timedelta(days=-1)
         dt_start = datetime(datetime.now().year,1,1)
         start_ts = dt_start.timestamp()
