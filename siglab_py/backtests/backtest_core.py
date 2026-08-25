@@ -862,15 +862,16 @@ def run_scenario(
                 lo_tm1_idmin_long_periods = int(lo_row_tm1['idmin_long_periods']) if not math.isnan(lo_row_tm1['idmin_long_periods']) else None
                 lo_tm1_idmin_dt_long_periods = pd_lo_candles.at[lo_tm1_idmin_long_periods,'datetime'] if not (lo_tm1_idmin_long_periods is None or pd.isna(lo_tm1_idmin_long_periods)) else None
 
-                if not ath or not atl:
-                    ath_atl = fetch_cycle_ath_atl(exchange=exchange, symbol=ticker, timeframe='1d', start_date=(algo_param['start_date'] - timedelta(days=365*4)), end_date=algo_param['start_date'])
-                    ath = ath_atl['ath']
-                    atl = ath_atl['atl']
+                if 'fetch_ath_atl' in algo_param and algo_param['fetch_ath_atl']:
+                    if not ath or not atl:
+                        ath_atl = fetch_cycle_ath_atl(exchange=exchange, symbol=ticker, timeframe='1d', start_date=(algo_param['start_date'] - timedelta(days=365*4)), end_date=algo_param['start_date'])
+                        ath = ath_atl['ath']
+                        atl = ath_atl['atl']
 
-                if lo_close>ath:
-                    ath = lo_close
-                if lo_close<atl:
-                    atl = lo_close
+                    if lo_close>ath:
+                        ath = lo_close
+                    if lo_close<atl:
+                        atl = lo_close
 
                 # Incoming economic calendars? num_incoming_economic_calendars is used to Block entries if incoming events (total_num_ecoevents==0 to make entries).
                 num_impacting_economic_calendars : int = 0
