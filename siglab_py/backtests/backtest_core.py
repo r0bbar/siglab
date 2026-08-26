@@ -18,7 +18,7 @@ import matplotlib.dates as mdates
 from ccxt.base.exchange import Exchange
 
 from siglab_py.util.retry_util import retry
-from siglab_py.util.market_data_util import fetch_candles, fix_column_types, fetch_historical_price, timestamp_to_week_of_month
+from siglab_py.util.market_data_util import fetch_candles, fix_column_types, fetch_historical_price, timestamp_to_week_of_month, candle_size_to_interval_sec
 from siglab_py.util.trading_util import calc_eff_trailing_sl
 from siglab_py.util.analytic_util import compute_candles_stats, lookup_fib_target, partition_sliding_window
 from siglab_py.util.simple_math import bucket_series, bucketize_val
@@ -623,6 +623,14 @@ def run_scenario(
         pd_hi_candles_segments = segments_to_df(pd_hi_candles_partitions['segments'])
         pd_lo_candles_segments = segments_to_df(pd_lo_candles_partitions['segments'])
 
+    start_date = algo_param['start_date']
+    hi_candle_size = algo_param['hi_candle_size']
+    hi_how_many_candles = algo_param['hi_how_many_candles']
+    hi_candle_interval_sec = candle_size_to_interval_sec(hi_candle_size)
+    end_date = start_date + timedelta(seconds=hi_how_many_candles*hi_candle_interval_sec) # Ensure clean exit
+
+    logger.info(f"start_date: {start_date} to end_date: {end_date}")
+
     lo_num_intervals = int(algo_param['lo_candle_size'].replace(algo_param['lo_candle_size'][-1],""))
     min_sl_age_ms : int = 0
     if algo_param['lo_candle_size'][-1]=="m":
@@ -791,6 +799,9 @@ def run_scenario(
 
                 lo_datetime = lo_row['datetime']
                 tm1 = lo_row_tm1['datetime']
+
+                if lo_datetime>=end_date:
+                    break
                 
                 lo_year = lo_row['year']
                 lo_month = lo_row['month']
