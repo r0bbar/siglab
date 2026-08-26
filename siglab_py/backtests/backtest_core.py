@@ -745,6 +745,7 @@ def run_scenario(
     reversal_camp_cache = {}
     lo_boillenger_lower_breached_cache = {}
     lo_boillenger_upper_breached_cache = {}
+    prev_close = None
     ath, atl = None, None
     target_order_notional = 0
     unrealized_pnl_live, running_sl_percent_hard, loss_hard = None, None, None
