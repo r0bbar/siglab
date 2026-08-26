@@ -11,6 +11,7 @@ import math
 import json
 import inspect
 import pandas as pd
+from pprint import pformat
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
@@ -1163,7 +1164,9 @@ def run_scenario(
 
                         this_ticker_open_trades = open_trades_by_ticker[ticker]
                         current_position_usdt_buy = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='buy'])
+                        current_position_usdt_buy = current_position_usdt_buy if not math.isnan(current_position_usdt_buy) else 0
                         current_position_usdt_sell = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='sell'])
+                        current_position_usdt_sell = current_position_usdt_sell if not math.isnan(current_position_usdt_sell) else 0
                         current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
                         
                         this_ticker_historical_tp = tp_by_ticker[ticker]
@@ -1197,10 +1200,16 @@ def run_scenario(
                             max_sl_trade_age_ms = timestamp_ms - last_sl_timestamp_ms
 
                         # In single legged trading, we either long or short for a particular ticker at any given moment
-                        assert(
-                            (current_position_usdt_buy>=0 and current_position_usdt_sell==0) 
-                            or (current_position_usdt_buy==0 and current_position_usdt_sell>=0))
-                        
+                        try:
+                            assert(
+                                (current_position_usdt_buy>=0 and current_position_usdt_sell==0) 
+                                or (current_position_usdt_buy==0 and current_position_usdt_sell>=0))
+                        except:
+                            logger.error(f"current_position_usdt_buy: {current_position_usdt_buy}, current_position_usdt_sell: {current_position_usdt_sell}")
+                            prettyprint = pformat(this_ticker_open_trades, indent=2, width=100)
+                            logger.error(prettyprint)
+                            raise
+                            
                         if current_position_usdt_buy>0:
                             this_ticker_open_positions_side = 'buy'
                             this_ticker_current_position_usdt = current_position_usdt_buy
@@ -1919,7 +1928,8 @@ def run_scenario(
                                 algo_param
                             )
 
-                prev_close = lo_close
+                if lo_close and not math.isnan(lo_close):
+                    prev_close = lo_close
 
             sorted_filtered_tickers.clear()
             sorted_filtered_tickers = None
