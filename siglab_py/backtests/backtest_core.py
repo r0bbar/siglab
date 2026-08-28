@@ -133,7 +133,10 @@ def spawn_parameters(
         algo_param['target_order_notional'] = None
         if algo_param['constant_order_notional']:
             algo_param['target_order_notional'] = algo_param['initial_cash'] * algo_param['entry_percent_initial_cash']/100
-        
+
+        if 'validation_max_gaps' not in algo_param:
+            algo_param['validation_max_gaps'] = 10 # default (fetch_candle checks if gap in candles)
+
         param_id+=1
     return algo_params
 
@@ -2128,7 +2131,8 @@ def run_all_scenario(
                                                                                         num_candles_limit=algo_param['num_candles_limit'],
                                                                                         logger=logger,
                                                                                         cache_dir=algo_param['cache_candles'],
-                                                                                        list_ts_field=exchanges[0].options['list_ts_field'] if hasattr(exchanges[0], "option") and 'list_ts_field' in exchanges[0].options else None
+                                                                                        list_ts_field=exchanges[0].options['list_ts_field'] if hasattr(exchanges[0], "option") and 'list_ts_field' in exchanges[0].options else None,
+                                                                                        validation_max_gaps=algo_param['validation_max_gaps']
                                                                                         )
                 
                 pd_ref_candles_fast : pd.DataFrame = ref_candles[reference_ticker]
@@ -2231,7 +2235,8 @@ def run_all_scenario(
                                                                                                 num_candles_limit=algo_param['num_candles_limit'],
                                                                                                 logger=logger,
                                                                                                 cache_dir=algo_param['cache_candles'],
-                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None
+                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None,
+                                                                                                validation_max_gaps=algo_param['validation_max_gaps']
                                                                                                 )
                                 pd_hi_candles : pd.DataFrame = hi_candles[ticker]
                                 logger.info(f"pd_hi_candles fetched: {ticker} {pd_hi_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
@@ -2299,7 +2304,8 @@ def run_all_scenario(
                                                                                                 num_candles_limit=algo_param['num_candles_limit'],
                                                                                                 logger=logger,
                                                                                                 cache_dir=algo_param['cache_candles'],
-                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None
+                                                                                                list_ts_field=exchange.options['list_ts_field'] if hasattr(exchange, "option") and 'list_ts_field' in exchanges.options else None,
+                                                                                                validation_max_gaps=algo_param['validation_max_gaps']
                                                                                                 )
                                 pd_lo_candles : pd.DataFrame = lo_candles[ticker]
                                 logger.info(f"pd_lo_candles fetched: {ticker} {pd_lo_candles.shape}, start: {cutoff_ts}, end: {int(test_end_date.timestamp())} {target_candle_file_name}")
