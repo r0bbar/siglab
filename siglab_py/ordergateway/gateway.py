@@ -607,7 +607,7 @@ async def execute_one_position(
             res = None
             while current_amount_base_ccy!=current_amount_base_ccy or i<max_retry:
                 try:
-                    res = _fetch_position(exchange=exchange, ticker=ticker, ticker_class=ticker_class, multiplier=multiplier)
+                    res = await _fetch_position(exchange=exchange, ticker=ticker, ticker_class=ticker_class, multiplier=multiplier)
 
                     current_amount_base_ccy = res['amount_base_ccy']
                     if current_amount_base_ccy==expected_amount_base_ccy:
