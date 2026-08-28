@@ -490,7 +490,10 @@ def timestamp_to_datetime_cols(
         NUM_MS_IN_1HR = 60*60*1000
         if timestamp_ms_gap_median>=NUM_MS_IN_1HR:
             num_rows_with_expected_gap = pd_candles[~pd_candles.timestamp_ms_gap.isna()][pd_candles.timestamp_ms_gap==timestamp_ms_gap_median].shape[0]
-            assert(num_rows_with_expected_gap/pd_candles.shape[0] > (100 - validation_max_gaps) / 100)
+            valid_rows_percent = num_rows_with_expected_gap/pd_candles.shape[0] * 100
+            if (valid_rows_percent < (100 - validation_max_gaps) / 100):
+                validation_err : str = f"num_rows_with_expected_gap: {num_rows_with_expected_gap}/{pd_candles.shape[0] * 100}. validation_max_gaps: {validation_max_gaps}."
+                raise ValueError(validation_err)
     pd_candles.drop(columns=['timestamp_ms_gap'], inplace=True)
 
 def timestamp_to_week_of_month(timestamp_ms: int) -> int:
