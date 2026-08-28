@@ -751,7 +751,7 @@ def fetch_candles(
             for symbol in exchange_candles:
                 pd_candles = exchange_candles[symbol]
                 if not pd_candles is None:
-                    fix_column_types(pd_candles) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
+                    fix_column_types(pd_candles=pd_candles, validation_max_gaps=validation_max_gaps) # You don't want to do this from Futubull as you'd need import Futubull from there: Circular references
 
     if num_intervals!=1:
             for symbol in exchange_candles:
