@@ -612,6 +612,9 @@ class PolygonMarketDataProvider:
     ) -> Dict[str, Union[pd.DataFrame, None]]:
         rsp = {}
 
+        interval_type = candle_size[-1]
+        one_interval_candle_size = f"1{interval_type}"
+
         num_tickers = len(symbols)
         i = 0
         for ticker in symbols:
@@ -633,9 +636,9 @@ class PolygonMarketDataProvider:
                     if len(record_ts_str)==13:
                         record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
                     
-                    this_cutoff = record_ts  + candle_size_to_interval_sec(candle_size)
+                    this_cutoff = record_ts  + candle_size_to_interval_sec(one_interval_candle_size)
                 else:
-                    this_cutoff += candle_size_to_interval_sec(candle_size)
+                    this_cutoff += candle_size_to_interval_sec(one_interval_candle_size)
 
             i+=1
 
@@ -855,6 +858,9 @@ def _fetch_candles_ccxt(
     rsp = {}
 
     exchange.load_markets()
+
+    interval_type = candle_size[-1]
+    one_interval_candle_size = f"1{interval_type}"
     
     num_tickers = len(normalized_symbols)
     i = 0
@@ -871,21 +877,6 @@ def _fetch_candles_ccxt(
 
             return candles
             
-        def _calc_increment(candle_size):
-            increment = 1
-            num_intervals = int(candle_size.replace(candle_size[-1],''))
-            interval_type = candle_size[-1]
-            if interval_type == "m":
-                increment = 60
-            elif interval_type == "h":
-                increment = 60*60
-            elif interval_type == "d":
-                increment = 60*60*24
-            else:
-                raise ValueError(f"Invalid candle_size {candle_size}")
-            return 1 * increment # Don't advance sliding window by for example 15m! Advance by 1m only! Or you may have missing candles every num_candles_limit=100 bars fetched
-        
-        
         if logger:
             logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
 
@@ -923,9 +914,9 @@ def _fetch_candles_ccxt(
                 if len(record_ts_str)==13:
                     record_ts = int(int(record_ts_str)/1000) # Convert from milli-seconds to seconds
                 
-                this_cutoff = record_ts  + _calc_increment(candle_size)
+                this_cutoff = record_ts  + candle_size_to_interval_sec(one_interval_candle_size)
             else:
-                this_cutoff += _calc_increment(candle_size)
+                this_cutoff += candle_size_to_interval_sec(one_interval_candle_size)
 
         columns = ['exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
         pd_all_candles = pd.DataFrame([ [ exchange.name, ticker, x[0], x[1], x[2], x[3], x[4], x[5] ] for x in all_candles], columns=columns)
