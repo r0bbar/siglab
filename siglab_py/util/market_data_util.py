@@ -883,7 +883,8 @@ def _fetch_candles_ccxt(
                 increment = 60*60*24
             else:
                 raise ValueError(f"Invalid candle_size {candle_size}")
-            return num_intervals * increment
+            return 1 * increment # Don't advance sliding window by for example 15m! Advance by 1m only! Or you may have missing candles every num_candles_limit=100 bars fetched
+        
         
         if logger:
             logger.info(f"{i}/{num_tickers} Fetching {candle_size} candles for {ticker}.")
