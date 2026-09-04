@@ -369,20 +369,6 @@ def generic_pnl_eval (
         lo_dayofweek = this_candle['dayofweek']
         cautious_dayofweek : List[int] = algo_param['cautious_dayofweek']
 
-        last_candle_was_entry : bool = False
-        if this_ticker_open_positions_entry_timestamp==last_candle['timestamp_ms']:
-            '''
-            Special case where last_candle was the entry. Your trade could have TP'ed, or SL'ed within same candle of entry!
-            With tight TP/SL targets, this can happen a lot.
-            Tricky part is, if wig up and down breaches BOTH TP and SL threshold - you don't know which comes first!!! 
-            In this case, 
-                This situation backtest_core would not know if TP came first, or SL came first: Indeterminstic scenario.
-                We do not evaluate unrealized_pnl_live_optimistic|unrealized_pnl_live_pessimistic based on entry candle (i.e. last_candle)
-            If however, we know for example, for a long entry, that wig down breached running_sl_percent_hard, but did NOT breach tp_min_percent. 
-                Then we evaluate unrealized_pnl_live_pessimistic based on entry candle to trigger SL.
-            '''
-            last_candle_was_entry
-
         lo_close = this_candle['close']
         lo_open = this_candle['open']
         lo_high = this_candle['high']
@@ -407,22 +393,8 @@ def generic_pnl_eval (
             if this_ticker_open_positions_side=='buy':
                 unrealized_pnl_interval += (lo_close - trade['entry_price']) * trade['size']
                 unrealized_pnl_open += (lo_open - trade['entry_price']) * trade['size']
-                unrealized_pnl_live_optimistic += (lo_high - trade['entry_price']) * trade['size']
-                unrealized_pnl_live_pessimistic += (lo_low - trade['entry_price']) * trade['size']
-                if last_candle_was_entry:
-                    current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
-                    current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
-                    current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
-                    entry_optimistic_pnl_percent = (lo_tm1_high - trade['entry_price']) * trade['size'] / current_position_usdt * 100
-                    entry_pessimistic_pnl_percent = (lo_tm1_low - trade['entry_price']) * trade['size'] / current_position_usdt * 100
-                    potential_tp_on_entry = True if entry_optimistic_pnl_percent>tp_min_percent else False
-                    potential_sl_on_entry = True if entry_pessimistic_pnl_percent>running_sl_percent_hard else False
-                    if not(potential_tp_on_entry and potential_sl_on_entry): # If both are True, then we are uncertain TP first, or SL first! Indeterministic!
-                        if potential_tp_on_entry:
-                            unrealized_pnl_live_optimistic = (lo_tm1_high - trade['entry_price']) * trade['size']
-                        if potential_sl_on_entry:
-                            unrealized_pnl_live_pessimistic = (lo_tm1_low - trade['entry_price']) * trade['size']
-
+                unrealized_pnl_live_optimistic += (lo_tm1_high - trade['entry_price']) * trade['size']
+                unrealized_pnl_live_pessimistic += (lo_tm1_low - trade['entry_price']) * trade['size']
                 unrealized_pnl_close_approx += (min(lo_close*(1+_asymmetric_tp_bps/10000), lo_high) - trade['entry_price']) * trade['size'] # Less accurate to use close price
                 if (
                     long_tp_indicator_name 
@@ -442,21 +414,8 @@ def generic_pnl_eval (
             else:
                 unrealized_pnl_interval += (trade['entry_price'] - lo_close) * trade['size']
                 unrealized_pnl_open += (trade['entry_price'] - lo_open) * trade['size']
-                unrealized_pnl_live_optimistic += (trade['entry_price'] - lo_low) * trade['size']
-                unrealized_pnl_live_pessimistic += (trade['entry_price'] - lo_high) * trade['size']
-                if last_candle_was_entry:
-                    current_position_usdt_buy = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='buy'])
-                    current_position_usdt_sell = sum([x['size'] * lo_open for x in this_ticker_open_trades if x['side']=='sell'])
-                    current_position_usdt = current_position_usdt_buy + current_position_usdt_sell
-                    entry_optimistic_pnl_percent = (trade['entry_price'] - lo_tm1_low) * trade['size'] / current_position_usdt * 100
-                    entry_pessimistic_pnl_percent = (trade['entry_price'] - lo_tm1_high) * trade['size'] / current_position_usdt * 100
-                    potential_tp_on_entry = True if entry_optimistic_pnl_percent>tp_min_percent else False
-                    potential_sl_on_entry = True if entry_pessimistic_pnl_percent>running_sl_percent_hard else False
-                    if not(potential_tp_on_entry and potential_sl_on_entry): # If both are True, then we are uncertain TP first, or SL first!
-                        if potential_tp_on_entry:
-                            unrealized_pnl_live_optimistic = (trade['entry_price'] - lo_tm1_low) * trade['size']
-                        if potential_sl_on_entry:
-                            unrealized_pnl_live_pessimistic = (trade['entry_price'] - lo_tm1_high) * trade['size']
+                unrealized_pnl_live_optimistic += (trade['entry_price'] - lo_tm1_low) * trade['size']
+                unrealized_pnl_live_pessimistic += (trade['entry_price'] - lo_tm1_high) * trade['size']
                 unrealized_pnl_close_approx += (trade['entry_price'] - max(lo_close*(1-_asymmetric_tp_bps/10000), lo_low)) * trade['size']
                 if (
                     short_tp_indicator_name 
