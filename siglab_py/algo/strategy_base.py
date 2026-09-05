@@ -24,12 +24,12 @@ class StrategyBase(ABC):
     def evaluate_trading_context(
         exchange_name : str,
         ticker : str,
-        start_ts : int = (datetime.now() + timedelta(days=-30)).timestamp(), # Default three months ago. Also timestamp in seconds (not in ms).
+        start_ts : int = (datetime.now() + timedelta(days=-30*3)).timestamp(), # Default three months ago. Also timestamp in seconds (not in ms).
         end_ts : int = datetime.now().timestamp(),
         candle_size : str = '1h',
         sliding_window_how_many_candles : int = 24*7, # Default: TAs are calculated using one week sliding window
         volume_profile_2_num_intervals : int = 24*30,
-        volume_profile_3_num_intervals : int = 24*7
+        volume_profile_3_num_intervals : int = 24*30*3
     ):
         exchange = instantiate_exchange(exchange_name)
 
