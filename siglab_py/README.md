@@ -7,6 +7,8 @@ The repo include all the infrastructure code necessary to backtest a trading str
 
 + [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine
 
+Drill down into back tests results with [**bacttest_trades_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/backtest_trades_viewer.ipynb)
+
 + [**order gateway**](https://medium.com/@norman-lm-fung/standalone-order-gateway-on-top-of-ccxt-576680a2d603) - dispatch orders to exchanges. 
 
 + [**strategy_executor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) - Take the lamdba functions with entry/TP/SL logic from back tests, use them in live algo. Ensure backtest-vs-live correspondence.
