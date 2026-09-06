@@ -2433,6 +2433,15 @@ def parseargs():
     parser.add_argument("--recompute_ta", help="Recompute TA/indicators from candles? Y (default) or N", default=True)
     parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
     parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
+
+    year_ago = datetime.now() + timedelta(days=-365)
+    year_ago = datetime(year_ago.year, year_ago.month, year_ago.day)
+    parser.add_argument("--start_date", help="Format: yyyy-MM-dd, default a year ago.", default=year_ago.strftime("%Y-%m-%d"))
+    parser.add_argument("--num_days", help="Default 365 days.", default=False)
+    parser.add_argument("--tp_min_percent", help="default 100 bps", default=1.0)
+    parser.add_argument("--tp_max_percent", help="default 200 bps", default=2.0)
+    parser.add_argument("--sl_hard_percent", help="default 100 bps", default=1.0)
+
     parser.add_argument("--block_entries_on_impacting_ecoevents", help="Block entries on economic event? Y (default) or N", default=True)
     parser.add_argument("--enable_sliced_entry", help="Block entries on economic event? Y or N (default)", default=False)
     parser.add_argument("--asymmetric_tp_bps", help="A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
@@ -2459,6 +2468,13 @@ def parseargs():
         
     reference_ticker = args.reference_ticker if args.reference_ticker else white_list_tickers[0]
 
+    start_date = args.start_date
+    start_date = datetime(int(start_date.split('-')[0]), int(start_date.split('-')[1]), int(start_date.split('-')[2]))
+    num_days = int(args.num_days)
+    tp_min_percent = float(args.tp_min_percent)
+    tp_max_percent = float(args.tp_max_percent)
+    sl_hard_percent = float(args.sl_hard_percent)
+
     if args.block_entries_on_impacting_ecoevents:
         if args.block_entries_on_impacting_ecoevents=='Y':
             block_entries_on_impacting_ecoevents = True
@@ -2482,6 +2498,13 @@ def parseargs():
         'recompute_ta': recompute_ta,
         'white_list_tickers' : white_list_tickers,
         'reference_ticker' : reference_ticker,
+
+        'start_date' : start_date,
+        'num_days'  : num_days,
+        'tp_min_percent' : tp_min_percent,
+        'tp_max_percent' : tp_max_percent,
+        'sl_hard_percent' : sl_hard_percent,
+        
         'block_entries_on_impacting_ecoevents' : block_entries_on_impacting_ecoevents,
         'enable_sliced_entry'  : enable_sliced_entry,
         'asymmetric_tp_bps' : asymmetric_tp_bps
