@@ -9,11 +9,11 @@ aiohttp
 pandas
 numpy
 boto3
-websockets
-web3
 ccxt
 ccxtpro
 massive
+websockets>=14.0
+web3
 feedparser
 futu-api
 plotext
