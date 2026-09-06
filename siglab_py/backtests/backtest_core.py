@@ -2174,7 +2174,7 @@ def run_all_scenario(
                     else:    
                         all_exchange_candles[exchange.name][ticker] = {}
 
-                        _ticker = ticker.split(":")[0].replace("/","")
+                        _ticker = ticker.replace(":","_").replace("/","").split(":")[0]
                         total_seconds = (test_end_date - test_fetch_start_date).total_seconds()
                         total_hours = total_seconds / 3600
                         total_days = total_hours / 24
@@ -2250,7 +2250,7 @@ def run_all_scenario(
                             pd_hi_candles_segments.to_csv(candle_segments_file_name)
 
                         pd_lo_candles = None
-                        _ticker = ticker.split(":")[0].replace("/","")
+                        _ticker = ticker.replace(":","_").replace("/","").split(":")[0]
                         target_candle_file_name : str = f'{cache_dir_fullpath}\\{_ticker}_candles_{test_fetch_start_date.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date.strftime("%Y-%m-%d-%H-%M-%S")}_{algo_param["lo_candle_size"]}.csv'
                         target_candle_ta_file_name : str = target_candle_file_name.replace('candles', 'candles_ta')
                         if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name):
