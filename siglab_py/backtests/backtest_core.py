@@ -573,6 +573,8 @@ def run_scenario(
 
         logger,
 
+        stage_strat_specific_preentry_data_func : Callable[..., Dict] = None,
+
         pypy_compat : bool = False,
         plot_timeseries : bool = True,
     ):
@@ -679,6 +681,10 @@ def run_scenario(
     tp_eval_func_params = tp_eval_func_sig.parameters.keys()
     sort_filter_universe_func_sig = inspect.signature(sort_filter_universe_func)
     sort_filter_universe_func_params = sort_filter_universe_func_sig.parameters.keys()
+
+    if stage_strat_specific_preentry_data_func:
+        stage_strat_specific_preentry_data_func_sig = inspect.signature(stage_strat_specific_preentry_data_func)
+        stage_strat_specific_preentry_data_func_params = stage_strat_specific_preentry_data_func_sig.parameters.keys()
     
     BUCKETS_m100_100 = bucket_series(
 						values=list([i for i in range(-100,100)]), 
@@ -715,6 +721,7 @@ def run_scenario(
     reversal_camp_cache = {}
     lo_boillenger_lower_breached_cache = {}
     lo_boillenger_upper_breached_cache = {}
+    strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
     prev_close = None
     ath, atl = None, None
     target_order_notional = 0
@@ -1131,6 +1138,10 @@ def run_scenario(
                         ref_close_slow = ref_row_slow['close']
                         ref_ema_close_slow = ref_row_slow['ema_close']
 
+                    if stage_strat_specific_preentry_data_func:
+                        kwargs = {k: v for k, v in locals().items() if k in stage_strat_specific_preentry_data_func_params}
+                        stage_strat_specific_preentry_data_func_result = stage_strat_specific_preentry_data_func(**kwargs)
+                        
                     # POSITION NOTIONAL MARKING lo_low, lo_high. pessimistic!
                     def _refresh_current_position(timestamp_ms):
                         # BTC, ETH, SOL..etc major pairs typically 24x7, less liquid pairs, newly listed, RWAs are typically more spotty.
@@ -1957,6 +1968,8 @@ def run_all_scenario(
 
     logger,
 
+    stage_strat_specific_preentry_data_func : Callable[..., Dict] = None,
+
     reference_start_dt : datetime = datetime(2021,1,1, tzinfo=timezone.utc),
 ) -> List[Dict]:
     all_exceptions = []
@@ -2335,6 +2348,7 @@ def run_all_scenario(
                 pnl_eval_func=pnl_eval_func,
                 tp_eval_func=tp_eval_func,
                 sort_filter_universe_func=sort_filter_universe_func,
+                stage_strat_specific_preentry_data_func=stage_strat_specific_preentry_data_func,
 
                 logger=logger,
 
