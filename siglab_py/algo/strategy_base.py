@@ -7,6 +7,7 @@ from siglab_py.constants import OrderSide
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import fetch_candles, instantiate_exchange
 from siglab_py.util.analytic_util import compute_candles_stats, compute_volume_profile, compute_value_area
+from siglab_py.util.analytic_util import evaluate_trading_context as _evaluate_trading_context
 
 class StrategyBase(ABC):
     def __init__(self, *args: object) -> None:
@@ -40,49 +41,17 @@ class StrategyBase(ABC):
             normalized_symbols = [ ticker ],
             candle_size = candle_size
         )[ticker]
-        
-        compute_candles_stats(
-                pd_candles=pd_candles,
-                boillenger_std_multiples=2,
-                sliding_window_how_many_candles=sliding_window_how_many_candles, 
-                pypy_compat=True
-            )
-        last_row =  pd_candles.iloc[-1]
-        adx = round(last_row['adx'], 2)
-        atr_bps = round(last_row['atr_bps'], 2)
-        
-        volume_profile_1 = compute_volume_profile(
-                            pd_candles = pd_candles,
-                            level_granularity = 0.1, # i.e. 10%
-                            ohlc = 'close'
-                        )
-        va_1 = compute_value_area(volume_profile_1, value_area_pct=0.70)
+        trading_context = _evaluate_trading_context(
+            pd_candles=pd_candles,
 
-        volume_profile_2 = compute_volume_profile(
-                            pd_candles = pd_candles.iloc[-volume_profile_2_num_intervals:],
-                            level_granularity = 0.1, # i.e. 10%
-                            ohlc = 'close'
-                        )
-        va_2 = compute_value_area(volume_profile_2, value_area_pct=0.70)
+            sliding_window_how_many_candles=sliding_window_how_many_candles,
 
-        volume_profile_3 = compute_volume_profile(
-                            pd_candles = pd_candles.iloc[-volume_profile_3_num_intervals:],
-                            level_granularity = 0.1, # i.e. 10%
-                            ohlc = 'close'
-                        )
-
-        va_3 = compute_value_area(volume_profile_3, value_area_pct=0.70)
-        
-        return {
-            'adx' : adx, # trending vs rangebound
-            'atr_bps' : atr_bps, # volatility measures
-            'volume_profiles' : {   # @todo: previous APAC, London, US session range 
-                '1' : va_1,
-                '2' : va_2,
-                '3' : va_3
-            },
-            'evaluation_timestamp_ms' : int(datetime.now().timestamp() *1000)
-        }
+            volume_profile_1_num_intervals=sliding_window_how_many_candles,
+            volume_profile_2_num_intervals=volume_profile_2_num_intervals,
+            volume_profile_3_num_intervals=volume_profile_3_num_intervals,
+            value_area_pct=0.7
+        )
+        return trading_context
 
     @staticmethod
     def stage_strat_specific_preentry_data(
