@@ -1101,6 +1101,62 @@ def lookup_fib_target(
                 }
             }
 
+# Very standard trading context evaluation: 1. ADX determines if trend present, 2. ATR determines if sufficient vols, and 3. volume profiles gives you periods ranges.
+def evaluate_trading_context(
+    pd_candles : pd.DataFrame,
+
+    sliding_window_how_many_candles : int,
+
+    volume_profile_1_num_intervals : int,
+    volume_profile_2_num_intervals : int,
+    volume_profile_3_num_intervals : int,
+
+    value_area_pct : float = 0.70 # 70% is fairly standard
+) -> Dict[str, Any]:
+    compute_candles_stats(
+                    pd_candles=pd_candles,
+                    boillenger_std_multiples=2,
+                    sliding_window_how_many_candles=sliding_window_how_many_candles, 
+                    pypy_compat=True
+                )
+    last_row =  pd_candles.iloc[-1]
+    adx = round(last_row['adx'], 2)
+    atr_bps = round(last_row['atr_bps'], 2)
+    
+    volume_profile_1 = compute_volume_profile(
+                        pd_candles = pd_candles[-volume_profile_1_num_intervals:],
+                        level_granularity = 0.1, # i.e. 10%
+                        ohlc = 'close'
+                    )
+    va_1 = compute_value_area(volume_profile_1, value_area_pct=value_area_pct)
+
+    volume_profile_2 = compute_volume_profile(
+                        pd_candles = pd_candles.iloc[-volume_profile_2_num_intervals:],
+                        level_granularity = 0.1, # i.e. 10%
+                        ohlc = 'close'
+                    )
+    va_2 = compute_value_area(volume_profile_2, value_area_pct=value_area_pct)
+
+    volume_profile_3 = compute_volume_profile(
+                        pd_candles = pd_candles.iloc[-volume_profile_3_num_intervals:],
+                        level_granularity = 0.1, # i.e. 10%
+                        ohlc = 'close'
+                    )
+
+    va_3 = compute_value_area(volume_profile_3, value_area_pct=value_area_pct)
+    
+    return {
+        'adx' : adx, # trending vs rangebound
+        'atr_bps' : atr_bps, # volatility measures
+        'volume_profiles' : {   # @todo: previous APAC, London, US session range 
+            '1' : va_1,
+            '2' : va_2,
+            '3' : va_3
+        },
+        'evaluation_timestamp_ms' : int(datetime.now().timestamp() *1000)
+    }
+
+    
 ''' 
 The implementation from Geeksforgeeks https://www.geeksforgeeks.org/find-indices-of-all-local-maxima-and-local-minima-in-an-array/ is wrong. 
 If you have consecutive-duplicates, things will gall apart!
