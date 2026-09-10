@@ -2,7 +2,7 @@ import unittest
 from typing import List
 from pathlib import Path
 
-from util.analytic_util import compute_volume_profile, compute_value_area, compute_candles_stats, lookup_fib_target
+from util.analytic_util import compute_volume_profile, compute_value_area, compute_candles_stats, lookup_fib_target, evaluate_trading_context
 
 import pandas as pd
 
@@ -132,6 +132,44 @@ class AnalyticUtilTests(unittest.TestCase):
         unexpected_columns = [ actual for actual in pd_candles.columns.to_list() if actual not in expected_columns ]
 
         assert(pd_candles.columns.to_list()==expected_columns)
+
+    def test_evaluate_trading_context(self):
+            '''
+            Folder structure:
+                \ siglab
+                    \ siglab_py	<-- python project root
+                        \ sigab_py
+                            __init__.py
+                            \ util
+                                __init__.py
+                                market_data_util.py
+                            \ tests
+                                \ unit
+                                    __init__.py
+                                    analytic_util_tests.py <-- Tests here
+                                
+                    \ siglab_rs <-- Rust project root
+                    \ data	 <-- Data files here!
+            '''
+            data_dir = Path(__file__).parent.parent.parent.parent / "data"
+            csv_path = data_dir / "sample_btc_candles.csv" # hourly bars
+            pd_candles : pd.DataFrame = pd.read_csv(csv_path)
+            trading_context = evaluate_trading_context(
+                 pd_candles=pd_candles,
+                 sliding_window_how_many_candles=24*7,  # 7 days (one week)
+                 volume_profile_1_num_intervals=24*7, # one week
+                 volume_profile_2_num_intervals=24*30, # one month
+                 volume_profile_3_num_intervals=24*30*3, # three months
+                 value_area_pct=0.7
+            )
+            assert(trading_context is not None)
+            assert('adx' in trading_context)
+            assert('atr_bps' in trading_context)
+            assert('volume_profiles' in trading_context)
+            assert('1' in trading_context['volume_profiles'])
+            assert('2' in trading_context['volume_profiles'])
+            assert('3' in trading_context['volume_profiles'])
+            assert('evaluation_timestamp_ms' in trading_context)
 
     def test_lookup_fib_target(self):
         data_dir = Path(__file__).parent.parent.parent.parent / "data"
