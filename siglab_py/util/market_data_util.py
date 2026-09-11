@@ -482,23 +482,24 @@ def timestamp_to_datetime_cols(
         lambda x: "AMER" in timestamp_to_active_trading_regions(x)
     )
 
-    _num_ms_24h = 24 * 60 * 60 * 1000
+    _num_ms_12h = 12 * 60 * 60 * 1000
     _median_gap_ms = pd_candles['timestamp_ms'].diff().median()
-    _window_24h_num_intervals = max(1, int(round(_num_ms_24h / _median_gap_ms)))
+    _window_12h_num_intervals = max(1, int(round(_num_ms_12h / _median_gap_ms)))
 
     _high = pd_candles['high'].where(pd_candles['apac_trading_hr'])
-    pd_candles['apac_session_high'] = _high.rolling(window=_window_24h_num_intervals, min_periods=1).max()
+    pd_candles['apac_session_high'] = _high.rolling(window=_window_12h_num_intervals, min_periods=1).max()
     _high = pd_candles['high'].where(pd_candles['emea_trading_hr'])
-    pd_candles['emea_session_high'] = _high.rolling(window=_window_24h_num_intervals, min_periods=1).max()
+    pd_candles['emea_session_high'] = _high.rolling(window=_window_12h_num_intervals, min_periods=1).max()
     _high = pd_candles['high'].where(pd_candles['amer_trading_hr'])
-    pd_candles['amer_session_high'] = _high.rolling(window=_window_24h_num_intervals, min_periods=1).max()
+    pd_candles['amer_session_high'] = _high.rolling(window=_window_12h_num_intervals, min_periods=1).max()
 
     _low = pd_candles['low'].where(pd_candles['apac_trading_hr'])
-    pd_candles['apac_session_low'] = _low.rolling(window=_window_24h_num_intervals, min_periods=1).min()
+    pd_candles['apac_session_low'] = _low.rolling(window=_window_12h_num_intervals, min_periods=1).min()
     _low = pd_candles['low'].where(pd_candles['emea_trading_hr'])
-    pd_candles['emea_session_low'] = _low.rolling(window=_window_24h_num_intervals, min_periods=1).min()
+    pd_candles['emea_session_low'] = _low.rolling(window=_window_12h_num_intervals, min_periods=1).min()
     _low = pd_candles['low'].where(pd_candles['amer_trading_hr'])
-    pd_candles['amer_session_low'] = _low.rolling(window=_window_24h_num_intervals, min_periods=1).min()
+    pd_candles['amer_session_low'] = _low.rolling(window=_window_12h_num_intervals, min_periods=1).min()
+
 
     pd_candles['timestamp_ms_gap'] = pd_candles['timestamp_ms'] - pd_candles['timestamp_ms'].shift(1)
     
