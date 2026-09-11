@@ -795,10 +795,11 @@ def fetch_candles(
                     'open', 'high', 'low', 'close', 'volume', 
                     'pct_chg_on_close', 
                     'year', 'month', 'day', 'hour', 'minute', 'dayofweek', 'week_of_month', 
-                    'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'
+                    'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr',
+                    'apac_session_high', 'emea_session_high', 'amer_session_high', 'apac_session_low', 'emea_session_low', 'amer_session_low'
                 ]
-            ]
-
+            ]           
+            
             mask_invalid_candles = pd_candles["timestamp_ms"].isna()
             if mask_invalid_candles.any():
                 pd_invalid_candles = pd_candles[mask_invalid_candles]
@@ -838,7 +839,9 @@ def fetch_candles(
                 tmp = pd.merge_asof(pd_candles[['timestamp_ms']].reset_index(drop=True), sessions.rename(columns={'timestamp_ms': 'start_ts'}), left_on='timestamp_ms', right_on='start_ts', direction='backward')
                 pd_candles[f'{reg}_session_open'] = tmp['open'].values
                 pd_candles[f'{reg}_session_close'] = np.where((tmp['end_ts'].notna()) & (tmp['end_ts'] <= pd_candles['timestamp_ms'].values), tmp['close'], np.nan)
-                
+
+            exchange_candles[symbol] = pd_candles
+
     return exchange_candles # type: ignore
 
 '''
