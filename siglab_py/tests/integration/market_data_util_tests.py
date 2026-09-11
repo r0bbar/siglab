@@ -77,7 +77,12 @@ class MarketDataUtilTests(unittest.TestCase):
 
         if pd_candles is not None:
             assert len(pd_candles) > 0, "No candles returned."
-            expected_columns = {'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'week_of_month', 'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr'}
+            expected_columns = {
+                'exchange', 'symbol', 'timestamp_ms', 'open', 'high', 'low', 'close', 'volume', 
+                'datetime_utc', 'datetime', 'year', 'month', 'day', 'hour', 'minute', 'week_of_month', 
+                'apac_trading_hr', 'emea_trading_hr', 'amer_trading_hr',
+                'apac_session_high', 'emea_session_high', 'amer_session_high', 'apac_session_low', 'emea_session_low', 'amer_session_low'
+                }
             assert set(pd_candles.columns) >= expected_columns, "Missing expected columns."
             assert pd_candles['timestamp_ms'].notna().all(), "timestamp_ms column contains NaN values."
             assert pd_candles['timestamp_ms'].is_monotonic_increasing, "Timestamps are not in ascending order."
