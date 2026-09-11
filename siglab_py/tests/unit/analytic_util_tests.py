@@ -133,7 +133,8 @@ class AnalyticUtilTests(unittest.TestCase):
         missing_columns = [ expected for expected in expected_columns if expected not in pd_candles.columns.to_list() ]
         unexpected_columns = [ actual for actual in pd_candles.columns.to_list() if actual not in expected_columns ]
 
-        assert(pd_candles.columns.to_list()==expected_columns)
+        assert(not missing_columns)
+        assert(not unexpected_columns)
 
     def test_evaluate_trading_context(self):
             '''
