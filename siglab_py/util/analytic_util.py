@@ -916,34 +916,37 @@ def compute_candles_stats(
             'macd_cross_last': 'last'
         })
         grouped.columns = ['price_low', 'price_high', 'macd_low', 'macd_high', 'regime']
+        grouped = grouped[grouped['regime'].isin(['bullish', 'bearish'])].copy()
+        grouped['prev_price_low']  = grouped.groupby('regime')['price_low'].shift(1)
+        grouped['prev_price_high'] = grouped.groupby('regime')['price_high'].shift(1)
+        grouped['prev_macd_low']   = grouped.groupby('regime')['macd_low'].shift(1)
+        grouped['prev_macd_high']  = grouped.groupby('regime')['macd_high'].shift(1)
 
-        prev_price_low  = grouped['price_low'].shift(1)
-        prev_price_high = grouped['price_high'].shift(1)
-        prev_macd_low   = grouped['macd_low'].shift(1)
-        prev_macd_high  = grouped['macd_high'].shift(1)
+        is_bearish_regime = grouped['regime'] == 'bearish'
+        is_bullish_regime = grouped['regime'] == 'bullish'
 
-        is_bullish = grouped['regime'] == 'bullish'
-        is_bearish = grouped['regime'] == 'bearish'
-
+        # Bullish divergences occur in bearish MACD regime
         cond_normal_bull = (
-            is_bullish &
-            (grouped['price_low'] < prev_price_low) &
-            (grouped['macd_low'] > prev_macd_low)
+            is_bearish_regime &
+            (grouped['price_low'] < grouped['prev_price_low']) &
+            (grouped['macd_low'] > grouped['prev_macd_low'])
         )
         cond_hidden_bull = (
-            is_bullish &
-            (grouped['price_low'] > prev_price_low) &
-            (grouped['macd_low'] < prev_macd_low)
+            is_bearish_regime &
+            (grouped['price_low'] > grouped['prev_price_low']) &
+            (grouped['macd_low'] < grouped['prev_macd_low'])
         )
+
+        # Bearish divergences occur in bullish MACD regime
         cond_normal_bear = (
-            is_bearish &
-            (grouped['price_high'] > prev_price_high) &
-            (grouped['macd_high'] < prev_macd_high)
+            is_bullish_regime &
+            (grouped['price_high'] > grouped['prev_price_high']) &
+            (grouped['macd_high'] < grouped['prev_macd_high'])
         )
         cond_hidden_bear = (
-            is_bearish &
-            (grouped['price_high'] < prev_price_high) &
-            (grouped['macd_high'] > prev_macd_high)
+            is_bullish_regime &
+            (grouped['price_high'] < grouped['prev_price_high']) &
+            (grouped['macd_high'] > grouped['prev_macd_high'])
         )
 
         conditions = [
