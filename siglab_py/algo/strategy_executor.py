@@ -263,6 +263,7 @@ Debug from VSCode, launch.json:
         3. #tpmincross
         4. #block/#unblock/#terminate are commands overrides
         5. #ordernotfound potential position break (See gateway.py)
+        6. #target_adj Target adjustment? tp_min_percent/tp_max_percent/sl_hard_percent
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -1502,8 +1503,8 @@ async def main():
                         'sl_pnl_est' : sl_pnl_est if not param['privacy_first'] else "---"
                     }
 
-                    log(f"TARGET ADJUSTMENT {pformat(target_adj_details, indent=2, width=100)}")
-                    dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    log(f"#target_adj {pformat(target_adj_details, indent=2, width=100)}")
+                    dispatch_notification(title=f"#target_adj {param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 '''
                 RECON block
@@ -1688,7 +1689,6 @@ async def main():
                     candles_age = int(dt_now.timestamp() *1000 - lo_row['timestamp_ms'])
                     if candles_age < lo_interval_ms:
                         lo_candles_valid = True
-
                         lo_candles_interval_rolled = False
                         if lo_row['timestamp_ms']!=lo_row_timestamp_ms:
                             lo_row_timestamp_ms = lo_row['timestamp_ms']
