@@ -6,7 +6,7 @@ async def main():
     rate_limit_ms = 100
     exchange_params = {
         "walletAddress" : "0x??????????", # Ledger Arbitrum Wallet Address here!
-        "privateKey" : "0x??????????",",
+        "privateKey" : "0x??????????",
         'enableRateLimit'  : True,
         'rateLimit' : rate_limit_ms
     }
