@@ -1494,8 +1494,8 @@ async def main():
                 max_recovered_pnl_percent_notional = max_recovered_pnl / pos_usdt * 100 if pos_usdt!=0 else 0
 
                 if any_target_adj and pos_usdt!=0:
-                    tp_max_pnl_est = abs(pos_usdt) * algo_param['tp_max_percent']/100
-                    tp_min_pnl_est = abs(pos_usdt) * algo_param['tp_min_percent']/100
+                    tp_max_pnl_est = abs(pos_usdt) * tp_max_percent/100
+                    tp_min_pnl_est = abs(pos_usdt) * tp_min_percent/100
                     sl_pnl_est = abs(pos_usdt) * running_sl_percent_hard/100
                     
                     target_adj_details = {
