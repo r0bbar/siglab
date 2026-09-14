@@ -962,7 +962,7 @@ def compute_candles_stats(
             'hidden_bearish_divergence'
         ]
 
-        grouped['macd_divergence'] = np.select(conditions, choices, default=None)
+        grouped['macd_divergence'] = np.select(conditions, choices, default="---")
 
         pd_candles['macd_divergence'] = (
             pd_candles['macd_segment_id'].map(grouped['macd_divergence'])
