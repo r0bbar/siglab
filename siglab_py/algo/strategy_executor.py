@@ -1451,7 +1451,7 @@ async def main():
                         else:
                             tp_max_target = entry_px * (1 - tp_max_percent/100)
                         pd_position_cache.loc[position_cache_row.name, 'tp_max_target'] = tp_max_target
-                        pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = algo_param['tp_max_percent'] * 100
+                        pd_position_cache.loc[position_cache_row.name, 'max_pnl_potential_bps'] = tp_max_percent * 100
 
                         log(f"tp_max_percent adjusted from parameter change, orignal_tp_max_target: {orignal_tp_max_target}, updated tp_max_target: {tp_max_target}")
 
