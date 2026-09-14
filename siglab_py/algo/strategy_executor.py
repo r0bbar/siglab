@@ -1920,41 +1920,25 @@ async def main():
 
                     if lo_candles_valid:
                         # lamda's may reference candles
-                        kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
-                        trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
-                        tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
-                        tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
-
-                        log(f"trailing_stop_threshold_eval tp_min_percent: {tp_min_percent}, tp_max_percent: {tp_max_percent}")
-
-                        '''
-                        tp_min_percent adj: Strategies where target_price not based on tp_max_percent, but variable
-                        Also be careful, not all strategies set target price so max_pnl_potential_bps can be null!
-                        '''
-                        if max_pnl_potential_bps and (max_pnl_potential_bps/100)<tp_max_percent:
-                            tp_minmax_ratio = tp_min_percent/tp_max_percent
-                            tp_max_percent = max_pnl_potential_bps/100
-                            tp_min_percent = tp_minmax_ratio * tp_max_percent
-                        # log(f"param tp_max_percent: {param['tp_max_percent']}, param tp_min_percent: {param['tp_min_percent']}, tp_minmax_ratio: {tp_minmax_ratio}, max_pnl_potential_bps: {max_pnl_potential_bps}, effective tp_max_percent: {tp_max_percent}, effective tp_min_percent: {tp_min_percent}")
-
                         if this_ticker_open_trades:
+                            '''
+                            We're only re-evaluating sl_adj here, but NOT trailing_stop_threshold_eval.
+                                a) allow_entry_final decides target_price and it may not respect tp_max_percent, or ratio tp_minmax_ratio (i.e. tp_min_percent/tp_max_percent)
+                                   max_pnl_potential_bps may not equal tp_max_percent!
+                                b) trailing stop is evaluated using calc_eff_trailing_sl, which depends only on tp_min_percent and tp_max_percent. Not target_price!
+                                   For session specific logic in trailing_stop_threshold_eval, they should be set upon ENTRY, not here.
+                            '''
                             kwargs = {k: v for k, v in locals().items() if k in sl_adj_func_params}
                             sl_adj_func_result = sl_adj_func(**kwargs)
                             running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
 
                         if pos_side == OrderSide.BUY:
-                            tp_max_price = round_to_sigfigs(entry_px * (1 + tp_max_percent/100), sigfigs=6)
-                            tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
                             sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
                         elif pos_side == OrderSide.SELL:
-                            tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
-                            tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                             sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
 
-                        pd_position_cache.loc[position_cache_row.name, 'tp_min_percent'] = tp_min_percent # Update position cache only! NOT algo_param['tp_min_percent'] which has original un-adjusted setting!
-                        pd_position_cache.loc[position_cache_row.name, 'tp_max_percent'] = tp_max_percent # Update position cache only! NOT algo_param['tp_max_percent'] which has original un-adjusted setting!
-                        pd_position_cache.loc[position_cache_row.name, 'tp_max_price'] = tp_max_price
-                        pd_position_cache.loc[position_cache_row.name, 'tp_min_price'] = tp_min_price
+                        # Don't update tp_max_price, allow_entry_final decides target_price on ENTRY. target_price may be used in tp_eval as final TP threshold. 
+                        # Trailing stop uses calc_eff_trailing_sl, it depends on tp_min_percent and tp_max_percent only.
                         pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
 
                     else:
@@ -2262,10 +2246,18 @@ async def main():
                                 running_sl_percent_hard = round(sl_adj_func_result['running_sl_percent_hard'], 2)
 
                                 assert(running_sl_percent_hard>0)
-
-                                # recalculate targets, based on entry_px
+                                
+                                '''
+                                recalculate targets, based on entry_px.
+                                    a) allow_entry_final decides target_price and it may not respect tp_max_percent, or ratio tp_minmax_ratio (i.e. tp_min_percent/tp_max_percent)
+                                       As a result, pnl_potential_bps may not equal tp_max_percent!
+                                    b) trailing stop is evaluated using calc_eff_trailing_sl, which depends only on tp_min_percent and tp_max_percent. Not target_price!
+                                       For session specific logic in trailing_stop_threshold_eval, they should be set upon ENTRY.
+                                    c) tp_eval, and default implementation of backtest_core generic_tp_eval, may rely on target_price, not percentages. 
+                                Design decision is tp_max_price set to target_price from allow_entry_final, rather than based on tp_max_percent or tp_minmax_ratio.
+                                '''
+                                tp_max_price = round_to_sigfigs(target_price, sigfigs=6)
                                 if side=='buy':
-                                    tp_max_price = round_to_sigfigs(entry_px * (1 + tp_max_percent/100), sigfigs=6)
                                     tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
                                     sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
 
@@ -2273,11 +2265,8 @@ async def main():
                                     slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px<mid else slippage_bps
 
                                 elif side=='sell':
-                                    tp_max_price = round_to_sigfigs(entry_px * (1 - tp_max_percent/100), sigfigs=6)
                                     tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                                     sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
-                                    tp_max_pnl_est = amount_filled_usdt * tp_max_percent/100
-                                    tp_min_pnl_est = amount_filled_usdt * tp_min_percent/100
 
                                     # negative slippage is to your favor
                                     slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px>mid else slippage_bps
