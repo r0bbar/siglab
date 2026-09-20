@@ -113,6 +113,7 @@ class AnalyticUtilTests(unittest.TestCase):
             'sma_short_periods', 'sma_long_periods', 'ema_short_periods', 'ema_long_periods', 'ema_close', 'distance_from_ema_bps', 'ema_distance_from_ema_bps', 'distance_from_ema_trend', 'distance_from_ema_bps_bucket', 
             'counter_trend_candle_height_bps', 'counter_trend_candle_body_height_bps', 
             'std', 'std_percent', 
+            'volume_ema',
             'vwap_short_periods', 'vwap_long_periods', 
             'candle_height_percent', 'candle_body_height_percent', 
             'wig_ratio_pct', 'ema_wig_ratio_pct', 
