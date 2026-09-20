@@ -2256,8 +2256,11 @@ async def main():
                                     c) tp_eval, and default implementation of backtest_core generic_tp_eval, may rely on target_price, not percentages. 
                                 Design decision is tp_max_price set to target_price from allow_entry_final, rather than based on tp_max_percent or tp_minmax_ratio.
                                 '''
-                                tp_max_price = round_to_sigfigs(target_price, sigfigs=6)
                                 if side=='buy':
+                                    tp_max_price = round_to_sigfigs(
+                                        target_price if target_price else entry_px * (1 + tp_max_percent/100), # Not all strategies allow_entry_func_final return target_price
+                                        sigfigs=6
+                                    )
                                     tp_min_price = round_to_sigfigs(entry_px * (1 + tp_min_percent/100), sigfigs=6)
                                     sl_price = round_to_sigfigs(entry_px * (1 - running_sl_percent_hard/100), sigfigs=6)
 
@@ -2265,6 +2268,10 @@ async def main():
                                     slippage_bps = (-1 * slippage_bps) if slippage_bps and entry_px<mid else slippage_bps
 
                                 elif side=='sell':
+                                    tp_max_price = round_to_sigfigs(
+                                        target_price if target_price else entry_px * (1 - tp_max_percent/100), # Not all strategies allow_entry_func_final return target_price
+                                        sigfigs=6
+                                    )
                                     tp_min_price = round_to_sigfigs(entry_px * (1 - tp_min_percent/100), sigfigs=6)
                                     sl_price = round_to_sigfigs(entry_px * (1 + running_sl_percent_hard/100), sigfigs=6)
 
