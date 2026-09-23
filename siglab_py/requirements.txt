@@ -16,6 +16,7 @@ websockets>=15.0.1
 web3
 feedparser
 futu-api
+matplotlib
 plotext
 yfinance
 yahoofinancials
