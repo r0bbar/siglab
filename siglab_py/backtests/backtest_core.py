@@ -2547,7 +2547,7 @@ def dump_trades_to_disk(
                 order['use_gradual_tightened_trailing_stops'] = algo_result['param']['use_gradual_tightened_trailing_stops']
                 order['tp_min_percent'] = algo_result['param']['tp_min_percent']
                 order['tp_max_percent'] = algo_result['param']['tp_max_percent']
-                order['asymmetric_tp_bps'] = algo_result['param']['asymmetric_tp_bps']
+                order['asymmetric_tp_bps'] = algo_result['param']['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_result['param'] else 0
             
                 order['hi_candle_size'] = algo_result['param']['hi_candle_size']
                 order['hi_stats_computed_over_how_many_candles'] = algo_result['param']['hi_stats_computed_over_how_many_candles']
