@@ -383,7 +383,7 @@ def generic_pnl_eval (
         long_tp_price = this_candle[long_tp_indicator_name] if long_tp_indicator_name else None
         short_tp_price = this_candle[short_tp_indicator_name] if short_tp_indicator_name else None
 
-        _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if lo_dayofweek in cautious_dayofweek else 0
+        _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in cautious_dayofweek else 0
 
         for trade in this_ticker_open_trades:
             target_price = trade['target_price'] if 'target_price' in trade else None
@@ -1394,7 +1394,7 @@ def run_scenario(
                     pnl_percent_notional = 0
                     if current_position_usdt>0:    
                         unrealized_pnl, unrealized_pnl_interval, unrealized_pnl_open, unrealized_pnl_live_optimistic, unrealized_pnl_live_pessimistic, unrealized_pnl_live, max_pnl_percent_notional, unrealized_pnl_boillenger, unrealized_pnl_sl, max_unrealized_pnl_live, max_pain, recovered_pnl_optimistic, recovered_pnl_pessimistic, max_recovered_pnl = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 # USDT
-                        _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if lo_dayofweek in algo_param['cautious_dayofweek'] else 0
+                        _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in algo_param['cautious_dayofweek'] else 0
                         
                         max_unrealized_pnl_live = max([ trade['max_unrealized_pnl_live'] if 'max_unrealized_pnl_live' in trade else 0 for trade in this_ticker_open_trades ])
                         # 'min' max_pain becaues max_pain is a negative number. It's a loss!
