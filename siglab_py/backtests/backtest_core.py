@@ -2385,7 +2385,7 @@ def run_all_scenario(
             'sl_num_intervals_delay' : algo_param['sl_num_intervals_delay'],
             'tp_min_percent' : algo_param['tp_min_percent'],
             'tp_max_percent' : algo_param['tp_max_percent'],
-            'asymmetric_tp_bps' : algo_param['asymmetric_tp_bps'],
+            'asymmetric_tp_bps' : algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param else 0,
 
             # Key output
             'realized_pnl' : result['realized_pnl'], # Commission already taken out
