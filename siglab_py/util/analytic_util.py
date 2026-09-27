@@ -289,6 +289,8 @@ Parameters:
         Example, 
             if Slow line is calculated using 24 candles and short_long_interval_ratios = 3, 
                 then Fast line is calculated using 24/3 = 8 candles.
+
+    f. pypy_compat: If your parent process (caller code) runs under pypy, set to True. It won't give you performance gain. pypy speedups are questionable for pandas-heavy code and not statsmodels compatible.
 '''
 def compute_candles_stats(
         pd_candles : pd.DataFrame,

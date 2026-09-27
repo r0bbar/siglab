@@ -27,11 +27,11 @@ It consists of Four primary components.
 
 ## 1. Under [**market_data_providers**](https://github.com/r0bbar/siglab/tree/master/siglab_py/market_data_providers)
 
-[**orderbooks_provider.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/orderbooks_provider.py): fetches orderbooks from exchanges. Orderbooks are published to redis under topic 'orderbooks_$SYMBOL$_$EXCHANGE$'
+[**orderbooks_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/orderbooks_provider.py): fetches orderbooks from exchanges. Orderbooks are published to redis under topic 'orderbooks_$SYMBOL$_$EXCHANGE$'
 
-[**candles_provider.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/candles_provider.py): fetches candles from exchanges (current implementation only crypto exchanges supported). Candles are published to redis under topic 'candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'. Please look at **market_data_util.py**.
+[**candles_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/candles_provider.py): fetches candles from exchanges (current implementation only crypto exchanges supported). Candles are published to redis under topic 'candles-$DENORMALIZED_SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'. Please look at **market_data_util.py**.
 
-[**candles_ta_provider.py** (pypy compatible, if arg 'pypy_compatible' set to True)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/candles_ta_provider.py): calculate technical indicators from candles_provider (Fetched from redis). TA calculations are published back to redis for strategy consumption. Please look at analytic_util.py
+[**candles_ta_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/candles_ta_provider.py): calculate technical indicators from candles_provider (Fetched from redis). TA calculations are published back to redis for strategy consumption. Please look at analytic_util.py
 
 TAs computed (This is an expanding list):
 
@@ -59,7 +59,7 @@ TAs computed (This is an expanding list):
 
 + [Volume Profiles and Value Area (analytic_util.compute_volume_profile and compute_value_area)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
 
-[**aggregated_orderbook_provider.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
+[**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
 
 [**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
 
@@ -141,7 +141,8 @@ expected_columns = [
 assert(pd_candles.columns.to_list()==expected_columns)
 ```
 
-(This list does not include the slopes calculated. Set pypy_compat to False if you want them.)
+This list does not include the slopes calculated. Set pypy_compat to False if you want them. This said, set pypy_compat to True only if your parent process (caller code) runs under pypy. It won't give you performance gain. pypy speedups are questionable for pandas-heavy code and not statsmodels compatible.
+As a side note, siglab_py also not compatible with Numba: siglab_py uses reflection for Lambda's from both strategy_executor and backtest_core.
 
 Further examples on usage of market_data_util and analytic_util in back tests.
 
