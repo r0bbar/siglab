@@ -1545,7 +1545,7 @@ def run_scenario(
                                 if unrealized_pnl_live>0:
                                     unrealized_pnl = min(
                                         ((100-effective_tp_trailing_percent)/100) * max_unrealized_pnl_live,
-                                        this_ticker_current_position_usdt * algo_param['tp_max_percent']/100
+                                        this_ticker_current_position_usdt * tp_max_percent/100
                                     )
                                 else:
                                     unrealized_pnl = max_pain + ((100-effective_tp_trailing_percent)/100) * max_recovered_pnl
