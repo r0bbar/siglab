@@ -300,6 +300,7 @@ def compute_candles_stats(
         boillenger_ema : bool = False,
         slow_fast_interval_ratio : float = 3,
         rsi_sliding_window_how_many_candles : int = 14, # RSI standard 14
+        adx_sliding_window_how_many_candles : int = 14, # ADX standard 14
         rsi_trend_sliding_window_how_many_candles : int = 24*7, # This is for purpose of RSI trend identification (Locating local peaks/troughs in RSI). This should typically be multiples of 'rsi_sliding_window_how_many_candles'.
         hurst_exp_window_how_many_candles : Union[int, None] = None, # Hurst exp standard 100-200
         boillenger_std_multiples_for_aggressive_moves_detect : int = 3, # Aggressive moves if candle low/high breaches boillenger bands from 3 standard deviations.
@@ -590,15 +591,15 @@ def compute_candles_stats(
         np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
         index=pd_candles.index
     )
-    smoothed_plus_DM = wilder_smooth(plus_DM, sliding_window_how_many_candles)
-    smoothed_minus_DM = wilder_smooth(minus_DM, sliding_window_how_many_candles)
-    smoothed_atr = wilder_smooth(pd_candles['tr'], sliding_window_how_many_candles)
+    smoothed_plus_DM = wilder_smooth(plus_DM, adx_sliding_window_how_many_candles)
+    smoothed_minus_DM = wilder_smooth(minus_DM, adx_sliding_window_how_many_candles)
+    smoothed_atr = wilder_smooth(pd_candles['tr'], adx_sliding_window_how_many_candles)
     plus_DI = 100 * smoothed_plus_DM / smoothed_atr
     minus_DI = 100 * smoothed_minus_DM / smoothed_atr
     di_sum = plus_DI + minus_DI
     di_diff = (plus_DI - minus_DI).abs()
     dx = 100 * di_diff / di_sum
-    pd_candles['adx'] = wilder_smooth(dx, sliding_window_how_many_candles)
+    pd_candles['adx'] = wilder_smooth(dx, adx_sliding_window_how_many_candles)
 
     # Choppiness Index is simply normalized "sum(ATR) relative to range of a sliding window".
     tr_sum = pd_candles['tr'].rolling(window=int(sliding_window_how_many_candles)).sum()
