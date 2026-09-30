@@ -1598,7 +1598,7 @@ def run_scenario(
                             if tp_eval_func_result:
                                 unrealized_pnl_tp = min(
                                     unrealized_pnl_tp,
-                                    this_ticker_current_position_usdt * algo_param['tp_max_percent']/100
+                                    this_ticker_current_position_usdt * tp_max_percent/100
                                 )
                                 _close_open_positions(
                                     key, ticker, 
