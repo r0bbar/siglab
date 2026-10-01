@@ -1413,10 +1413,11 @@ async def main():
                 max_pnl_potential_bps = position_cache_row['max_pnl_potential_bps']
                 close_px = position_cache_row['close_px']
 
-                kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
-                trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
-                tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
-                tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
+                if lo_row_tm1 is not None:
+                    kwargs = {k: v for k, v in locals().items() if k in trailing_stop_threshold_eval_func_params}
+                    trailing_stop_threshold_eval_func_result = trailing_stop_threshold_eval_func(**kwargs)
+                    tp_min_percent = trailing_stop_threshold_eval_func_result['tp_min_percent']
+                    tp_max_percent = trailing_stop_threshold_eval_func_result['tp_max_percent']
 
                 # targets adjustments: Potential parameter changes after re-start with existing position, comparison is always position cache vs running values (which comes from lambda, not algo_param! lambdas can change these)
                 pos_cache_target = round(position_cache_row['tp_min_percent'], 5)
