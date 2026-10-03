@@ -1461,17 +1461,17 @@ async def main():
                 adj_diff_bps = (pos_cache_target/runing_target-1)*10000 if pos_cache_target>runing_target else (runing_target/pos_cache_target-1)*10000
                 if adj_diff_bps>1: # change at least 1 bps
                     log(f"Parameter changed position cache vs running values? running sl_hard_percent: {sl_hard_percent}, position_cache_row['sl_hard_percent']: {position_cache_row['sl_hard_percent']}, algo_param['sl_hard_percent']: {algo_param['sl_hard_percent']}")
-                    pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = algo_param['sl_hard_percent']
+                    pd_position_cache.loc[position_cache_row.name, 'sl_hard_percent'] = sl_hard_percent
 
                     if sl_price:
                         any_target_adj = True
                         original_sl_price = sl_price
                         if pos_side == OrderSide.BUY:
-                            sl_price = entry_px * (1 - algo_param['sl_hard_percent']/100)
+                            sl_price = entry_px * (1 - sl_hard_percent/100)
                         else:
-                            sl_price = entry_px * (1 + algo_param['sl_hard_percent']/100)
+                            sl_price = entry_px * (1 + sl_hard_percent/100)
                         pd_position_cache.loc[position_cache_row.name, 'sl_price'] = sl_price
-                        pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = algo_param['sl_hard_percent']
+                        pd_position_cache.loc[position_cache_row.name, 'running_sl_percent_hard'] = sl_hard_percent
 
                         log(f"sl_hard_percent adjusted from parameter change, original_sl_price: {original_sl_price}, updated sl_price: {sl_price}")
                 
@@ -1520,7 +1520,8 @@ async def main():
                     }
 
                     log(f"#target_adj {pformat(target_adj_details, indent=2, width=100)}")
-                    dispatch_notification(title=f"#target_adj {param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+                    if not (algo_param['tp_min_percent']==-1 or algo_param['tp_max_percent']==-1 or algo_param['sl_hard_percent']==-1):
+                        dispatch_notification(title=f"#target_adj {param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
                 '''
                 RECON block
