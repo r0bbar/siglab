@@ -2384,7 +2384,7 @@ async def main():
                                     
                                 any_entry = True
                 
-                if pos!=0 and pos_status==PositionStatus.OPEN.name:
+                if pos!=0 and pos_status==PositionStatus.OPEN.name and tp_min_percent!=-1:
                     '''
                     algo_param['tp_min_percent'] and algo_param['tp_max_percent'] == -1 indicates trailing_stop_threshold_eval lambda continually adjust targets.
                     In first iteration, before entry and after exit: tp_min_percent and tp_max_percent are initialized to algo_param -1.
