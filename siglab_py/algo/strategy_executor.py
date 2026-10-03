@@ -1520,6 +1520,7 @@ async def main():
                     }
 
                     log(f"#target_adj {pformat(target_adj_details, indent=2, width=100)}")
+                    # algo_param tp_min_percent, tp_max_percent, sl_hard_percent == -1 indicates dynamic targets from lambda, don't dispatch #target_adj notification
                     if not (algo_param['tp_min_percent']==-1 or algo_param['tp_max_percent']==-1 or algo_param['sl_hard_percent']==-1):
                         dispatch_notification(title=f"#target_adj {param['current_filename']} {param['gateway_id']} Target adjustment. {_ticker}", message=target_adj_details, footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
