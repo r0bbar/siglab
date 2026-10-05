@@ -331,6 +331,8 @@ def compute_candles_stats(
     pd_candles['candle_body_height'] = pd_candles['close'] - pd_candles['open'] # sometimes negative
     pd_candles['candle_height_bps'] = pd_candles['candle_height']/pd_candles['close'] *10000
     pd_candles['candle_body_height_bps'] = pd_candles['candle_body_height']/pd_candles['close'] *10000
+    pd_candles['ema_candle_body_height_bps'] = pd_candles['candle_body_height_bps'].ewm(span=sliding_window_how_many_candles, adjust=False).mean()
+    pd_candles['ema_candle_body_height_bps_std'] = pd_candles['candle_body_height_bps'].ewm(span=sliding_window_how_many_candles, adjust=False).std()
 
     '''
     market_data_gizmo inserted dummy lines --> Need exclude those or "TypeError: unorderable types for comparison": pd_btc_candles = pd_btc_candles[pd_btc_candles.close.notnull()]
