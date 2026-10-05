@@ -212,7 +212,7 @@ Reference: https://norman-lm-fung.medium.com/standalone-order-gateway-on-top-of-
 
 + Multiple **DivisiblePosition** executed in **Parallel**, while slices are executed **Sequentially**. Atm, there's no synchronization if you're executing multiple positions. So, first position may have executed 3/10 slices. The second position may have already executed 6/10 slices. If you're entering or unwinding delta neutral positions, burden of making sure both legs of the trade is being executed at same pace is on strategy implementation.
 
-+ Slack notifications on executions and errors.
++ Discord notifications on executions and errors.
 
 The idea is, strategies (separate service that you'd build), would send orders (JSON) to [**gateway.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py) via redis, using **DivisiblePosition** and **execute_positions** exposed in [**client.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/client.py).
 
