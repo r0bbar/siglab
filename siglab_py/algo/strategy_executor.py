@@ -2390,8 +2390,6 @@ async def main():
                     In first iteration, before entry and after exit: tp_min_percent and tp_max_percent are initialized to algo_param -1.
                     Thus execute the following block only AFTER entries. 
                     '''
-                    tp_minmax_mid_percent = (tp_min_percent + tp_max_percent)/2
-
                     tp_min_breached : bool = False
                     if param['tp_min_threshold_mode']=="open" and (max_unreal_open_bps/100)>=tp_min_percent:
                         tp_min_breached = True # use max_unreal_open_bps to avoid spikes
@@ -2404,7 +2402,6 @@ async def main():
                     '''
                     if (
                         tp_min_breached
-                        or (pnl_live_bps/100) >= tp_minmax_mid_percent # This here, deviates from backtest_core.
                         or (
                             pnl_percent_notional<0 
                             and max_recovered_pnl_percent_notional>=param['recover_min_percent']
