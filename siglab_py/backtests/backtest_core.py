@@ -127,6 +127,19 @@ def spawn_parameters(
         algo_param['name'] = name
         algo_param['name_exclude_start_date'] = name_exclude_start_date
 
+        '''
+        Estimation for trade friction besides fees. This is on per trade, round trip basis. 
+        Note, backtest_core will NOT subtract on after-the-fact basis from trade_pnl, this is not very accurate approach. This is what SLIPPAGE_COST_BPS in backtest_trades_viewer.ipynb does (A crude estimation).
+        You may think backtest_core will can adjust entry price by slippage_cost_bps/2, and subtract 1/2 slippage_cost_bps from exit trade_pnl_bps? However, this may not work as strategy allow_entry_final lambda determines target_price based on entry_price.
+        Thus, the most accurate handling be: backtest_core will
+            a. pass 'slippage_cost_bps' to strategy allow_entry_final lambda, allow_entry_final will decide if it will adjust entry_price by adding/subtracing 0.5*slippage_cost_bps (And target_price)
+            b. backtest_core _close_open_positions will subtract 0.5*slippage_cost_bps from trade_pnl
+
+        Now, how to estimate slippage_cost_bps? Estimate from live trading experimentations, use slippage histogram from orderhist_cache_viewer.ipynb.
+        '''
+        if 'slippage_cost_bps' not in algo_param:
+            algo_param['slippage_cost_bps'] = 0
+
         # Purpose is to avoid snowball effect in equity curves in long dated back tests.
         if 'constant_order_notional' not in algo_param:
             algo_param['constant_order_notional'] = True
@@ -1316,6 +1329,7 @@ def run_scenario(
                         entry_post_move_price_change_percent = max([ trade['post_move_price_change_percent'] if 'post_move_price_change_percent' in trade else 0 for trade in this_ticker_open_trades ])
                         
                         # Step 2. Update global_state
+                        trade_pnl = trade_pnl * (1 - 0.5 * algo_param['slippage_cost_bps']/10000)
                         trade_pnl_less_comm = trade_pnl - (entry_commission + exit_commission)
                         gains_losses_percent = trade_pnl_less_comm/this_ticker_current_position_usdt * 100
                         gains_losses_percent_label = _gains_losses_to_label(gains_losses_percent)
