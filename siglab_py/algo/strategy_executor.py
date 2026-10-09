@@ -2102,6 +2102,7 @@ async def main():
                     # Strategies uses different indicators, thus: TargetStrategy.get_strategy_indicators()
                     _all_indicators = {}
 
+                    pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:datetime"] = lo_row_tm1['datetime']
                     pd_position_cache.loc[position_cache_row.name, "lo_row:datetime"] = lo_row['datetime']
                     pd_position_cache.loc[position_cache_row.name, "hi_row:datetime"] = hi_row['datetime']
                     pd_position_cache.loc[position_cache_row.name, "lo_row:timestamp_ms"] = str(lo_row['timestamp_ms']) # For display purpose, cast to str so won't print scientific notation
