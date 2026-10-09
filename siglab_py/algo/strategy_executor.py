@@ -1753,7 +1753,7 @@ async def main():
                         if closed_lo_candles_hash_cache[last_closed_candle_timestamp_ms]!=last_closed_row_hash:
                             logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta. last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_candle_timestamp_ms: {last_closed_candle_timestamp_ms}, last_closed_row_hash: {last_closed_row_hash}")
 
-                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}, last_closed_row_hash: {last_closed_row_hash}")
+                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}, last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_row_hash: {last_closed_row_hash}")
 
                     else:
                         lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
