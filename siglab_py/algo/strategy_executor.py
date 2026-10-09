@@ -2109,6 +2109,7 @@ async def main():
                     pd_position_cache.loc[position_cache_row.name, "lo_row_tm1:id"] = lo_row_tm1.name
                     pd_position_cache.loc[position_cache_row.name, "hi_row_tm1:id"] = hi_row_tm1.name
 
+                    _all_indicators["lo_row_tm1:datetime"] = lo_row_tm1['datetime'].strftime("%Y-%m-%d %H:%M")
                     _all_indicators["lo_row:datetime"] = lo_row['datetime'].strftime("%Y-%m-%d %H:%M")
                     _all_indicators["hi_row:datetime"] = hi_row['datetime'].strftime("%Y-%m-%d %H:%M")
                     _all_indicators["lo_row:timestamp_ms"] = int(lo_row['timestamp_ms'])
