@@ -264,6 +264,7 @@ Debug from VSCode, launch.json:
         4. #block/#unblock/#terminate are commands overrides
         5. #ordernotfound potential position break (See gateway.py)
         6. #target_adj Target adjustment? tp_min_percent/tp_max_percent/sl_hard_percent
+        7. #closed_candle_mutation: closed candles supposed to be immutable. But in reality, they aren't: For example late trade processed by exchanges.
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -275,6 +276,8 @@ param : Dict = {
     'rolldate_tz' : 'Asia/Hong_Kong', # Roll date based on what timezone?
 
     'ob_max_age_sec' : 3, # orderbook fetched from message bus: age if exceed 'ob_max_age_sec', algo should fetch ob again itself, discard whatever from message bus.
+
+    'rounding_precision' : 1e8, # Use here is round candles fields timestamp/O/H/L/C/V before converting them to row hashcode. 
 
     'start_timestamp_ms' : None, # You want your algo to start only after what time?
 
@@ -402,6 +405,10 @@ POSITION_CACHE_COLUMNS = [
 
 
 ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_unreal_live_bps', 'max_pain', 'fees', 'slippage_bps', 'remarks' ]
+BASIC_CANDLES_COLUMNS = ['timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
+
+closed_hi_candles_hash_cache = {}
+closed_lo_candles_hash_cache = {}
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1650,7 +1657,6 @@ async def main():
                         message = message.decode('utf-8')
                     hi_candles_w_ta = json.loads(message) if message else None
                     pd_hi_candles_w_ta = pd.read_json(StringIO(hi_candles_w_ta))
-
                     ts_series = pd_hi_candles_w_ta['timestamp_ms'].astype('int64')
                     ts_str_len = ts_series.astype(str).str.len()
                     pd_hi_candles_w_ta['timestamp_ms'] = np.where(
@@ -1659,6 +1665,19 @@ async def main():
                         np.where(ts_str_len == 16, ts_series // 1000,
                         np.where(ts_str_len == 19, ts_series // 1_000_000, ts_series)))
                     )
+
+                    _trailing_candles = pd_hi_candles_w_ta.tail(param['reversal_num_intervals'])
+                    closed_trailing_candles = _trailing_candles.iloc[:-1]
+                    last_closed_candle_timestamp_ms = closed_trailing_candles.iloc[-1]['timestamp_ms']
+                    last_closed_candle_dt_str : str = datetime.fromtimestamp(last_closed_candle_timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                    quantized = (closed_trailing_candles[BASIC_CANDLES_COLUMNS] * param['rounding_precision']).round().astype(np.int64)
+                    last_closed_row_hash : str = pd.util.hash_pandas_object(
+                        quantized, index=False
+                    ).astype(str).iloc[-1]
+                    if last_closed_candle_timestamp_ms not in closed_hi_candles_hash_cache:
+                        closed_hi_candles_hash_cache[last_closed_candle_timestamp_ms] = last_closed_row_hash
+                    if closed_hi_candles_hash_cache[last_closed_candle_timestamp_ms]!=last_closed_row_hash:
+                        logger.error(f"#closed_candle_mutation in pd_hi_candles_w_ta. last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_candle_timestamp_ms: {last_closed_candle_timestamp_ms}, last_closed_row_hash: {last_closed_row_hash}")
 
                     hi_row = pd_hi_candles_w_ta.iloc[-1]
                     hi_row_tm1 = pd_hi_candles_w_ta.iloc[-2]
@@ -1712,13 +1731,30 @@ async def main():
                             lo_row_timestamp_ms = lo_row['timestamp_ms']
                             lo_candles_interval_rolled = True
 
-                        trailing_candles = pd_lo_candles_w_ta \
-                                .tail(param['reversal_num_intervals']) \
-                                .values.tolist()
-                                
+                        _trailing_candles = pd_lo_candles_w_ta.tail(param['reversal_num_intervals'])
+                        closed_trailing_candles = _trailing_candles.iloc[:-1]
+
+                        '''
+                        Closed candles are generally immutable. But they aren't. Late trade processing/amends can result in back-dated candles revisions. This happens more during fast markets.
+                        However, impact from closed candles amends are just as big during quiet markets. For example signal can be above/below a simple VWAP. Small amends easier result in signal being on wrong side of the VWAP just as it would in fast markets. 
+                        '''
+                        last_closed_candle_timestamp_ms = closed_trailing_candles.iloc[-1]['timestamp_ms']
+                        last_closed_candle_dt_str : str = datetime.fromtimestamp(last_closed_candle_timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                        quantized = (closed_trailing_candles[BASIC_CANDLES_COLUMNS] * param['rounding_precision']).round().astype(np.int64)
+                        last_closed_row_hash : str = pd.util.hash_pandas_object(
+                            quantized, index=False
+                        ).astype(str).iloc[-1]
+
+                        trailing_candles = _trailing_candles.values.tolist()                                
                         trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in pd_lo_candles_w_ta.tail(param['reversal_num_intervals']+1).values.tolist()]
-                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}")
-                        
+
+                        if last_closed_candle_timestamp_ms not in closed_lo_candles_hash_cache:
+                            closed_lo_candles_hash_cache[last_closed_candle_timestamp_ms] = last_closed_row_hash
+                        if closed_lo_candles_hash_cache[last_closed_candle_timestamp_ms]!=last_closed_row_hash:
+                            logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta. last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_candle_timestamp_ms: {last_closed_candle_timestamp_ms}, last_closed_row_hash: {last_closed_row_hash}")
+
+                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}, last_closed_row_hash: {last_closed_row_hash}")
+
                     else:
                         lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
                         
