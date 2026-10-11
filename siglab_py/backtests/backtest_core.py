@@ -2516,7 +2516,7 @@ def parseargs():
         enable_sliced_entry = False
 
     asymmetric_tp_bps = int(args.asymmetric_tp_bps)
-    some_multiples = int(args.some_multiples)
+    some_multiples = float(args.some_multiples)
 
     return {
         'exchange_name' : exchange_name,
