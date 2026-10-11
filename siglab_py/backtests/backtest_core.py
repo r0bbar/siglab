@@ -2443,22 +2443,32 @@ def run_all_scenario(
 
 def parseargs():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--exchange_name", help="CCXT based exchange name, or polygonio for tradfi feeds", default="binance_linear")
+    parser.add_argument("--api_key", help="Optional. For crypto exchanges just leave this null as candles are free.", default=None)
+
     parser.add_argument("--force_reload", help="Reload candles? Both candles and TA previously computed will be loaded from disk. Y or N (default)", default=False)
     parser.add_argument("--recompute_ta", help="Recompute TA/indicators from candles? Y (default) or N", default=True)
     parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
     parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
 
+    exchange_name = args.exchange_name.strip().lower()
+    api_key = args.api_key
+
     year_ago = datetime.now() + timedelta(days=-365)
     year_ago = datetime(year_ago.year, year_ago.month, year_ago.day)
     parser.add_argument("--start_date", help="Format: yyyy-MM-dd, default a year ago.", default=year_ago.strftime("%Y-%m-%d"))
     parser.add_argument("--num_days", help="Default 365 days.", default=False)
+
     parser.add_argument("--tp_min_percent", help="default 100 bps", default=1.0)
     parser.add_argument("--tp_max_percent", help="default 200 bps", default=2.0)
     parser.add_argument("--sl_hard_percent", help="default 100 bps", default=1.0)
 
     parser.add_argument("--block_entries_on_impacting_ecoevents", help="Block entries on economic event? Y (default) or N", default=True)
     parser.add_argument("--enable_sliced_entry", help="Block entries on economic event? Y or N (default)", default=False)
-    parser.add_argument("--asymmetric_tp_bps", help="A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
+    
+    parser.add_argument("--asymmetric_tp_bps", help="Optional. A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
+    parser.add_argument("--some_multiplies", help="Optional. Strategy specific variable 'multiples', however you want to interpret this whether it's std multiples? or atr multiples? Default 1", default=1)
+
     args = parser.parse_args()
     
     if args.force_reload:
@@ -2506,8 +2516,12 @@ def parseargs():
         enable_sliced_entry = False
 
     asymmetric_tp_bps = int(args.asymmetric_tp_bps)
+    some_multiples = int(args.some_multiples)
 
     return {
+        'exchange_name' : exchange_name,
+        'api_key' : api_key,
+
         'force_reload': force_reload,
         'recompute_ta': recompute_ta,
         'white_list_tickers' : white_list_tickers,
@@ -2521,7 +2535,9 @@ def parseargs():
         
         'block_entries_on_impacting_ecoevents' : block_entries_on_impacting_ecoevents,
         'enable_sliced_entry'  : enable_sliced_entry,
-        'asymmetric_tp_bps' : asymmetric_tp_bps
+
+        'asymmetric_tp_bps' : asymmetric_tp_bps,
+        'some_multiplies' : some_multiplies
     }
 
 def dump_trades_to_disk(
