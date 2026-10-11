@@ -287,7 +287,7 @@ def work(
                                     redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
                                     redis_set_elapsed_ms = int((time.time() - start) *1000)
 
-                                    log(f"published candles {pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms, compute_candles_stats_elapsed_ms: {compute_candles_stats_elapsed_ms}")
+                                    log(f"published candles {_pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms, compute_candles_stats_elapsed_ms: {compute_candles_stats_elapsed_ms}")
                             else:
                                 if i%100==0:
                                     log(f"#{i} {s_key} message with hash {message_hash} been processed previously.")
