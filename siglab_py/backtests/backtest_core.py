@@ -2451,9 +2451,6 @@ def parseargs():
     parser.add_argument("--white_list_tickers", help="Comma seperated list, example: BTC/USDT:USDT,ETH/USDT:USDT,XRP/USDT:USDT ", default="BTC/USDT:USDT")
     parser.add_argument("--reference_ticker", help="This is ticker for bull / bear determination. The Northstar.", default="BTC/USDT:USDT")
 
-    exchange_name = args.exchange_name.strip().lower()
-    api_key = args.api_key
-
     year_ago = datetime.now() + timedelta(days=-365)
     year_ago = datetime(year_ago.year, year_ago.month, year_ago.day)
     parser.add_argument("--start_date", help="Format: yyyy-MM-dd, default a year ago.", default=year_ago.strftime("%Y-%m-%d"))
@@ -2470,6 +2467,9 @@ def parseargs():
     parser.add_argument("--some_multiplies", help="Optional. Strategy specific variable 'multiples', however you want to interpret this whether it's std multiples? or atr multiples? Default 1", default=1)
 
     args = parser.parse_args()
+
+    exchange_name = args.exchange_name.strip().lower()
+    api_key = args.api_key
     
     if args.force_reload:
         if args.force_reload=='Y':
