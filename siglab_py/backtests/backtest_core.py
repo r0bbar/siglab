@@ -2464,7 +2464,7 @@ def parseargs():
     parser.add_argument("--enable_sliced_entry", help="Block entries on economic event? Y or N (default)", default=False)
     
     parser.add_argument("--asymmetric_tp_bps", help="Optional. A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
-    parser.add_argument("--some_multiplies", help="Optional. Strategy specific variable 'multiples', however you want to interpret this whether it's std multiples? or atr multiples? Default 1", default=1)
+    parser.add_argument("--some_multiples", help="Optional. Strategy specific variable 'multiples', however you want to interpret this whether it's std multiples? or atr multiples? Default 1", default=1)
 
     args = parser.parse_args()
 
@@ -2537,7 +2537,7 @@ def parseargs():
         'enable_sliced_entry'  : enable_sliced_entry,
 
         'asymmetric_tp_bps' : asymmetric_tp_bps,
-        'some_multiplies' : some_multiplies
+        'some_multiples' : some_multiples
     }
 
 def dump_trades_to_disk(
