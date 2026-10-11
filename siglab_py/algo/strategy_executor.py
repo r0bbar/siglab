@@ -2698,6 +2698,11 @@ async def main():
                     log(f"{tabulate(pd_position_cache.loc[:, 'ob_mid':'level_above'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'unreal_live':'max_unreal_open_bps'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
                     log(f"{tabulate(pd_position_cache.loc[:, 'running_sl_percent_hard':'loss_trailing'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
+
+                    if param['dump_candles'] and any_entry:
+                        pd_hi_candles_w_ta.to_csv(f"entry_hi_candles_{loop_counter}_{_ticker.replace(':','').replace('/','')}.csv")
+                        pd_lo_candles_w_ta.to_csv(f"entry_lo_candles_{loop_counter}_{_ticker.replace(':','').replace('/','')}.csv")
+
                 else:
                     print(f"[position update]")
                     print(f"{tabulate(pd_position_cache.loc[:, 'exchange':'pos_entries'], headers='keys', tablefmt='psql')}")
