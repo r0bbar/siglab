@@ -134,6 +134,7 @@ def parse_args():
     parser.add_argument("--tickers", help="This is to amend 'candles_ta_publish_topic_regex' so candles_ta_provider filter by specific ticker(s). Default None (No filtering) ", default=None)
     parser.add_argument("--publish_key_prefix", help="publish_key prefix", default=None)
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
+    parser.add_argument("--tail", help="candles_provider may be fetching more candles than you want? Default: -1, means you take the whole data set from candles_provider and publish the whole set back to redis after TA calc.", default=-1)
     parser.add_argument("--ma_long_intervals", help="Window size in number of intervals for higher timeframe", default=24)
     parser.add_argument("--ma_short_intervals", help="Window size in number of intervals for lower timeframe", default=8)
     parser.add_argument("--boillenger_std_multiples", help="Boillenger bands: # std", default=2)
@@ -166,6 +167,7 @@ def parse_args():
         param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('-$PREFIX$', '')
 
     param['candle_size'] = args.candle_size
+    param['tail'] = int(args.tail)
     param['candles_ta_publish_topic_regex'] = param['candles_ta_publish_topic_regex'].replace('$CANDLE_SIZE$', param['candle_size'])
 
     '''
@@ -264,7 +266,9 @@ def work(
                                             pypy_compat=param['pypy_compatible']
                                         )
                                 compute_candles_stats_elapsed_ms = int((time.time() - start) *1000)
-                                data = pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                                num_trailing_rows = param['tail']
+                                _pd_candles = pd_candles.tail(num_trailing_rows) if num_trailing_rows!=-1 else pd_candles
+                                data = _pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
 
                                 start = time.time()
                                 if redis_client:
