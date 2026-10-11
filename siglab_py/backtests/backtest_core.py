@@ -2443,7 +2443,7 @@ def run_all_scenario(
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exchange_name", help="CCXT based exchange name, or polygonio for tradfi feeds", default="binance_linear")
+    parser.add_argument("--exchange_name", help="CCXT based exchange name, or polygonio for tradfi feeds", default="binance")
     parser.add_argument("--api_key", help="Optional. For crypto exchanges just leave this null as candles are free.", default=None)
 
     parser.add_argument("--force_reload", help="Reload candles? Both candles and TA previously computed will be loaded from disk. Y or N (default)", default=False)
