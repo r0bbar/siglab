@@ -88,6 +88,12 @@ Usage:
         Note, 
         a. for 15m bars, a sliding window of size 150 means 150 x 15m = 2250 minutes
         b. sliding window sizes are defined by 'candles_ta_provider', not 'candles_provider'!!!
+        c. TA like ADX, MACD are sensitive to the number of rows you feed into compute_candles_stats. If in backtests you're feeding months worth of 15m bars and in live trading you're feeding only 24h worth of 15m bars, you may find discrepancies on TAs (live vs backtest).
+           Fix is, 
+            * candles_provider to fetch longer history: --change how_many_candles from 96 to 480 for example (from 24h worth of 15m bar, to five days)
+            * specify for candles_ta_provider: 
+                --tail 96 
+              to trim down the candles to much smaller size, so strategy_executor hot loops won't be impacted.
 
     Step 3. Start orderbooks_provider
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
