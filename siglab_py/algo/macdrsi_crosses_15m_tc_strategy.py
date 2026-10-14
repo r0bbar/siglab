@@ -36,10 +36,7 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
         us_cash_open_effective : bool = is_us_cash_open_effective(utc_now=utc_now)
         if (
                 lo_row_tm1['macd_cross_last'] == 'bullish'
-                and (
-                        lo_row_tm1.name >= lo_row_tm1['macd_bullish_cross_last_id']
-                        and lo_row_tm1['nums_intervals_since_last_cross'] < 3
-                )
+                and lo_row_tm1['nums_intervals_since_last_cross'] < 3
                 and (lo_row_tm1['macd_divergence'] not in ['normal_bearish_divergence', 'hidden_bearish_divergence'])
                 and (
                     ('min_adx_threshold' not in algo_param or not algo_param['min_adx_threshold']) 
@@ -51,10 +48,7 @@ class MACDRSICrosses15mTCStrategy(StrategyBase):
             
         if (
                 lo_row_tm1['macd_cross_last'] == 'bearish'
-                and (
-                        lo_row_tm1.name >= lo_row_tm1['macd_bearish_cross_last_id']
-                        and lo_row_tm1['nums_intervals_since_last_cross'] < 3
-                )
+                and lo_row_tm1['nums_intervals_since_last_cross'] < 3
                 and (lo_row_tm1['macd_divergence'] not in ['normal_bullish_divergence', 'hidden_bullish_divergence'])
                 and (
                     ('min_adx_threshold' not in algo_param or not algo_param['min_adx_threshold']) 
