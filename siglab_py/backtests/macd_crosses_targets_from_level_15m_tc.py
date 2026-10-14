@@ -157,7 +157,7 @@ num_intervals_current_ecoevents = 8
 
 tp_num_intervals_delay : int = 0
 sl_num_intervals_delay_values : List[float] = [ 4 ]
-sl_hard_percent_values : List[float] = [ 0.7 ]
+sl_hard_percent_values : List[float] = [ 1.00 ]
 sl_percent_trailing_values : List[float] = [ 10 ]
 use_gradual_tightened_trailing_stops : bool = True
 trailing_stop_mode : str = "linear" # linear or parabolic
@@ -167,8 +167,8 @@ This is for trailing stops slope calc.
 Say if your trade's max profit potential is tp_max_percent=3%=300bps.
 tp_min_percent = 0.3 means you will NOT TP until at least pnl > 0.3% or 30bps.
 '''
-tp_min_percent = 0.70
-tp_max_percent = 1.50
+tp_min_percent = 1.00
+tp_max_percent = 3.00
 sl_adj_percent : float = 0.25
 
 POST_MOVE_NUM_INTERVALS : int = 24*3
