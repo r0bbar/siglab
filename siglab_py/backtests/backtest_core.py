@@ -127,6 +127,9 @@ def spawn_parameters(
         algo_param['name'] = name
         algo_param['name_exclude_start_date'] = name_exclude_start_date
 
+        if 'max_trade_age_num_intervals' not in algo_param:
+            algo_param['max_trade_age_num_intervals'] = None
+
         '''
         Estimation for trade friction besides fees. This is on per trade, round trip basis. 
         Note, backtest_core will NOT subtract on after-the-fact basis from trade_pnl, this is not very accurate approach. This is what SLIPPAGE_COST_BPS in backtest_trades_viewer.ipynb does (A crude estimation).
@@ -735,7 +738,7 @@ def run_scenario(
     lo_boillenger_lower_breached_cache = {}
     lo_boillenger_upper_breached_cache = {}
     strategy_specific_data_cache : Dict[str, Any] = {} # passed to strategy_base.stage_strat_specific_preentry_data
-    prev_close = None
+    mark_price, prev_close = None, None
     ath, atl = None, None
     target_order_notional = 0
     unrealized_pnl_live, running_sl_percent_hard, loss_hard = None, None, None
@@ -1155,11 +1158,11 @@ def run_scenario(
                         kwargs = {k: v for k, v in locals().items() if k in stage_strat_specific_preentry_data_func_params}
                         stage_strat_specific_preentry_data_func_result = stage_strat_specific_preentry_data_func(**kwargs)
                         
+                    # BTC, ETH, SOL..etc major pairs typically 24x7, less liquid pairs, newly listed, RWAs are typically more spotty.
+                    mark_price = lo_open if not math.isnan(lo_open) else prev_close 
+
                     # POSITION NOTIONAL MARKING lo_low, lo_high. pessimistic!
                     def _refresh_current_position(timestamp_ms):
-                        # BTC, ETH, SOL..etc major pairs typically 24x7, less liquid pairs, newly listed, RWAs are typically more spotty.
-                        mark_price = lo_open if not math.isnan(lo_open) else prev_close 
-
                         this_ticker_open_trades = open_trades_by_ticker[ticker]
                         current_position_usdt_buy = sum([x['size'] * mark_price for x in this_ticker_open_trades if x['side']=='buy'])
                         current_position_usdt_buy = current_position_usdt_buy if not math.isnan(current_position_usdt_buy) else 0
@@ -1411,6 +1414,7 @@ def run_scenario(
                         _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in algo_param['cautious_dayofweek'] else 0
                         
                         max_unrealized_pnl_live = max([ trade['max_unrealized_pnl_live'] if 'max_unrealized_pnl_live' in trade else 0 for trade in this_ticker_open_trades ])
+                        trade_age_num_intervals = max([ trade['trade_age_num_intervals'] if 'max_unrealized_pnl_live' in trade else 0 for trade in this_ticker_open_trades ])
                         # 'min' max_pain becaues max_pain is a negative number. It's a loss!
                         max_pain = min([ trade['max_pain'] if 'max_pain' in trade else 0 for trade in this_ticker_open_trades ])
                         max_recovered_pnl = max([ trade['max_recovered_pnl'] if 'max_recovered_pnl' in trade else 0 for trade in this_ticker_open_trades ])
@@ -1418,6 +1422,9 @@ def run_scenario(
                         entry_post_move_price_change_percent = max([ trade['post_move_price_change_percent'] if 'post_move_price_change_percent' in trade else 0 for trade in this_ticker_open_trades ])
                         max_camp = max([ trade['max_camp'] for trade in this_ticker_open_trades])
                         running_sl_percent_hard = max([ trade['running_sl_percent_hard'] for trade in this_ticker_open_trades])
+
+                        for trade in this_ticker_open_trades:
+                            trade['trade_age_num_intervals'] = trade['trade_age_num_intervals'] +1
 
                         max_pnl_potential_percent = None
                         if any([ trade for trade in this_ticker_open_trades if 'target_price' in trade and trade['target_price'] ]):
@@ -1565,6 +1572,8 @@ def run_scenario(
                                     unrealized_pnl = max_pain + ((100-effective_tp_trailing_percent)/100) * max_recovered_pnl
                                 # unrealized_pnl = unrealized_pnl_interval # less accurate
                                 reason2 = "sl_percent_trailing"
+                            elif (algo_param['max_trade_age_num_intervals'] and trade_age_num_intervals>algo_param['max_trade_age_num_intervals']):
+                                reason2 = "sl_max_trade_age_num_intervals"
 
                             if (
                                 (loss_hard>=running_sl_percent_hard) 
@@ -1609,7 +1618,10 @@ def run_scenario(
                             kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                             tp_eval_func_result = tp_eval_func(**kwargs)
 
-                            if tp_eval_func_result:
+                            if (
+                                tp_eval_func_result
+                                or (algo_param['max_trade_age_num_intervals'] and trade_age_num_intervals>algo_param['max_trade_age_num_intervals'])
+                            ):
                                 unrealized_pnl_tp = min(
                                     unrealized_pnl_tp,
                                     this_ticker_current_position_usdt * tp_max_percent/100
@@ -1782,7 +1794,8 @@ def run_scenario(
                                                     'max_pain' : 0,
                                                     'num_impacting_economic_calendars' : num_impacting_economic_calendars,
                                                     'max_camp': max_camp,
-                                                    'post_move_price_change_percent' : post_move_price_change_percent
+                                                    'post_move_price_change_percent' : post_move_price_change_percent,
+                                                    'trade_age_num_intervals' : 0
                                                 }
                                 all_trades.append(new_trade_0)
                                 open_trades_by_ticker[ticker].append(new_trade_0)
@@ -1888,7 +1901,8 @@ def run_scenario(
                                                     'max_pain' : 0,
                                                     'num_impacting_economic_calendars' : num_impacting_economic_calendars,
                                                     'max_camp': max_camp,
-                                                    'post_move_price_change_percent' : post_move_price_change_percent
+                                                    'post_move_price_change_percent' : post_move_price_change_percent,
+                                                    'trade_age_num_intervals' : 0
                                                 }
                                 all_trades.append(new_trade_0)
                                 open_trades_by_ticker[ticker].append(new_trade_0)
@@ -1907,7 +1921,7 @@ def run_scenario(
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].axvline(x=lo_datetime, color='gray', linewidth=1, linestyle='-')
                                 all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].scatter([lo_datetime, lo_datetime], [lo_low, lo_high], color='gray')
                     
-                    iter_info = f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, equity: {round(gloabl_state.total_equity,2)}, unrealized_pnl_live: {round(unrealized_pnl_live, 2) if unrealized_pnl_live else '---'}, loss_hard: {loss_hard if loss_hard else '---'}, running_sl_percent_hard: {running_sl_percent_hard if running_sl_percent_hard else '---'}"
+                    iter_info = f"param_id: {algo_param['param_id']}, {key} i: {i} {lo_datetime}, # trades: {len(all_trades)}, current_position_usdt: {round(current_position_usdt,0)}, equity: {round(gloabl_state.total_equity,2)}, unrealized_pnl_live: {round(unrealized_pnl_live, 2) if unrealized_pnl_live else '---'}, loss_hard: {loss_hard if loss_hard else '---'}, running_sl_percent_hard: {running_sl_percent_hard if running_sl_percent_hard else '---'}"
                     if i%100==0 and i%1000!=0:
                         print(iter_info)
                     elif i%1000==0:
