@@ -1251,6 +1251,10 @@ def run_scenario(
                     block_entry_since_last_tp = True if max_tp_trade_age_ms and max_tp_trade_age_ms<=min_tp_age_ms else False
                     block_entry_since_last_sl = True if max_sl_trade_age_ms and max_sl_trade_age_ms<=min_sl_age_ms else False
 
+                    if current_position_usdt==0 and len(this_ticker_open_trades)>0:
+                        print(pformat(this_ticker_open_trades, indent=2, width=100))
+                        raise ValueError(f"If you have open position, current_position_usdt must be non-zero!! mark_price: {mark_price}, prev_close: {prev_close}, len(this_ticker_open_trades): {len(this_ticker_open_trades)}")
+
                     def _close_open_positions(
                             key, ticker, 
                             this_ticker_current_position_usdt, 
@@ -1409,7 +1413,7 @@ def run_scenario(
                     
                     # UNREAL EVALUATION. We're being pessimistic! We use low/high for estimating unrealized_pnl for buys and sells respectively here.
                     pnl_percent_notional = 0
-                    if current_position_usdt>0:    
+                    if len(this_ticker_open_trades)>0:    
                         unrealized_pnl, unrealized_pnl_interval, unrealized_pnl_open, unrealized_pnl_live_optimistic, unrealized_pnl_live_pessimistic, unrealized_pnl_live, max_pnl_percent_notional, unrealized_pnl_boillenger, unrealized_pnl_sl, max_unrealized_pnl_live, max_pain, recovered_pnl_optimistic, recovered_pnl_pessimistic, max_recovered_pnl = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 # USDT
                         _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in algo_param['cautious_dayofweek'] else 0
                         
