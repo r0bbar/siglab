@@ -796,6 +796,12 @@ def run_scenario(
                 lo_timestamp_ms = lo_row['timestamp_ms']
                 lo_dayofweek = lo_row['dayofweek']
                 lo_open = lo_row['open']
+
+                if lo_open is None or math.isnan(lo_open):
+                    logger.warning("#bad_candle lo_row")
+                    logger.warning(pformat(lo_row[['datetime', 'datetime_utc', 'open', 'high', 'low', 'close', 'volume', 'timestamp_ms']], indent=2, width=100))
+                    continue
+
                 lo_high = lo_row['high']
                 lo_low = lo_row['low']
                 lo_mid = (lo_high + lo_low)/2
