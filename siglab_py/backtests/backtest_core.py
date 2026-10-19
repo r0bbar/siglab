@@ -742,6 +742,7 @@ def run_scenario(
     ath, atl = None, None
     target_order_notional = 0
     unrealized_pnl_live, running_sl_percent_hard, loss_hard = None, None, None
+    bad_candle = False
     for i in range(algo_param['how_many_last_candles'], lo_num_intervals):
         for exchange in exchanges:
             
@@ -798,6 +799,7 @@ def run_scenario(
                 lo_open = lo_row['open']
 
                 if lo_open is None or math.isnan(lo_open):
+                    bad_candle = True
                     logger.warning("#bad_candle lo_row")
                     logger.warning(pformat(lo_row[['datetime', 'datetime_utc', 'open', 'high', 'low', 'close', 'volume', 'timestamp_ms']], indent=2, width=100))
                     continue
@@ -832,6 +834,13 @@ def run_scenario(
                 lo_ema_long_slope = lo_row['ema_long_slope'] if 'ema_long_slope' in pd_lo_candles.columns else 0
                 lo_normalized_ema_long_slope = lo_row['normalized_ema_long_slope'] if 'normalized_ema_long_slope' in pd_lo_candles.columns else 0
                 lo_tm1_normalized_ema_long_slope = lo_row_tm1['normalized_ema_long_slope'] if 'normalized_ema_long_slope' in pd_lo_candles.columns else 0
+
+                lo_tm1_open = lo_row_tm1['open']
+                if lo_tm1_open is None or math.isnan(lo_tm1_open):
+                    bad_candle = True
+                    logger.warning("#bad_candle lo_tm1_open")
+                    logger.warning(pformat(lo_row_tm1[['datetime', 'datetime_utc', 'open', 'high', 'low', 'close', 'volume', 'timestamp_ms']], indent=2, width=100))
+                    continue
 
                 lo_tm1_close = lo_row_tm1['close']
                 lo_tm1_rsi = lo_row_tm1['rsi']
@@ -1419,7 +1428,7 @@ def run_scenario(
                     
                     # UNREAL EVALUATION. We're being pessimistic! We use low/high for estimating unrealized_pnl for buys and sells respectively here.
                     pnl_percent_notional = 0
-                    if len(this_ticker_open_trades)>0:    
+                    if not bad_candle and len(this_ticker_open_trades)>0:    
                         unrealized_pnl, unrealized_pnl_interval, unrealized_pnl_open, unrealized_pnl_live_optimistic, unrealized_pnl_live_pessimistic, unrealized_pnl_live, max_pnl_percent_notional, unrealized_pnl_boillenger, unrealized_pnl_sl, max_unrealized_pnl_live, max_pain, recovered_pnl_optimistic, recovered_pnl_pessimistic, max_recovered_pnl = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 # USDT
                         _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in algo_param['cautious_dayofweek'] else 0
                         
