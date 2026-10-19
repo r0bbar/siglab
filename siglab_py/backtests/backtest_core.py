@@ -1428,7 +1428,7 @@ def run_scenario(
                     
                     # UNREAL EVALUATION. We're being pessimistic! We use low/high for estimating unrealized_pnl for buys and sells respectively here.
                     pnl_percent_notional = 0
-                    if not bad_candle and len(this_ticker_open_trades)>0:    
+                    if len(this_ticker_open_trades)>0:    
                         unrealized_pnl, unrealized_pnl_interval, unrealized_pnl_open, unrealized_pnl_live_optimistic, unrealized_pnl_live_pessimistic, unrealized_pnl_live, max_pnl_percent_notional, unrealized_pnl_boillenger, unrealized_pnl_sl, max_unrealized_pnl_live, max_pain, recovered_pnl_optimistic, recovered_pnl_pessimistic, max_recovered_pnl = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 # USDT
                         _asymmetric_tp_bps = algo_param['asymmetric_tp_bps'] if 'asymmetric_tp_bps' in algo_param and lo_dayofweek in algo_param['cautious_dayofweek'] else 0
                         
@@ -1640,7 +1640,8 @@ def run_scenario(
                                 this_ticker_open_positions_side='flat' # Reset!
                                 reversal_camp_cache[key] = REVERSAL_CAMP_ITEM.copy()
 
-                        # 2. TP: Trigger by unrealized_pnl_live_optimistic, not unrealized_pnl_live (which is unrealized_pnl_live_pessimistic). Pnl estimation from unrealized_pnl_boillenger however!!!
+                        # 2. TP: Trigger by unrealized_pnl_live_optimistic, not unrealized_pnl_live (which is unrealized_pnl_live_pessimistic). 
+                        # In the indeterministic case where candle wigs crosses both SL and TP threshold in CURRENT candle, we'd SL instead of TP. It's a pessmistic approach.
                         if this_ticker_current_position_usdt>0 and unrealized_pnl_live_optimistic>0:
                             kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                             tp_eval_func_result = tp_eval_func(**kwargs)
