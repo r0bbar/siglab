@@ -411,7 +411,7 @@ def generic_pnl_eval (
                 unrealized_pnl_open += (lo_open - trade['entry_price']) * trade['size']
                 unrealized_pnl_live_optimistic += (lo_tm1_high - trade['entry_price']) * trade['size']
                 unrealized_pnl_live_pessimistic += (lo_tm1_low - trade['entry_price']) * trade['size']
-                unrealized_pnl_close_approx += (min(lo_close*(1+_asymmetric_tp_bps/10000), lo_high) - trade['entry_price']) * trade['size'] # Less accurate to use close price
+                unrealized_pnl_close_approx += (min(lo_close*(1+_asymmetric_tp_bps/10000), lo_high) - trade['entry_price']) * trade['size'] # Forward bias using close price? but we use min(close, high) for longs
                 if (
                     long_tp_indicator_name 
                     and not target_price # If entry trades are tagged target_price, it should take precedence over indicator
@@ -432,7 +432,7 @@ def generic_pnl_eval (
                 unrealized_pnl_open += (trade['entry_price'] - lo_open) * trade['size']
                 unrealized_pnl_live_optimistic += (trade['entry_price'] - lo_tm1_low) * trade['size']
                 unrealized_pnl_live_pessimistic += (trade['entry_price'] - lo_tm1_high) * trade['size']
-                unrealized_pnl_close_approx += (trade['entry_price'] - max(lo_close*(1-_asymmetric_tp_bps/10000), lo_low)) * trade['size']
+                unrealized_pnl_close_approx += (trade['entry_price'] - max(lo_close*(1-_asymmetric_tp_bps/10000), lo_low)) * trade['size'] # Forward bias using close price? but we use max(close, high) for shorts
                 if (
                     short_tp_indicator_name 
                     and not target_price # If entry trades are tagged target_price, it should take precedence over indicator
