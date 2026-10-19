@@ -1778,7 +1778,7 @@ def run_scenario(
                                                     'exchange' : exchange.name,
                                                     'symbol' : ticker,
                                                     'side' : 'buy',
-                                                    'size' : order_notional_adj_factor*order_notional/lo_close, # in base ccy. 
+                                                    'size' : order_notional_adj_factor*order_notional/mark_price, # in base ccy. 
                                                     'entry_price' : entry_price,
                                                     'target_price' : target_price,
                                                     'pnl_potential_bps' : pnl_potential_bps,
