@@ -1642,6 +1642,7 @@ def run_scenario(
 
                         # 2. TP: Trigger by unrealized_pnl_live_optimistic, not unrealized_pnl_live (which is unrealized_pnl_live_pessimistic). 
                         # In the indeterministic case where candle wigs crosses both SL and TP threshold in CURRENT candle, we'd SL instead of TP. It's a pessmistic approach.
+                        # Indeterministic? yes, unless you zoom-in. For example if you're trading 1h candles. Drill down into 15m bars when this happens. Yes, it is computationally intensive + more fetches, and complicate things more.
                         if this_ticker_current_position_usdt>0 and unrealized_pnl_live_optimistic>0:
                             kwargs = {k: v for k, v in locals().items() if k in tp_eval_func_params}
                             tp_eval_func_result = tp_eval_func(**kwargs)
