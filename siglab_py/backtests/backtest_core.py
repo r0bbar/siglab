@@ -1252,7 +1252,7 @@ def run_scenario(
                     block_entry_since_last_sl = True if max_sl_trade_age_ms and max_sl_trade_age_ms<=min_sl_age_ms else False
 
                     if current_position_usdt==0 and len(this_ticker_open_trades)>0:
-                        print(pformat(this_ticker_open_trades, indent=2, width=100))
+                        logger.error(pformat(this_ticker_open_trades, indent=2, width=100))
                         raise ValueError(f"If you have open position, current_position_usdt must be non-zero!! mark_price: {mark_price}, prev_close: {prev_close}, len(this_ticker_open_trades): {len(this_ticker_open_trades)}")
 
                     def _close_open_positions(
@@ -1467,6 +1467,14 @@ def run_scenario(
                         unrealized_pnl_tp = unrealized_pnl_eval_result['unrealized_pnl_tp']
                         unrealized_pnl_sl = unrealized_pnl_eval_result['unrealized_pnl_sl']
                         unrealized_pnl_live = unrealized_pnl_live_pessimistic
+
+                        if unrealized_pnl_live is None or math.isnan(unrealized_pnl_live):
+                            logger.error("lo_row")
+                            logger.error(pformat(lo_row[['datetime', 'datetime_utc', 'open', 'high', 'low', 'close', 'volume', 'timestamp_ms']], indent=2, width=100))
+                            logger.error("lo_row_tm1")
+                            logger.error(pformat(lo_row_tm1[['datetime', 'datetime_utc', 'open', 'high', 'low', 'close', 'volume', 'timestamp_ms']], indent=2, width=100))
+                            raise ValueError(f"unrealized_pnl_live null? nan? mark_price: {mark_price}, prev_close: {prev_close}")
+                            
 
                         if unrealized_pnl_live>0 and unrealized_pnl_live_optimistic>max_unrealized_pnl_live:
                             max_unrealized_pnl_live = unrealized_pnl_live_optimistic
