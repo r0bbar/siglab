@@ -95,7 +95,7 @@ def calculate_slope(
     import statsmodels.api as sm # in-compatible with pypy
 
     X = sm.add_constant(range(len(pd_data[src_col_name])))
-    rolling_slope = pd_data[src_col_name].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, X[:len(x)]).fit().params[1], raw=False)
+    rolling_slope = pd_data[src_col_name].rolling(window=sliding_window_how_many_candles).apply(lambda x: sm.OLS(x, sm.add_constant(X[:len(x)])).fit().params.iloc[1], raw=False)
     pd_data[slope_col_name] = rolling_slope
     max_abs_slope = pd_data[slope_col_name].abs().rolling(window=sliding_window_how_many_candles).max()
     pd_data[f"normalized_{slope_col_name}"] = pd_data[slope_col_name] / max_abs_slope
