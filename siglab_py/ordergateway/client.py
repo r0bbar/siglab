@@ -39,6 +39,7 @@ class Order:
         amount : float,
         order_type : str, # market/limit
         leg_room_bps : float = 0,
+        time_in_force : str = None, # gft, day, ioc, fok. atm only [gft] supported
         reduce_only : bool = False,
         fees_ccy : Union[str, None] = None,
         non_unified_params : Dict[str, Union[str, float, bool]] = {},
@@ -52,6 +53,7 @@ class Order:
         self.amount = amount
         self.order_type = order_type.strip().lower()
         self.leg_room_bps = leg_room_bps
+        self.time_in_force = time_in_force.strip().lower()
         self.reduce_only = reduce_only
         self.fees_ccy = fees_ccy
         self.non_unified_params = non_unified_params
@@ -70,6 +72,7 @@ class Order:
             "amount" : self.amount,
             "order_type" : self.order_type,
             "leg_room_bps" : self.leg_room_bps,
+            "time_in_force" : self.time_in_force,
             "reduce_only" : self.reduce_only,
             "fees_ccy" : self.fees_ccy,
             "dispatched_amount" : self.dispatched_amount,
@@ -82,6 +85,13 @@ class Order:
 '''
 For limit orders, if not filled within wait_fill_threshold_ms, we'd try cancel and resend un-filled amount as market order.
 wait_fill_threshold_ms default to -1: Means wait forever until fully filled.
+
+time_in_force: gft, day, ioc, fok. atm only [gft] supported
+
+gft (Good for Time): If market order fail to get filled within 'wait_fill_threshold_ms' (DivisiblePosition's attribute), Limit order will be cancelled. Remaining amount will not be resent as market order. gateway will simply continue on to next slice.
+
+instructions: Default None (i.e. No non default instructions passed to gateway)
+    better_than_ref: only dispatch order to exchange if best better than ref_price. For example, long only if best_ask lower than ref_price the moment when the slice about to get sent off.
 '''
 class DivisiblePosition(Order):
     def __init__(
@@ -91,11 +101,13 @@ class DivisiblePosition(Order):
         amount : float,
         order_type : str, # market/limit
         leg_room_bps : float,
+        time_in_force : str = None, # gft, day, ioc, fok. atm only [gft] supported
         reduce_only : bool = False,
         fees_ccy : Union[str, None] = None,
         slices : int = 1,
         wait_fill_threshold_ms : float = -1,
         ref_price : float = None,
+        instructions : List[str] = None, # List of execution instructions.
         max_slippage_from_ref_price_bps : int = None, 
         non_unified_params : Dict[str, Union[str, float, bool]] = {},
         expected_pos_after_execution : float = None,
@@ -110,6 +122,7 @@ class DivisiblePosition(Order):
             amount=amount, 
             order_type=order_type, 
             leg_room_bps=leg_room_bps, 
+            time_in_force=time_in_force,
             reduce_only=reduce_only, 
             fees_ccy=fees_ccy, 
             non_unified_params=non_unified_params,
@@ -119,6 +132,7 @@ class DivisiblePosition(Order):
         self.slices = slices
         self.wait_fill_threshold_ms = wait_fill_threshold_ms
         self.ref_price = ref_price
+        self.instructions = instructions
         self.max_slippage_from_ref_price_bps = max_slippage_from_ref_price_bps
         self.multiplier = 1
         self.filled_amount : Union[float, None] = None
@@ -157,6 +171,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=slice_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        time_in_force=self.time_in_force,
                         reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type,
@@ -170,6 +185,7 @@ class DivisiblePosition(Order):
                         side=self.side, 
                         amount=remaining_amount_in_base_ccy, 
                         leg_room_bps=self.leg_room_bps, 
+                        time_in_force=self.time_in_force,
                         reduce_only=self.reduce_only,
                         fees_ccy=self.fees_ccy,
                         order_type=self.order_type,
@@ -418,6 +434,7 @@ class DivisiblePosition(Order):
         rv['slices'] = self.slices
         rv['wait_fill_threshold_ms'] = self.wait_fill_threshold_ms
         rv['ref_price'] = self.ref_price
+        rv['instructions'] = self.instructions
         rv['max_slippage_from_ref_price_bps'] = self.max_slippage_from_ref_price_bps
         rv['executions'] = self.executions
         rv['filled_amount'] = self.filled_amount
