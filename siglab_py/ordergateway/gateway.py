@@ -976,82 +976,87 @@ async def execute_one_position(
                                 rounded_slice_amount_in_base_ccy = float(exchange.amount_to_precision(position.ticker, rounded_slice_amount_in_base_ccy))
                             if rounded_slice_amount_in_base_ccy>min_amount:
                                 rounded_slice_amount_in_base_ccy = rounded_slice_amount_in_base_ccy
-                            if rounded_slice_amount_in_base_ccy>0:
-                                # Need fetch best prices again after waited all these seconds
-                                orderbook = await _fetch_order_book(position.ticker, exchange) 
-                                asks = [ ask[0] for ask in orderbook['asks'] ]
-                                best_ask = min(asks)
-                                bids = [ bid[0] for bid in orderbook['bids'] ]
-                                best_bid = max(bids)
+                            
+                            if slice.time_in_force and slice.time_in_force in ['gft']:
+                                continue
 
-                                default_max_slippage_bps = exchange.options['default_max_slippage_bps'] if 'default_max_slippage_bps' in exchange.options else 100
-                                if position.side=='buy':
-                                    limit_price = best_ask * (1 + default_max_slippage_bps /10000)
-                                else:
-                                    limit_price = best_bid * (1 - default_max_slippage_bps /10000)
-                                limit_price = float(exchange.price_to_precision(position.ticker, limit_price))
-                                executed_resent_order = await exchange.create_order(
-                                    symbol=position.ticker,
-                                    type='market',
-                                    amount=remaining_amount,
-                                    price = limit_price, # Even for market orders, still pass price. Some exchanges may require this. *5? We want a fat leg room as we just want to execute aggressively.
-                                    side=position.side,
-                                    params=order_params
-                                )
-                                
-                                executed_resent_order['slice_id'] = i
-                                average_price = executed_resent_order['average'] if ('average' in executed_resent_order and executed_resent_order['average'] and executed_resent_order['average']!=0) else rounded_limit_price
-                                
-                                order_id = executed_resent_order['id']
-                                order_status = executed_resent_order['status']
-                                executed_resent_order['multiplier'] = multiplier
-                                position.append_execution(order_id, executed_resent_order)
-                                order_update = executed_resent_order # Some orders get filled right away, in this case won't go thru the waiting loop below.
+                            else:
+                                if rounded_slice_amount_in_base_ccy>0:
+                                    # Need fetch best prices again after waited all these seconds
+                                    orderbook = await _fetch_order_book(position.ticker, exchange) 
+                                    asks = [ ask[0] for ask in orderbook['asks'] ]
+                                    best_ask = min(asks)
+                                    bids = [ bid[0] for bid in orderbook['bids'] ]
+                                    best_bid = max(bids)
 
-                                log(f"Resent market order {order_id}. status: {order_status}, average_price: {average_price}, rounded_limit_price: {rounded_limit_price}. {json.dumps(executed_resent_order, indent=4)}")
-                                
-                                wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
+                                    default_max_slippage_bps = exchange.options['default_max_slippage_bps'] if 'default_max_slippage_bps' in exchange.options else 100
+                                    if position.side=='buy':
+                                        limit_price = best_ask * (1 + default_max_slippage_bps /10000)
+                                    else:
+                                        limit_price = best_bid * (1 - default_max_slippage_bps /10000)
+                                    limit_price = float(exchange.price_to_precision(position.ticker, limit_price))
+                                    executed_resent_order = await exchange.create_order(
+                                        symbol=position.ticker,
+                                        type='market',
+                                        amount=remaining_amount,
+                                        price = limit_price, # Even for market orders, still pass price. Some exchanges may require this. *5? We want a fat leg room as we just want to execute aggressively.
+                                        side=position.side,
+                                        params=order_params
+                                    )
+                                    
+                                    executed_resent_order['slice_id'] = i
+                                    average_price = executed_resent_order['average'] if ('average' in executed_resent_order and executed_resent_order['average'] and executed_resent_order['average']!=0) else rounded_limit_price
+                                    
+                                    order_id = executed_resent_order['id']
+                                    order_status = executed_resent_order['status']
+                                    executed_resent_order['multiplier'] = multiplier
+                                    position.append_execution(order_id, executed_resent_order)
+                                    order_update = executed_resent_order # Some orders get filled right away, in this case won't go thru the waiting loop below.
 
-                                start_time = time.time()
-                                elapsed_sec = time.time() - start_time
-                                while (
-                                    (not order_status or order_status!='closed') 
-                                    and (elapsed_sec < wait_threshold_sec) # What if update never comes?
-                                ):
-                                    order_update = None
-                                    if order_id in executions:
-                                        order_update = executions[order_id]
+                                    log(f"Resent market order {order_id}. status: {order_status}, average_price: {average_price}, rounded_limit_price: {rounded_limit_price}. {json.dumps(executed_resent_order, indent=4)}")
+                                    
+                                    wait_threshold_sec = position.wait_fill_threshold_ms / 1000 
 
-                                    if order_update:
+                                    start_time = time.time()
+                                    elapsed_sec = time.time() - start_time
+                                    while (
+                                        (not order_status or order_status!='closed') 
+                                        and (elapsed_sec < wait_threshold_sec) # What if update never comes?
+                                    ):
+                                        order_update = None
+                                        if order_id in executions:
+                                            order_update = executions[order_id]
+
+                                        if order_update:
+                                            order_update['slice_id'] = i
+                                            order_id = order_update['id']
+                                            order_status = order_update['status']
+                                            filled_amount = order_update['filled']
+                                            remaining_amount = order_update['remaining']
+                                            position.executions[order_id] = order_update
+                                            exchange.patch_create_order_response(average_price=average_price, create_order_response=order_update, order_type='market')
+
+                                        elapsed_sec = time.time() - start_time
+                                        log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec} / wait_threshold_sec: {wait_threshold_sec}")
+
+                                        loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
+                                        await asyncio.sleep(loop_freq_sec)
+
+                                    if (not order_status or order_status!='closed'):
+                                        # If no update from websocket, do one last fetch via REST
+                                        order_update = await _fetch_order(order_id, position.ticker, exchange) 
                                         order_update['slice_id'] = i
-                                        order_id = order_update['id']
                                         order_status = order_update['status']
                                         filled_amount = order_update['filled']
                                         remaining_amount = order_update['remaining']
-                                        position.executions[order_id] = order_update
+                                        order_update['multiplier'] = multiplier
                                         exchange.patch_create_order_response(average_price=average_price, create_order_response=order_update, order_type='market')
+                                        position.executions[order_id] = order_update
 
-                                    elapsed_sec = time.time() - start_time
-                                    log(f"Waiting for resent market order to close {order_id} ... elapsed_sec: {elapsed_sec} / wait_threshold_sec: {wait_threshold_sec}")
+                                        assert(order_status=='closed') # Market order not getting filled?
+                                        executions[order_id] = order_update
 
-                                    loop_freq_sec : int = max(1, param['loop_freq_ms']/1000)
-                                    await asyncio.sleep(loop_freq_sec)
-
-                                if (not order_status or order_status!='closed'):
-                                    # If no update from websocket, do one last fetch via REST
-                                    order_update = await _fetch_order(order_id, position.ticker, exchange) 
-                                    order_update['slice_id'] = i
-                                    order_status = order_update['status']
-                                    filled_amount = order_update['filled']
-                                    remaining_amount = order_update['remaining']
-                                    order_update['multiplier'] = multiplier
-                                    exchange.patch_create_order_response(average_price=average_price, create_order_response=order_update, order_type='market')
-                                    position.executions[order_id] = order_update
-
-                                    assert(order_status=='closed') # Market order not getting filled?
-                                    executions[order_id] = order_update
-
-                                log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
+                                    log(f"Resent market order {order_id} filled. status: {order_status}, filled_amount: {filled_amount}, remaining_amount: {remaining_amount} {json.dumps(order_update, indent=4)}")
                     else:
                         log(f"{position.ticker} {order_id} status (From REST): {json.dumps(order_update, indent=4)}")
 
@@ -1191,6 +1196,7 @@ async def work(
                                         amount=order['amount'],
                                         order_type=order['order_type'],
                                         leg_room_bps=order['leg_room_bps'],
+                                        time_in_force=order['time_in_force'],
                                         reduce_only=order['reduce_only'],
                                         fees_ccy=order['fees_ccy'] if 'fees_ccy' in order else param['default_fees_ccy'],
                                         slices=order['slices'],
