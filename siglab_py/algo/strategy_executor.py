@@ -376,7 +376,7 @@ POSITION_CACHE_COLUMNS = [
             'exchange', 'ticker',
             'status', 
             'pos', 'pos_usdt', # pos and pos_usdt: For longs, it's positive number. For shorts, it's a negative number. 
-            'multiplier', 'created', 'tp_min_crossed', 'closed', 
+            'multiplier', 'created', 'trade_age_num_intervals', 'tp_min_crossed', 'closed', 
             'pos_entries',
              
             'tp_min_percent',
@@ -482,6 +482,7 @@ def parse_args():
     parser.add_argument("--sl_hard_percent", help="Hard stop in percent.", default=2)
     parser.add_argument("--sl_num_intervals_delay", help="Number of intervals to wait before re-entry allowed after SL. Default 1", default=1)
     parser.add_argument("--reversal_num_intervals", help="How many reversal candles to confirm reversal?", default=3)
+    parser.add_argument("--max_trade_age_num_intervals", help="Max position age in # lo intervals, default None (i.e. Not enforced). If exceeded, position will be closed whether pnl still light green, or red.", default=None)
 
     parser.add_argument("--trailing_stop_mode", help="This is for trailing stops tightening 'calc_eff_trailing_sl': linear or parabolic. Default: linear", default='linear')
     parser.add_argument("--non_linear_pow", help="For non-linear trailing stops tightening, have a look at call to 'calc_eff_trailing_sl'. Default: 5", default=5)
@@ -595,6 +596,7 @@ def parse_args():
     param['fees_ccy'] = args.fees_ccy
     param['wait_fill_threshold_ms'] = int(args.wait_fill_threshold_ms)
     param['exit_wait_fill_threshold_ms'] = int(args.exit_wait_fill_threshold_ms)
+    param['max_trade_age_num_intervals'] = int(args.max_trade_age_num_intervals) if args.max_trade_age_num_intervals else None
     param['max_slippage_percent_tp_min'] = float(args.max_slippage_percent_tp_min) if args.max_slippage_percent_tp_min else None
 
     param['tp_min_percent'] = float(args.tp_min_percent)
@@ -1274,6 +1276,7 @@ async def main():
                         'multiplier' : multiplier,
 
                         'created' : None,
+                        'trade_age_num_intervals' : None,
                         'tp_min_crossed' : None,
                         'closed' : None,
 
@@ -1369,9 +1372,12 @@ async def main():
                 pos_created = position_cache_row['created']
                 pos_created = arrow.get(pos_created).datetime if pos_created and isinstance(pos_created, str) else pos_created
                 total_sec_since_pos_created = INVALID
+                trade_age_num_intervals = None
                 if pos_created:
                     pos_created = pos_created.replace(tzinfo=None)
                     total_sec_since_pos_created = (dt_now - pos_created).total_seconds()
+                    trade_age_num_intervals = int(total_sec_since_pos_created*1000 / 1000)
+                    pd_position_cache.loc[position_cache_row.name, 'trade_age_num_intervals'] = trade_age_num_intervals
                 
                 pos_tp_min_crossed = position_cache_row['tp_min_crossed']
                 pos_tp_min_crossed = arrow.get(pos_tp_min_crossed).datetime if pos_tp_min_crossed and isinstance(pos_tp_min_crossed, str) else pos_tp_min_crossed
@@ -2370,6 +2376,7 @@ async def main():
                                 pd_position_cache.loc[position_cache_row.name, 'status'] = PositionStatus.OPEN.name
                                 pos_created = datetime.fromtimestamp(time.time())
                                 pd_position_cache.loc[position_cache_row.name, 'created'] = pos_created
+                                pd_position_cache.loc[position_cache_row.name, 'trade_age_num_intervals'] = 0
                                 pd_position_cache.loc[position_cache_row.name, 'tp_min_crossed'] = None
                                 pd_position_cache.loc[position_cache_row.name, 'closed'] = None
 
@@ -2530,11 +2537,16 @@ async def main():
                             reason = f"tp_max_target {tp_max_target} reached."
                         elif tp_trailing_stop:
                             reason = f"Trailing stop fired. tp_min_target: {tp_min_target}, loss_trailing: {loss_trailing}, effective_tp_trailing_percent: {effective_tp_trailing_percent}"
+                        elif param['max_trade_age_num_intervals'] and trade_age_num_intervals>param['max_trade_age_num_intervals']:
+                            reason = f"TP. trade_age_num_intervals {trade_age_num_intervals} exceeds max_trade_age_num_intervals {param['max_trade_age_num_intervals']}"
 
                     else:
                         if abs(pnl_live_bps/100)>=running_sl_percent_hard:
                             sl = True
                             reason = "Hard stop"
+                        elif param['max_trade_age_num_intervals'] and trade_age_num_intervals>param['max_trade_age_num_intervals']:
+                            sl = True
+                            reason = f"SL. trade_age_num_intervals {trade_age_num_intervals} exceeds max_trade_age_num_intervals {param['max_trade_age_num_intervals']}"
 
                 if tp or sl:
                     log(f"******** EXIT (loop# {loop_counter}) ********")
@@ -2643,6 +2655,7 @@ async def main():
                             pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = new_pos_usdt_from_exchange
                             pd_position_cache.loc[position_cache_row.name, 'status'] = new_status
                             pd_position_cache.loc[position_cache_row.name, 'closed'] = dt_now
+                            pd_position_cache.loc[position_cache_row.name, 'trade_age_num_intervals'] = trade_age_num_intervals
                             pd_position_cache.loc[position_cache_row.name, 'close_px'] = exit_px
                             pd_position_cache.loc[position_cache_row.name, 'unreal_live'] = 0
                             pd_position_cache.loc[position_cache_row.name, 'max_unreal_live'] = 0
