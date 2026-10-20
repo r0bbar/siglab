@@ -53,7 +53,7 @@ class Order:
         self.amount = amount
         self.order_type = order_type.strip().lower()
         self.leg_room_bps = leg_room_bps
-        self.time_in_force = time_in_force.strip().lower()
+        self.time_in_force = time_in_force.strip().lower() if time_in_force else None
         self.reduce_only = reduce_only
         self.fees_ccy = fees_ccy
         self.non_unified_params = non_unified_params
