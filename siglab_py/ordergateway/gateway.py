@@ -559,7 +559,17 @@ async def execute_one_position(
             exchange : AnyExchange,
         ):
             orderbook = await exchange.fetch_order_book(symbol=ticker, limit=5)
-            return orderbook
+            asks = [ ask[0] for ask in orderbook['asks'] ]
+            best_ask = min(asks)
+            bids = [ bid[0] for bid in orderbook['bids'] ]
+            best_bid = max(bids)
+            mid = (best_bid + best_ask)/2
+            return {
+                'ob' : orderbook,
+                'best_ask' : best_ask,
+                'best_bid' : best_bid,
+                'mid' : mid
+            }
         
         async def _fetch_position(
             exchange : AnyExchange, 
@@ -693,32 +703,50 @@ async def execute_one_position(
                     log(f"{position.ticker} Slice amount rounded to zero?! slice amount before rounding: {slice.amount}") 
                     continue
                 
-                orderbook = await _fetch_order_book(position.ticker, exchange) 
-                asks = [ ask[0] for ask in orderbook['asks'] ]
-                best_ask = min(asks)
-                bids = [ bid[0] for bid in orderbook['bids'] ]
-                best_bid = max(bids)
+                ob_res = await _fetch_order_book(position.ticker, exchange) 
+                best_ask = ob_res['best_ask']
+                best_bid = ob_res['best_bid']
+                mid = ob_res['mid']
                 if position.side=='buy':
                     limit_price : float = best_ask * (1 + position.leg_room_bps/10000)
                 else:
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
-                mid = (best_bid + best_ask)/2
 
                 # Enforce position.max_slippage_from_ref_price_bps, this logic is for: a) Entries only, b) Only checked first slice
                 if i==0 and not position.reduce_only:
-                    if position.max_slippage_from_ref_price_bps and position.ref_price:
+                    if (
+                        (
+                            position.max_slippage_from_ref_price_bps 
+                            or (position.instructions and 'better_than_ref' in position.instructions)
+                        ) 
+                        and position.ref_price
+                    ):
                         if position.side=='buy':
-                            price_cap = position.ref_price * (1 + position.max_slippage_from_ref_price_bps/10000)
-                            price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                            if mid > price_cap: # If price already moved up, don't chase long trade
-                                raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                            price_cap = position.ref_price
+                            if position.max_slippage_from_ref_price_bps:
+                                price_cap = price_cap * (1 + position.max_slippage_from_ref_price_bps/10000)
+                            
+                            start_wait_ts = int(time.time() * 1000)
+                            while best_ask > price_cap: # If price already moved up, don't chase long trade
+                                ob_res = await _fetch_order_book(position.ticker, exchange) 
+                                best_ask = ob_res['best_ask']
+                                if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
+                                    price_cap_check_msg = f"#slippage_check side: {position.side}, best_ask: {best_ask}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
+                                    raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
                             log(f"{price_cap_check_msg}. ENTRY may proceed.")
 
                         else:
-                            price_cap = position.ref_price * (1 - position.max_slippage_from_ref_price_bps/10000)
-                            price_cap_check_msg = f"#slippage_check side: {position.side}, mid: {mid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                            if mid < price_cap: # If price already moved down, don't chase short trade
-                                raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                            price_cap = position.ref_price
+                            if position.max_slippage_from_ref_price_bps:
+                                price_cap = price_cap * (1 - position.max_slippage_from_ref_price_bps/10000)
+                            
+                            start_wait_ts = int(time.time() * 1000)
+                            while best_bid < price_cap: # If price already moved down, don't chase short trade
+                                best_bid = await _fetch_order_book(position.ticker, exchange) 
+                                best_bid = ob_res['best_bid']
+                                if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
+                                    price_cap_check_msg = f"#slippage_check side: {position.side}, best_bid: {best_bid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
+                                    raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
                             log(f"{price_cap_check_msg}. ENTRY may proceed.")
                             
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
@@ -983,11 +1011,10 @@ async def execute_one_position(
                             else:
                                 if rounded_slice_amount_in_base_ccy>0:
                                     # Need fetch best prices again after waited all these seconds
-                                    orderbook = await _fetch_order_book(position.ticker, exchange) 
-                                    asks = [ ask[0] for ask in orderbook['asks'] ]
-                                    best_ask = min(asks)
-                                    bids = [ bid[0] for bid in orderbook['bids'] ]
-                                    best_bid = max(bids)
+                                    ob_res = await _fetch_order_book(position.ticker, exchange) 
+                                    best_ask = ob_res['best_ask']
+                                    best_bid = ob_res['best_bid']
+                                    mid = ob_res['mid']
 
                                     default_max_slippage_bps = exchange.options['default_max_slippage_bps'] if 'default_max_slippage_bps' in exchange.options else 100
                                     if position.side=='buy':
