@@ -1376,7 +1376,7 @@ async def main():
                 if pos_created:
                     pos_created = pos_created.replace(tzinfo=None)
                     total_sec_since_pos_created = (dt_now - pos_created).total_seconds()
-                    trade_age_num_intervals = int(total_sec_since_pos_created*1000 / 1000)
+                    trade_age_num_intervals = int(total_sec_since_pos_created*1000 / lo_interval_ms)
                     pd_position_cache.loc[position_cache_row.name, 'trade_age_num_intervals'] = trade_age_num_intervals
                 
                 pos_tp_min_crossed = position_cache_row['tp_min_crossed']
