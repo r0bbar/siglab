@@ -152,8 +152,7 @@ Further examples on usage of market_data_util and analytic_util in back tests.
     MACD crosses (ETH, 15m bars): https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macd_crosses_targets_from_level_15m_tc.py
 
 - Notebook to view equity curve and calc Sharpe: 
-    https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/fibonacci_d_mv_crypto.ipynb 
-    https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macdrsi_15m_tc_crypto.ipynb
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macd_15m_tc_crypto.ipynb
 
 - backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing
 
