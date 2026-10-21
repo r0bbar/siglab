@@ -1921,7 +1921,6 @@ async def main():
 
                 pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                 pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
-                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
                 pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
                 pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
                 pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
@@ -1943,6 +1942,7 @@ async def main():
                     wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
                 )
                 spread_bps_by_order_notional : float = ob_features['spread_bps_by_order_notional']
+                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
 
                 if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
