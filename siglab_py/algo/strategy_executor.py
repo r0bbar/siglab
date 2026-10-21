@@ -1050,6 +1050,7 @@ async def main():
         tp_max_percent : float  = param['tp_max_percent']
         tp_min_percent : float  = param['tp_min_percent']
         sl_hard_percent : float = param['sl_hard_percent']
+        level_granularity : float = param['level_granularity']
         executed_position = None
         position_break : bool = False
         keep_looping : bool = True
@@ -1819,74 +1820,6 @@ async def main():
                 if not orderbook_valid:
                     ob = await exchange.fetch_order_book(symbol=_ticker, limit=10) 
 
-                best_ask = min([x[0] for x in ob['asks']])
-                best_bid = max([x[0] for x in ob['bids']])
-                mid = round_to_sigfigs((best_ask+best_bid)/2, sigfigs=6)
-                spread_bps = round_to_sigfigs((best_ask/best_bid - 1) * 10000, sigfigs=6)
-
-                level_granularity = param['level_granularity']
-                msd_adj = param['price_levels_msd_adj'] if 'price_levels_msd_adj' in param else 0
-                adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, msd_adj=msd_adj, num_levels_per_side=2)
-                level_below = round_to_sigfigs(adjacent_levels[1], sigfigs=6)
-                level_above = round_to_sigfigs(adjacent_levels[2], sigfigs=6)
-                if level_granularity==0:
-                    idx_level_below, idx_level_above = 0, 1
-                    for level in adjacent_levels:
-                        level_below = adjacent_levels[idx_level_below]
-                        if level_below>mid:
-                            idx_level_below = idx_level_below - 1
-                            level_below = adjacent_levels[idx_level_below]
-                            break
-                        else:
-                            idx_level_below += 1
-                    idx_level_above = idx_level_below +1
-                    level_above = adjacent_levels[idx_level_above]
-
-                position_summary : Dict[str, Union[str, int, float]] = {
-                    'key' : f"{gateway_id} {_ticker}",
-                    'gateway_id' : gateway_id,
-                    'ticker' : _ticker,
-
-                    'pos' : round(float(pos), 4) if pos else "---",
-                    'pos_usdt' : round(float(pos_usdt), 4) if pos_usdt else "---",
-                    'pos_side' : pos_side.name,
-                    'pos_status' : pos_status,
-                    'block_entries' : block_entries,
-                    'pos_created' : pos_created.strftime("%Y%m%d %H-%M-%S") if pos_created else "---",
-                    'pos_closed' : pos_closed.strftime("%Y%m%d %H-%M-%S") if pos_closed else "---",
-
-                    'pnl_live_bps' : float(pnl_live_bps) if pnl_live_bps else "---",
-                    'pos_tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H-%M-%S") if pos_tp_min_crossed else "---",
-
-                    'tp_min_percent' : float(tp_min_percent) if tp_min_percent else "---",
-                    'tp_max_percent' : float(tp_max_percent) if tp_max_percent else "---",
-                    'sl_hard_percent' : float(sl_hard_percent) if sl_hard_percent else "---",
-                    'running_sl_percent_hard' : float(running_sl_percent_hard) if running_sl_percent_hard else "---",
-                    
-                    'sl_trailing_min_threshold_crossed' : bool(sl_trailing_min_threshold_crossed),
-                    'mid' : mid,
-                    'entry_px' : float(entry_px) if entry_px else "---",
-                    'close_px' : float(close_px) if close_px else "---",
-                    'tp_max_target' : float(tp_max_target) if tp_max_target else "---",
-                    'tp_min_target' : float(tp_min_target) if tp_min_target else "---",
-                    'sl_price' : float(sl_price) if sl_price else "---",
-                    'max_pnl_potential_bps' : float(max_pnl_potential_bps) if max_pnl_potential_bps else "---",
-
-                    'unreal_live' : float(unreal_live) if unreal_live else "---",
-                    'max_unreal_live' : float(max_unreal_live) if max_unreal_live else "---",
-                    'max_pain' : float(max_pain) if max_pain else "---",
-                    'max_recovered_pnl' : float(max_recovered_pnl) if max_recovered_pnl else "---",
-                    'pnl_live_bps' : float(pnl_live_bps) if pnl_live_bps else "---",
-                    'pnl_open_bps' : float(pnl_open_bps) if pnl_open_bps else "---",
-                    'max_unreal_live_bps' : float(max_unreal_live_bps) if max_unreal_live_bps else "---",
-                    'max_unreal_open_bps' : float(max_unreal_open_bps) if max_unreal_open_bps else "---",
-                    'max_pain_percent_notional' : float(max_pain_percent_notional) if max_pain_percent_notional else "---",
-                    'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
-
-                    'block_entry_reason' : block_entry_reason if block_entry_reason else "---", # Lengthy, leave it to last
-                    'command_trigger_update' : command_trigger_update # Indicates to strategy_master if this update is a command triggered adhoc update.
-                }
-
                 if (
                     param['build_volume_profile']
                     and (loop_counter%100==0) # VAH/L and PoC don't need updated too freq, recalc only every hundred iterations is fine
@@ -1920,20 +1853,6 @@ async def main():
                             point_of_control = f'lo_volume_profile, {bucket_key} volume: {int(volume):,}'
                             log(point_of_control)
 
-                pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
-                pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
-                pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
-                pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
-                pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
-                pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
-                pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
-
-                # amount_quote_ccy takes precedence over amount_base_ccy
-                if param['amount_quote_ccy']:
-                    param['amount_base_ccy'] = round_to_sigfigs(param['amount_quote_ccy']/mid, sigfigs=6)
-                    param['max_pos_amount_base_ccy'] = round_to_sigfigs(param['max_pos_amount_quote_ccy']/mid, sigfigs=6)
-                log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
-
                 ob_features : OrderBookFeatures = extract_ob_features(
                     ob=ob,
                     order_notional=param['amount_quote_ccy'],
@@ -1942,8 +1861,11 @@ async def main():
                     focus_atr_multiple=int(algo_param['tp_max_percent']*1000/hi_row_tm1['atr_bps']) if algo_param['tp_max_percent'] and algo_param['tp_max_percent']!=-1 else 10,
                     wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
                 )
+                spread_bps : float = ob_features['best_spread_bps']
+                best_bid : float = ob_features['best_bid']
+                best_ask : float = ob_features['best_ask']
+                mid : float = ob_features['mid']
                 spread_bps_by_order_notional : float = ob_features['spread_bps_by_order_notional']
-                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
 
                 ob_features : OrderBookFeatures = extract_ob_features(
                     ob=ob,
@@ -1954,7 +1876,84 @@ async def main():
                     wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
                 )
                 spread_bps_by_order_100k_notional : float = ob_features['spread_bps_by_order_notional']
+
+                # amount_quote_ccy takes precedence over amount_base_ccy
+                if param['amount_quote_ccy']:
+                    param['amount_base_ccy'] = round_to_sigfigs(param['amount_quote_ccy']/mid, sigfigs=6)
+                    param['max_pos_amount_base_ccy'] = round_to_sigfigs(param['max_pos_amount_quote_ccy']/mid, sigfigs=6)
+                log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
+                
+                msd_adj = param['price_levels_msd_adj'] if 'price_levels_msd_adj' in param else 0
+                adjacent_levels = compute_adjacent_levels(num=mid, level_granularity=level_granularity, msd_adj=msd_adj, num_levels_per_side=2)
+                level_below = round_to_sigfigs(adjacent_levels[1], sigfigs=6)
+                level_above = round_to_sigfigs(adjacent_levels[2], sigfigs=6)
+                if level_granularity==0:
+                    idx_level_below, idx_level_above = 0, 1
+                    for level in adjacent_levels:
+                        level_below = adjacent_levels[idx_level_below]
+                        if level_below>mid:
+                            idx_level_below = idx_level_below - 1
+                            level_below = adjacent_levels[idx_level_below]
+                            break
+                        else:
+                            idx_level_below += 1
+                    idx_level_above = idx_level_below +1
+                    level_above = adjacent_levels[idx_level_above]
+
+                pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
+                pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
+                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
                 pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_100k_notional'] = spread_bps_by_order_100k_notional
+                pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
+                pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
+                pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
+                pd_position_cache.loc[position_cache_row.name, 'level_below'] = level_below
+                pd_position_cache.loc[position_cache_row.name, 'level_above'] = level_above
+
+                position_summary : Dict[str, Union[str, int, float]] = {
+                            'key' : f"{gateway_id} {_ticker}",
+                            'gateway_id' : gateway_id,
+                            'ticker' : _ticker,
+        
+                            'pos' : round(float(pos), 4) if pos else "---",
+                            'pos_usdt' : round(float(pos_usdt), 4) if pos_usdt else "---",
+                            'pos_side' : pos_side.name,
+                            'pos_status' : pos_status,
+                            'block_entries' : block_entries,
+                            'pos_created' : pos_created.strftime("%Y%m%d %H-%M-%S") if pos_created else "---",
+                            'pos_closed' : pos_closed.strftime("%Y%m%d %H-%M-%S") if pos_closed else "---",
+        
+                            'pnl_live_bps' : float(pnl_live_bps) if pnl_live_bps else "---",
+                            'pos_tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H-%M-%S") if pos_tp_min_crossed else "---",
+        
+                            'tp_min_percent' : float(tp_min_percent) if tp_min_percent else "---",
+                            'tp_max_percent' : float(tp_max_percent) if tp_max_percent else "---",
+                            'sl_hard_percent' : float(sl_hard_percent) if sl_hard_percent else "---",
+                            'running_sl_percent_hard' : float(running_sl_percent_hard) if running_sl_percent_hard else "---",
+                            
+                            'sl_trailing_min_threshold_crossed' : bool(sl_trailing_min_threshold_crossed),
+                            'mid' : mid,
+                            'entry_px' : float(entry_px) if entry_px else "---",
+                            'close_px' : float(close_px) if close_px else "---",
+                            'tp_max_target' : float(tp_max_target) if tp_max_target else "---",
+                            'tp_min_target' : float(tp_min_target) if tp_min_target else "---",
+                            'sl_price' : float(sl_price) if sl_price else "---",
+                            'max_pnl_potential_bps' : float(max_pnl_potential_bps) if max_pnl_potential_bps else "---",
+        
+                            'unreal_live' : float(unreal_live) if unreal_live else "---",
+                            'max_unreal_live' : float(max_unreal_live) if max_unreal_live else "---",
+                            'max_pain' : float(max_pain) if max_pain else "---",
+                            'max_recovered_pnl' : float(max_recovered_pnl) if max_recovered_pnl else "---",
+                            'pnl_live_bps' : float(pnl_live_bps) if pnl_live_bps else "---",
+                            'pnl_open_bps' : float(pnl_open_bps) if pnl_open_bps else "---",
+                            'max_unreal_live_bps' : float(max_unreal_live_bps) if max_unreal_live_bps else "---",
+                            'max_unreal_open_bps' : float(max_unreal_open_bps) if max_unreal_open_bps else "---",
+                            'max_pain_percent_notional' : float(max_pain_percent_notional) if max_pain_percent_notional else "---",
+                            'max_recovered_pnl_percent_notional' : float(max_recovered_pnl_percent_notional) if max_recovered_pnl_percent_notional else "---",
+        
+                            'block_entry_reason' : block_entry_reason if block_entry_reason else "---", # Lengthy, leave it to last
+                            'command_trigger_update' : command_trigger_update # Indicates to strategy_master if this update is a command triggered adhoc update.
+                        }
 
                 if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
