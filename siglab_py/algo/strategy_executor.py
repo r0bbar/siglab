@@ -395,6 +395,7 @@ POSITION_CACHE_COLUMNS = [
             'ob_mid', 
             'spread_bps', # This is spread between bests 
             'spread_bps_by_order_notional', # This is spread, by order notional you're trading. If you hit the market in one slice, that's the spread you will be paying.
+            'spread_bps_by_order_100k_notional', # Spread for first 100k
             'ob_best_bid', 'ob_best_ask', 'level_granularity', 'level_below', 'level_above',
 
             'unreal_live',
@@ -1943,6 +1944,17 @@ async def main():
                 )
                 spread_bps_by_order_notional : float = ob_features['spread_bps_by_order_notional']
                 pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
+
+                ob_features : OrderBookFeatures = extract_ob_features(
+                    ob=ob,
+                    order_notional=100_000,
+                    price_level_separation_bps=level_granularity if level_granularity and level_granularity>0 else 10,
+                    atr_bps=hi_row_tm1['atr_bps'],
+                    focus_atr_multiple=int(algo_param['tp_max_percent']*1000/hi_row_tm1['atr_bps']) if algo_param['tp_max_percent'] and algo_param['tp_max_percent']!=-1 else 10,
+                    wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
+                )
+                spread_bps_by_order_100k_notional : float = ob_features['spread_bps_by_order_100k_notional']
+                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_100k_notional'] = spread_bps_by_order_100k_notional
 
                 if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
