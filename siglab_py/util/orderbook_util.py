@@ -135,6 +135,11 @@ def extract_ob_features(
     best_spread_bps = round((best_ask/best_bid-1) *10000, 5)
     worst_spread_bps = round((worst_ask/worst_bid-1) *10000, 5)
 
+    total_bid_vol = sum(v for _, v in ob['bids'])
+    total_ask_vol = sum(v for _, v in ob['asks'])
+    total_vol = total_bid_vol + total_ask_vol
+    imbalance = (total_bid_vol - total_ask_vol) / total_vol if total_vol else 0.0
+
     result = calc_slippages_by_notional(mid=mid, order_notional=order_notional, ob=ob)
     spread_bps_by_order_notional = result['spread_bps']
     slippage_target_bid = result['target_bid']
@@ -171,11 +176,6 @@ def extract_ob_features(
             avg_ask_vol = sum(ask_vols) / len(ask_vols)
             threshold = avg_ask_vol * wall_threshold_multiplier
             sell_walls = [(p, v) for p, v in asks if v >= threshold]
-
-    total_bid_vol = sum(v for _, v in bids)
-    total_ask_vol = sum(v for _, v in asks)
-    denom = total_bid_vol + total_ask_vol
-    imbalance = (total_bid_vol - total_ask_vol) / denom if denom else 0.0
 
     return OrderBookFeatures(
         num_bids=num_bids,
