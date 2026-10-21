@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, TypedDict
 import numpy as np
 
+# Usage: https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/orderbook_exploratory.ipynb
 class OrderBookFeatures(TypedDict):
     num_bids : int # Number of bids, before price levels binning in extract_ob_features
     num_asks : int # Number of asks, before price levels binning in extract_ob_features
