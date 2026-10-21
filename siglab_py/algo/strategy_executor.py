@@ -1953,7 +1953,7 @@ async def main():
                     focus_atr_multiple=int(algo_param['tp_max_percent']*1000/hi_row_tm1['atr_bps']) if algo_param['tp_max_percent'] and algo_param['tp_max_percent']!=-1 else 10,
                     wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
                 )
-                spread_bps_by_order_100k_notional : float = ob_features['spread_bps_by_order_100k_notional']
+                spread_bps_by_order_100k_notional : float = ob_features['spread_bps_by_order_notional']
                 pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_100k_notional'] = spread_bps_by_order_100k_notional
 
                 if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
