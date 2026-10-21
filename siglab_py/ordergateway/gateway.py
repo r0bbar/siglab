@@ -712,8 +712,8 @@ async def execute_one_position(
                 else:
                     limit_price : float = best_bid * (1 - position.leg_room_bps/10000)
 
-                # Enforce position.max_slippage_from_ref_price_bps, this logic is for: a) Entries only, b) Only checked first slice
-                if i==0 and not position.reduce_only:
+                # Enforce position.max_slippage_from_ref_price_bps, this logic is for Entries only. Also first/subsequent slices different handling.
+                if not position.reduce_only: 
                     if (
                         (
                             position.max_slippage_from_ref_price_bps 
@@ -730,10 +730,16 @@ async def execute_one_position(
                             while best_ask > price_cap: # If price already moved up, don't chase long trade
                                 ob_res = await _fetch_order_book(position.ticker, exchange) 
                                 best_ask = ob_res['best_ask']
+                                log(f"#slippage_check best_ask {best_ask} > price_cap {price_cap}, wait some more ...")
                                 if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
                                     price_cap_check_msg = f"#slippage_check side: {position.side}, best_ask: {best_ask}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                                    raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
-                            log(f"{price_cap_check_msg}. ENTRY may proceed.")
+                                    if i==0:
+                                        # If you raise on first slice, no subsequent slices will be executed. Ball back to strategy_executor.
+                                        raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                                    else:
+                                        # For subsequent slices, this is on best-effort basis.
+                                        log(f"{price_cap_check_msg}. ENTRY proceeds, wait no further.")
+                                        break
 
                         else:
                             price_cap = position.ref_price
@@ -744,10 +750,16 @@ async def execute_one_position(
                             while best_bid < price_cap: # If price already moved down, don't chase short trade
                                 best_bid = await _fetch_order_book(position.ticker, exchange) 
                                 best_bid = ob_res['best_bid']
+                                log(f"#slippage_check best_bid {best_bid} < price_cap {price_cap}, wait some more ...")
                                 if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
                                     price_cap_check_msg = f"#slippage_check side: {position.side}, best_bid: {best_bid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
-                                    raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
-                            log(f"{price_cap_check_msg}. ENTRY may proceed.")
+                                    if i==0:
+                                        # if you raise on first slice, no subsequent slices will be executed. Ball back to strategy_executor.
+                                        raise Exception(f"{price_cap_check_msg}. ENTRY aborted.")
+                                    else:
+                                        # For subsequent slices, this is on best-effort basis.
+                                        log(f"{price_cap_check_msg}. ENTRY proceeds, wait no further.")
+                                        break
                             
                 rounded_limit_price : float = exchange.price_to_precision(position.ticker, limit_price)
                 rounded_limit_price = float(rounded_limit_price)
