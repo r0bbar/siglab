@@ -33,8 +33,8 @@ def calc_slippages_by_notional(
     ob : Dict,
 ):
     result = calc_slippages(
-        bids_in_scope = [ (p, v) for p, v in ob['bids'] if p<mid and v*mid>=order_notional],
-        asks_in_scope = [ (p, v) for p, v in ob['asks'] if p>mid and v*mid>=order_notional]
+        bids_in_scope = [ (lvl[0], lvl[1]) for lvl in ob['bids'] if lvl[0] < mid and lvl[1] * mid >= order_notional],
+        asks_in_scope = [ (lvl[0], lvl[1]) for lvl in ob['asks'] if lvl[0] > mid and lvl[1] * mid >= order_notional]
     )
     return result
 
@@ -45,8 +45,8 @@ def calc_slippages_by_target(
     ob : Dict,
 ):
     result = calc_slippages(
-        bids_in_scope = [ (p, v) for p, v in ob['bids'] if p<mid and p > mid*(1-focus_atr_multiple*atr_bps/10000)],
-        asks_in_scope = [ (p, v) for p, v in ob['asks'] if p>mid and p < mid*(1+focus_atr_multiple*atr_bps/10000)]
+        bids_in_scope = [ (lvl[0], lvl[1]) for lvl in ob['bids'] if lvl[0] < mid and lvl[0] > mid * (1 - focus_atr_multiple * atr_bps / 10000)],
+        asks_in_scope = [ (lvl[0], lvl[1]) for lvl in ob['asks'] if lvl[0] > mid and lvl[0] < mid * (1 + focus_atr_multiple * atr_bps / 10000)]
     )
     return result
 
@@ -81,7 +81,8 @@ def extract_ob_features(
             mid_ref: float
         ) -> List[List[float]]:
         binned: Dict[int, List[float]] = {}
-        for price, qty in levels:
+        for lvl in levels:
+            price, qty = lvl[0], lvl[1]      # <-- was: for price, qty in levels
             dist_bps = (price - mid_ref) / mid_ref * 10000.0
             bucket = int(np.floor(dist_bps / price_level_separation_bps))
             if bucket not in binned:
@@ -101,9 +102,9 @@ def extract_ob_features(
         if not levels:
             return (0.0, 0.0)
         if len(levels) < 3:
-            return (levels[-1][0], sum(v for _, v in levels))
-        prices = np.array([p for p, _ in levels], dtype=float)
-        cum = np.cumsum([v for _, v in levels])
+            return (levels[-1][0], sum(lvl[1] for lvl in levels))          # was: sum(v for _, v in levels)
+        prices = np.array([lvl[0] for lvl in levels], dtype=float)         # was: [p for p, _ in levels]
+        cum = np.cumsum([lvl[1] for lvl in levels])                        # was: [v for _, v in levels]
         x = (prices - prices.min()) / (prices.max() - prices.min()) if prices.max() > prices.min() else np.zeros_like(prices)
         y = (cum - cum.min()) / (cum.max() - cum.min()) if cum.max() > cum.min() else np.zeros_like(cum)
         x1, y1, x2, y2 = x[0], y[0], x[-1], y[-1]
@@ -135,8 +136,8 @@ def extract_ob_features(
     best_spread_bps = round((best_ask/best_bid-1) *10000, 5)
     worst_spread_bps = round((worst_ask/worst_bid-1) *10000, 5)
 
-    total_bid_vol = sum(v for _, v in ob['bids'])
-    total_ask_vol = sum(v for _, v in ob['asks'])
+    total_bid_vol = sum(lvl[1] for lvl in ob['bids'])
+    total_ask_vol = sum(lvl[1] for lvl in ob['asks'])
     total_vol = total_bid_vol + total_ask_vol
     imbalance = (total_bid_vol - total_ask_vol) / total_vol if total_vol else 0.0
 
