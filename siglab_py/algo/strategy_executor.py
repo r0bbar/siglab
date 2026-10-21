@@ -39,6 +39,7 @@ from siglab_py.util.simple_str import is_int_string, is_float_string
 from siglab_py.util.market_data_util import async_instantiate_exchange, interval_to_ms, get_old_ticker, get_ticker_map
 from siglab_py.util.analytic_util import compute_volume_profile
 from siglab_py.util.trading_util import calc_eff_trailing_sl
+from siglab_py.util.orderbook_util import OrderBookFeatures, extract_ob_features
 from siglab_py.util.notification_util import dispatch_notification
 from siglab_py.util.aws_util import AwsKmsUtil
 from siglab_py.util.module_util import load_module_class
@@ -391,7 +392,10 @@ POSITION_CACHE_COLUMNS = [
             'max_pnl_potential_bps',
             'close_px',
 
-            'ob_mid', 'spread_bps', 'ob_best_bid', 'ob_best_ask', 'level_granularity', 'level_below', 'level_above',
+            'ob_mid', 
+            'spread_bps', # This is spread between bests 
+            'spread_bps_by_order_notional', # This is spread, by order notional you're trading. If you hit the market in one slice, that's the spread you will be paying.
+            'ob_best_bid', 'ob_best_ask', 'level_granularity', 'level_below', 'level_above',
 
             'unreal_live',
             'max_unreal_live',
@@ -1917,6 +1921,7 @@ async def main():
 
                 pd_position_cache.loc[position_cache_row.name, 'ob_mid'] = mid
                 pd_position_cache.loc[position_cache_row.name, 'spread_bps'] = spread_bps
+                pd_position_cache.loc[position_cache_row.name, 'spread_bps_by_order_notional'] = spread_bps_by_order_notional
                 pd_position_cache.loc[position_cache_row.name, 'ob_best_bid'] = best_bid
                 pd_position_cache.loc[position_cache_row.name, 'ob_best_ask'] = best_ask
                 pd_position_cache.loc[position_cache_row.name, 'level_granularity'] = param['level_granularity']
@@ -1928,6 +1933,16 @@ async def main():
                     param['amount_base_ccy'] = round_to_sigfigs(param['amount_quote_ccy']/mid, sigfigs=6)
                     param['max_pos_amount_base_ccy'] = round_to_sigfigs(param['max_pos_amount_quote_ccy']/mid, sigfigs=6)
                 log(f"Sizing info, mid: {mid}, amount_quote_ccy: {param['amount_quote_ccy']}, amount_base_ccy: {param['amount_base_ccy']}, max_pos_amount_quote_ccy: {param['max_pos_amount_quote_ccy']}, max_pos_amount_base_ccy: {param['max_pos_amount_base_ccy']}")
+
+                ob_features : OrderBookFeatures = extract_ob_features(
+                    ob=ob,
+                    order_notional=param['amount_quote_ccy'],
+                    price_level_separation_bps=level_granularity if level_granularity and level_granularity>0 else 10,
+                    atr_bps=hi_row_tm1['atr_bps'],
+                    focus_atr_multiple=int(algo_param['tp_max_percent']*1000/hi_row_tm1['atr_bps']) if algo_param['tp_max_percent'] and algo_param['tp_max_percent']!=-1 else 10,
+                    wall_threshold_multiplier=None # If set to None, skip compute buy/sell walls
+                )
+                spread_bps_by_order_notional : float = ob_features['spread_bps_by_order_notional']
 
                 if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
