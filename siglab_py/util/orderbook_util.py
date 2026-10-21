@@ -54,6 +54,13 @@ def calc_slippages(
     bids_in_scope,
     asks_in_scope
 ):
+    if not bids_in_scope or not asks_in_scope:
+        return {
+            'spread_bps' : None,
+            'target_bid' : None,
+            'target_ask' : None
+        }
+    
     bids_in_scope_price = max([x[0] for x in bids_in_scope]) 
     bids_in_scope_vol = sum([x[1] for x in bids_in_scope])
     target_bid = (bids_in_scope_price, bids_in_scope_vol)
