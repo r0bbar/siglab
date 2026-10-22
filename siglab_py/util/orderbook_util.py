@@ -8,13 +8,13 @@ class OrderBookFeatures(TypedDict):
     mid : float
     best_bid : float
     best_ask : float
-    focus_bid : float # focus range
+    focus_bid : float # "Focus" simply your focus range: You strategy generally make entries/TP/SL how far from mid?
     focus_ask : float
     worst_bid : float # Why you want to know? You want to know how much depth you've got from fetch_orderbook given OB_DEPTH specified. And if that's sufficient for your purpose?
     worst_ask : float
     best_spread_bps : float
-    spread_bps_by_order_notional : float
-    focus_spread_bps : float
+    spread_bps_by_order_notional : float # For specified notional how much spread you need to pay? This is one way, not round trip, estimation for trading frictions.
+    focus_spread_bps : float # "Focus" simply your focus range.
     knee_spread_bps : float # This is the actively traded region where market participants places bets
     worst_spread_bps : float
     buy_walls : List[Tuple[float, float]]  # List of (price, volume) tuples
