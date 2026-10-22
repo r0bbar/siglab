@@ -19,7 +19,7 @@ class OrderBookFeatures(TypedDict):
     worst_spread_bps : float
     buy_walls : List[Tuple[float, float]]  # List of (price, volume) tuples
     sell_walls : List[Tuple[float, float]]  # List of (price, volume) tuples
-    bid_knee : Tuple[float, float]
+    bid_knee : Tuple[float, float] # Tuple (price, volume). Below the knee is where market participants actively place bets (i.e. passive limit orders). 
     ask_knee : Tuple[float, float]
     slippage_target_bid : Tuple[float, float]
     slippage_target_ask : Tuple[float, float]
