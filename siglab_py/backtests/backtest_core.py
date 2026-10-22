@@ -1424,7 +1424,7 @@ def run_scenario(
                             all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].axvline(x=this_datetime, color=color, linewidth=2, linestyle='--')
                             all_canvas[f"{key}-param_id{algo_param['param_id']}"]['time_series_canvas'].scatter([this_datetime, this_datetime], [low, high], color=color)
                     
-                    # UNREAL EVALUATION. We're being pessimistic! We use low/high for estimating unrealized_pnl for buys and sells respectively here.
+                    # PNL EVALUATION block. We're being pessimistic! We use low/high for estimating unrealized_pnl for buys and sells respectively here.
                     pnl_percent_notional = 0
                     if len(this_ticker_open_trades)>0:    
                         unrealized_pnl, unrealized_pnl_interval, unrealized_pnl_open, unrealized_pnl_live_optimistic, unrealized_pnl_live_pessimistic, unrealized_pnl_live, max_pnl_percent_notional, unrealized_pnl_boillenger, unrealized_pnl_sl, max_unrealized_pnl_live, max_pain, recovered_pnl_optimistic, recovered_pnl_pessimistic, max_recovered_pnl = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 # USDT

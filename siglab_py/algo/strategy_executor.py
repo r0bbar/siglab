@@ -1955,7 +1955,7 @@ async def main():
                             'command_trigger_update' : command_trigger_update # Indicates to strategy_master if this update is a command triggered adhoc update.
                         }
 
-                if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL Evaluation block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
+                if pos!=0 and pos_status==PositionStatus.OPEN.name: # PNL EVALUATION block. Note checking pos_status, in additional to pos, is important: pos can have residuals when the position practically closed.
                     pos_usdt = round_to_sigfigs(mid * pos, sigfigs=6)
                     pd_position_cache.loc[position_cache_row.name, 'pos_usdt'] = pos_usdt
 
