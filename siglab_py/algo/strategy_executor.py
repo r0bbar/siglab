@@ -26,7 +26,7 @@ import plotext as plt
 from importlib.metadata import version as package_version
 
 from requests.exceptions import HTTPError
-from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported
+from ccxt.base.errors import RequestTimeout, ExchangeNotAvailable, NotSupported, NullResponse
 
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.ordergateway.client import DivisiblePosition, execute_positions
@@ -1603,6 +1603,9 @@ async def main():
                         position_from_exchange = await _fetch_position(exchange, _ticker)
                     else:
                         position_from_exchange = await exchange.fetch_position(_ticker)
+                except NullResponse:
+                    position_from_exchange = None
+                    log(f"No existing position on {_ticker}.")
 
                 except NotSupported:
                     positions_from_exchange = await exchange.fetch_positions()
@@ -1610,6 +1613,7 @@ async def main():
                         position_from_exchange = [ pos for pos in positions_from_exchange if pos['symbol']==_ticker ]
                         if position_from_exchange:
                             position_from_exchange = position_from_exchange[-1]
+
                 
                 position_from_exchange_base_ccy = 0
                 position_break_diff_bps = 0
