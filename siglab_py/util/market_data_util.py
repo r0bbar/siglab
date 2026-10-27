@@ -188,6 +188,10 @@ def instantiate_exchange(
     
     exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
+    for option in exchange_specific_options:
+        if option not in exchange.options:
+            exchange.options[option] = exchange_specific_options[option]
+
     exchange.load_markets() # type: ignore
 
     if not hasattr(exchange, "patch_create_order_response"):
@@ -405,6 +409,10 @@ async def async_instantiate_exchange(
         raise ValueError(f"Unsupported exchange {exchange_name}, check gateway_id {gateway_id}.")
 
     exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
+
+    for option in exchange_specific_options:
+        if option not in exchange.options:
+            exchange.options[option] = exchange_specific_options[option]
 
     await exchange.load_markets() # type: ignore
 
