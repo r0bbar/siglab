@@ -174,16 +174,18 @@ def extract_ob_features(
         # --- Bid side (buy walls) ---
         if bids:
             bid_vols = [v for p, v in bids if p>bid_knee[0] and p<mid]
-            avg_bid_vol = sum(bid_vols) / len(bid_vols)
-            threshold = avg_bid_vol * wall_threshold_multiplier
-            buy_walls = [(p, v) for p, v in bids if v >= threshold]
+            if bid_vols:
+                avg_bid_vol = sum(bid_vols) / len(bid_vols)
+                threshold = avg_bid_vol * wall_threshold_multiplier
+                buy_walls = [(p, v) for p, v in bids if v >= threshold]
 
         # --- Ask side (sell walls) ---
         if asks:
             ask_vols = [v for p, v in asks if p<ask_knee[0] and p>mid]
-            avg_ask_vol = sum(ask_vols) / len(ask_vols)
-            threshold = avg_ask_vol * wall_threshold_multiplier
-            sell_walls = [(p, v) for p, v in asks if v >= threshold]
+            if ask_vols:
+                avg_ask_vol = sum(ask_vols) / len(ask_vols)
+                threshold = avg_ask_vol * wall_threshold_multiplier
+                sell_walls = [(p, v) for p, v in asks if v >= threshold]
 
     return OrderBookFeatures(
         num_bids=num_bids,
