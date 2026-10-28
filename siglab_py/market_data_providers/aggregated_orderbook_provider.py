@@ -14,6 +14,7 @@ import numpy as np
 from redis import StrictRedis
 
 from ccxt.base.exchange import Exchange
+from siglab_py.util.retry_util import retry
 from siglab_py.util.orderbook_util import OrderBookFeatures, extract_ob_features
 from siglab_py.util.market_data_util import instantiate_exchange, candle_size_to_interval_sec, fetch_candles
 from siglab_py.util.analytic_util import compute_candles_stats
@@ -53,7 +54,7 @@ Key config:
     order_notional: Position notional in USD. extract_ob_features will calculate spread based on size you want to trade.
     focus_atr_multiple: Focus range is defined in ATR multiples. Related config: candles_size and how_many_candles
     wall_threshold_multiplier: This is threshold to detect bid/ask wall on orderbook based on avg volume at particular price level. Set to like 3. Default None - i.e. Don't bother compute
-    ts_delta_observation_ms_threshold: If orderbook age, in ms, breaches this threshold, the orderbook is deemed invalid and will be discarded. If you're on the move with unstable connection, set this to for example 1000 ms.
+    ts_delta_observation_ms_threshold: If orderbook age, in ms, breaches this threshold, the orderbook is deemed invalid and will be discarded if re-fetch keeps failing for three times. If you're on the move with unstable connection, set this to for example 1000 ms.
     
     candles_size: We fetch trailing candles for things like ATR. Default: 1h
     how_many_candles: Sliding window size for TA calculations. Default: 24
@@ -209,6 +210,7 @@ supported_exchanges = [
     hyperliquid_linear_exchange
 ]
 
+@retry(num_attempts=3, pause_between_retries_ms=100)
 async def _fetch_orderbook(ticker : str, exchange : Exchange):
     try:
         normalized_symbol : str = f"{ticker}/{exchange.options['quote_ccy']}" if exchange.options['defaultType']=='spot' else f"{ticker}/{exchange.options['quote_ccy']}:{exchange.options['quote_ccy']}"
@@ -230,6 +232,10 @@ async def _fetch_orderbook(ticker : str, exchange : Exchange):
         mid = (max([ x[0] for x in ob['bids'] ]) + min([ x[0] for x in ob['asks'] ])) / 2
 
         logger.info(f"{exchange.name} mid: {mid}, min_bid_price: {min_bid_price}, max_bid_price: {max_bid_price}, min_ask_price: {min_ask_price}, max_ask_price: {max_ask_price}, range: {int(max_ask_price-min_bid_price)}, ts_delta_observation_ms: {ts_delta_observation_ms}, #bids: {len(ob['bids'])}, #asks: {len(ob['asks'])}")
+
+        if not is_valid:
+            # Trigger retry
+            raise ValueError(f"#stale_orderbook {ticker} ts_delta_observation_ms: {ts_delta_observation_ms} > ts_delta_observation_ms_threshold: {param['ts_delta_observation_ms_threshold']}")
 
         return {
                     'source' : exchange.name,
