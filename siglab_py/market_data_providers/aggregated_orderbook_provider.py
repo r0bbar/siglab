@@ -53,7 +53,7 @@ Key config:
     order_notional: Position notional in USD. extract_ob_features will calculate spread based on size you want to trade.
     focus_atr_multiple: Focus range is defined in ATR multiples. Related config: candles_size and how_many_candles
     wall_threshold_multiplier: This is threshold to detect bid/ask wall on orderbook based on avg volume at particular price level. Set to like 3. Default None - i.e. Don't bother compute
-    ts_delta_observation_ms_threshold: If orderbook age, in ms, breaches this threshold, the orderbook is deemed invalid and will be discarded.
+    ts_delta_observation_ms_threshold: If orderbook age, in ms, breaches this threshold, the orderbook is deemed invalid and will be discarded. If you're on the move with unstable connection, set this to for example 1000 ms.
     
     candles_size: We fetch trailing candles for things like ATR. Default: 1h
     how_many_candles: Sliding window size for TA calculations. Default: 24
