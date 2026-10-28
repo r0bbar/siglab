@@ -51,7 +51,9 @@ Key config:
     candles_size: We fetch trailing candles for things like ATR. Default: 1h
     how_many_candles: Sliding window size for TA calculations. Default: 24
 
-    loop_freq_ms: Loop frequency in ms
+    loop_freq_ms: Loop frequency in ms. 
+        900,000: orderbook snapshot per 15m
+        3,600,000: orderbook snapshot per hr 
     redis_ttl_ms: TTL, in ms, of published data in redis.
 
 Launch.json if you wish to debug from VSCode:
@@ -88,7 +90,7 @@ Launch.json if you wish to debug from VSCode:
 '''
 param : Dict = {
     'ticker' : 'BTC',
-    'depth' : 1000,
+    'depth' : 200,
 
     'price_level_separation_bps' : 20,
     'order_notional' : 1_000_000,
