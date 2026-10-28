@@ -22,16 +22,23 @@ VALIDATION_MAX_GAPS = 30
 
 '''
 From command prompt:
-    python aggregated_orderbook_provider.py --ticker BTC --price_level_separation_bps 5 --order_notional 1000000 --focus_atr_multiple 5 --wall_threshold_multiplier 3 --ts_delta_observation_ms_threshold 100 --loop_freq_ms 10000 --redis_ttl_ms 60000
+    python aggregated_orderbook_provider.py --ticker SOL --price_level_separation_bps 5 --order_notional 1000000 --focus_atr_multiple 5 --wall_threshold_multiplier 3 --ts_delta_observation_ms_threshold 100 --loop_freq_ms 10000 --redis_ttl_ms 60000
 
 Every iteration, it will spits out a summary like one below:
-    +----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
-    |    | source     |   num_bids |   num_asks |     mid |   best_bid |   best_ask |   bid_knee |   ask_knee |   best_spread_bps |   spread_bps_by_order_notional |   knee_spread_bps |   slippage_target_bid_price |   slippage_target_ask_price |   slippage_target_bid_volume_quote |   slippage_target_ask_volume_quote |   total_bid_volume |   total_ask_volume |
-    |----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------|
-    |  0 | binance    |       1000 |       1000 | 80901.8 |    80901.7 |    80901.8 |    80820.8 |    80982.7 |           0.01236 |                       15.1253  |        20.032     |                     80857.7 |                     80980   |                          1,408,904 |                          3,797,043 |            516.783 |            631.819 |
-    |  1 | kraken        |        400 |        400 | 80907.1 |    80907   |    80907.1 |    80866.5 |    80947.6 |           0.01236 |                        0.01236 |        10.0289    |                     80907   |                     80907.1 |                      1,275,158,215 |                      1,727,918,922 |          16076.9   |          21679.5   |
-    |  2 | AGGREGATED |       1097 |       1045 | 80904.4 |    80907   |    80901.8 |    80904.3 |    80904.4 |          -0.64271 |                        0.59331 |         0.0123603 |                     80902.3 |                     80907.1 |                      1,211,669,924 |                      1,739,855,837 |          16593.7   |          22311.3   |
-    +----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
++----+-------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+|    | source      |   num_bids |   num_asks |     mid |   best_bid |   best_ask |   bid_knee |   ask_knee |   best_spread_bps |   spread_bps_by_order_notional |   knee_spread_bps |   slippage_target_bid_price |   slippage_target_ask_price |   slippage_target_bid_volume_quote |   slippage_target_ask_volume_quote |   total_bid_volume |   total_ask_volume |
+|----+-------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------|
+|  0 | binance     |        500 |        500 | 103.065 |     103.06 |     103.07 |     100.02 |     106.06 |           0.97031 |                       59.2924  |          603.879  |                      102.88 |                      103.49 |                         27,384,576 |                         16,063,596 |        1.03463e+06 |   914231           |
+|  1 | bybit       |        200 |        200 | 103.065 |     103.06 |     103.07 |     102.54 |     103.48 |           0.97031 |                       55.5339  |           91.6715 |                      102.64 |                      103.21 |                          7,427,462 |                          8,350,945 |   253792           |   258411           |
+|  2 | okx         |        400 |        400 | 103.055 |     103.05 |     103.06 |     102.23 |     103.99 |           0.9704  |                      nan       |          172.161  |                      nan    |                      nan    |                                    |                                    |   223597           |   238821           |
+|  3 | deribit     |         20 |         20 | 102.945 |     102.94 |     102.95 |     102.89 |     103.05 |           0.97144 |                      nan       |           15.5506 |                      nan    |                      nan    |                                    |                                    |    15692.6         |     9170.52        |
+|  4 | hyperliquid |         20 |         20 | 103.085 |     103.08 |     103.09 |     102.98 |     103.19 |           0.97012 |                      nan       |           20.3923 |                      nan    |                      nan    |                                    |                                    |    78366.6         |    59225.6         |
+|  5 | AGGREGATED  |        502 |        512 | 103.015 |     103.08 |     102.95 |     100.54 |     104.2  |         -12.6116  |                        7.76624 |          364.034  |                      103.01 |                      103.09 |                         72,395,347 |                         54,892,282 |        1.60608e+06 |        1.47986e+06 |
++----+-------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+Notes:
+    slippage_target_bid_volume_quote: 'quote' means USD. 
+    slippage_target_bid_price: For the 'order_notional' you specified, you would have hit up bids up to this level. In above example, best_bid is $103.06. But for $1mn notional, you'd be selling at a lower price of $102.88 at binance.
+    spread_bps_by_order_notional: Gives you spread in bps for the 'order_notional' you specified. This is your per-side trade friction cost. 
 
 It will also publish to redis individual order book from supported_exchanges under key:
     ob_key : str = f"orderbooks:{ticker}:{ob['source']}:{ob['orderbook']['timestamp']}"
@@ -179,7 +186,18 @@ deribit_linear_exchange = instantiate_exchange(
         'fetch_ob_params' : {
             'limit' : depth if depth <= 200 else 200,
         },
-        'quote_ccy' : 'USDT'
+        'quote_ccy' : 'USDC'
+    }
+)
+
+hyperliquid_linear_exchange = instantiate_exchange(
+    exchange_name="hyperliquid",
+    default_sub_type="linear",
+    exchange_specific_options={
+        'fetch_ob_params' : {
+            'limit' : depth if depth <= 200 else 200,
+        },
+        'quote_ccy' : 'USDC'
     }
 )
 
@@ -187,7 +205,8 @@ supported_exchanges = [
     binance_linear_exchange,
     bybit_linear_exchange,
     okx_linear_exchange,
-    deribit_linear_exchange
+    deribit_linear_exchange,
+    hyperliquid_linear_exchange
 ]
 
 async def _fetch_orderbook(ticker : str, exchange : Exchange):
