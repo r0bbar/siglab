@@ -357,6 +357,7 @@ param : Dict = {
             'port' : 6379,
             'db' : 0,
             'ttl_ms' : 1000*60*15, # 15 min
+            'ob_ttl_ms' : 1000*60*60*24 *365 *5, # 5 years
             'position_summary_ttl_ms' : 1000*30 # 30 sec
         }
     }
@@ -1823,6 +1824,8 @@ async def main():
                     
                 if not orderbook_valid:
                     ob = await exchange.fetch_order_book(symbol=_ticker, limit=10) 
+                    if 'timestamp' not in ob:
+                        ob['timestamp'] = time.time() *1000
 
                 if (
                     param['build_volume_profile']
@@ -2459,6 +2462,12 @@ async def main():
                                 log(executed_position)
                                 dispatch_notification(title=f"#entry {param['current_filename']} {gateway_id} Entry succeeded. {_ticker} {side} {param['amount_base_ccy'] if not param['privacy_first'] else '---'} (USD amount: {amount_filled_usdt if not param['privacy_first'] else '---'}) @ {entry_px}", message=executed_position['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
+                                ob_key : str = f"orderbooks:entry:{_ticker}:{exchange_name}:{ob['timestamp']}"
+                                if "/" in _ticker or ":" in _ticker:
+                                    base_ccy : str = _ticker.split('/')[0].split(':')[0]
+                                    ob_key = f"orderbooks:entry:{base_ccy}:{exchange_name}:{ob['timestamp']}"
+                                redis_client.set(name=ob_key, value=json.dumps(ob).encode('utf-8'), ex=int(param['mds']['redis']['ob_ttl_ms']/1000))
+
                                 if param['dump_candles']:
                                     pd_hi_candles_w_ta.to_csv(f"hi_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
                                     pd_lo_candles_w_ta.to_csv(f"lo_candles_entry_{gateway_id}_{_ticker.replace(':','').replace('/','')}_{loop_counter}_{int(dt_now.timestamp())}.csv")
@@ -2731,6 +2740,12 @@ async def main():
 
                             log(executed_position_close)
                             dispatch_notification(title=f"#exit {param['current_filename']} {param['gateway_id']} {'TP' if tp else 'SL'} on {_ticker} {pos_side.name} succeeded. pnl_bps (Before fees): {pnl_bps}", message=executed_position_close['position'], footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
+
+                            ob_key : str = f"orderbooks:exit:{_ticker}:{exchange_name}:{ob['timestamp']}"
+                            if "/" in _ticker or ":" in _ticker:
+                                base_ccy : str = _ticker.split('/')[0].split(':')[0]
+                                ob_key = f"orderbooks:exit:{base_ccy}:{exchange_name}:{ob['timestamp']}"
+                            redis_client.set(name=ob_key, value=json.dumps(ob).encode('utf-8'), ex=int(param['mds']['redis']['ob_ttl_ms']/1000))
 
                             any_exit = True
 
