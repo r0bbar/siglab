@@ -352,7 +352,7 @@ async def main():
             invalid_orderbooks_names = " ".join([ ob['source'] for ob in invalid_orderbooks ] )
 
             elapsed_ms = (time.time() - loop_start) * 1000
-            logger.info(f"orderbooks fetch elapsed (ms): {elapsed_ms}, # orderbooks: {len(valid_orderbooks)}. Invalid books: {invalid_orderbooks_names}")
+            logger.info(f"orderbooks fetch elapsed (ms): {elapsed_ms}, ticker: {ticker}, # orderbooks: {len(valid_orderbooks)}. Invalid books: {invalid_orderbooks_names}")
             logger.info(f"atr_bps: {atr_bps} from {candle_size} bars, over sliding window size of {how_many_candles} intervals")
 
             def _extract_summary(
