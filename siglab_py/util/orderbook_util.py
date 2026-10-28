@@ -27,6 +27,9 @@ class OrderBookFeatures(TypedDict):
     total_ask_volume : float
     imbalance: float  # (bid_vol - ask_vol) / (bid_vol + ask_vol)
 
+    aggregated_bids : List
+    aggregated_asks : List
+
 def calc_slippages_by_notional(
     order_notional : float,
     mid : float,
@@ -211,4 +214,7 @@ def extract_ob_features(
         total_bid_volume=total_bid_vol,
         total_ask_volume=total_ask_vol,
         imbalance=imbalance,
+
+        aggregated_bids=_ob['bids'],
+        aggregated_asks=_ob['asks']
     )
