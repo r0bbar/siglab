@@ -279,7 +279,7 @@ async def main():
 
         param['loop_freq_ms'] = int(args.loop_freq_ms)
         
-        param['redis_ttl_ms'] = int(args.redis_ttl_ms) if args.redis_ttl_ms else int(param['candle_interval_sec']*1000)*24*7
+        param['mds']['redis']['ttl_ms'] = int(args.redis_ttl_ms) if args.redis_ttl_ms else int(param['candle_interval_sec']*1000)*24*7
         
     def init_redis_client():
         redis_client = StrictRedis(
