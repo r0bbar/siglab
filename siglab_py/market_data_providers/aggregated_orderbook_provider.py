@@ -141,10 +141,10 @@ sh = logging.StreamHandler()
 sh.setLevel(log_level)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
-# fh = logging.FileHandler(f"{param['job_name']}.log")
-# fh.setLevel(log_level)
-# fh.setFormatter(formatter)     
-# logger.addHandler(fh)
+fh = logging.FileHandler(f"{__file__}.log")
+fh.setLevel(log_level)
+fh.setFormatter(formatter)     
+logger.addHandler(fh)
 
 binance_linear_exchange = instantiate_exchange(
     exchange_name="binance",
