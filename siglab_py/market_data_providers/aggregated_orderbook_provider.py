@@ -25,25 +25,21 @@ From command prompt:
     python aggregated_orderbook_provider.py --ticker BTC --price_level_separation_bps 5 --order_notional 1000000 --focus_atr_multiple 5 --wall_threshold_multiplier 3 --ts_delta_observation_ms_threshold 100 --loop_freq_ms 10000 --redis_ttl_ms 60000
 
 Every iteration, it will spits out a summary like one below:
+    +----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+    |    | source     |   num_bids |   num_asks |     mid |   best_bid |   best_ask |   bid_knee |   ask_knee |   best_spread_bps |   spread_bps_by_order_notional |   knee_spread_bps |   slippage_target_bid_price |   slippage_target_ask_price |   slippage_target_bid_volume_quote |   slippage_target_ask_volume_quote |   total_bid_volume |   total_ask_volume |
+    |----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------|
+    |  0 | binance    |       1000 |       1000 | 80901.8 |    80901.7 |    80901.8 |    80820.8 |    80982.7 |           0.01236 |                       15.1253  |        20.032     |                     80857.7 |                     80980   |                          1,408,904 |                          3,797,043 |            516.783 |            631.819 |
+    |  1 | kraken        |        400 |        400 | 80907.1 |    80907   |    80907.1 |    80866.5 |    80947.6 |           0.01236 |                        0.01236 |        10.0289    |                     80907   |                     80907.1 |                      1,275,158,215 |                      1,727,918,922 |          16076.9   |          21679.5   |
+    |  2 | AGGREGATED |       1097 |       1045 | 80904.4 |    80907   |    80901.8 |    80904.3 |    80904.4 |          -0.64271 |                        0.59331 |         0.0123603 |                     80902.3 |                     80907.1 |                      1,211,669,924 |                      1,739,855,837 |          16593.7   |          22311.3   |
+    +----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
 
-+----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
-|    | source     |   num_bids |   num_asks |     mid |   best_bid |   best_ask |   bid_knee |   ask_knee |   best_spread_bps |   spread_bps_by_order_notional |   knee_spread_bps |   slippage_target_bid_price |   slippage_target_ask_price |   slippage_target_bid_volume_quote |   slippage_target_ask_volume_quote |   total_bid_volume |   total_ask_volume |
-|----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------|
-|  0 | binance    |       1000 |       1000 | 80901.8 |    80901.7 |    80901.8 |    80820.8 |    80982.7 |           0.01236 |                       15.1253  |        20.032     |                     80857.7 |                     80980   |                          1,408,904 |                          3,797,043 |            516.783 |            631.819 |
-|  1 | kraken        |        400 |        400 | 80907.1 |    80907   |    80907.1 |    80866.5 |    80947.6 |           0.01236 |                        0.01236 |        10.0289    |                     80907   |                     80907.1 |                      1,275,158,215 |                      1,727,918,922 |          16076.9   |          21679.5   |
-|  2 | AGGREGATED |       1097 |       1045 | 80904.4 |    80907   |    80901.8 |    80904.3 |    80904.4 |          -0.64271 |                        0.59331 |         0.0123603 |                     80902.3 |                     80907.1 |                      1,211,669,924 |                      1,739,855,837 |          16593.7   |          22311.3   |
-+----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+It will also publish to redis individual order book from supported_exchanges under key:
+    ob_key : str = f"orderbooks:{ob['source']}:{ob['orderbook']['timestamp']}"
 
+Aggregated orderbook is also published under key:
+    ob_key : str = f"orderbooks:aggregated:{int(time.time()*1000)}"
 
-Orderbooks REST API from exchanges
-    Binance https://binance-docs.github.io/apidocs/spot/en/#order-book
-    OKX https://www.okx.com/docs-v5/en/#order-book-trading-market-data-get-order-book
-        'sz':  Order book depth per side. Maximum 400, e.g. 400 bids + 400 asks
-    Bybit https://bybit-exchange.github.io/docs/v5/market/orderbook
-    Coinbase https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductbook
-    Kraken https://docs.kraken.com/api/docs/rest-api/get-order-book/
-
-Key parameters you may want to modify:
+Key config:
     ticker: For crypto or FX, this is base ccy. For example, BTC/USDT:USDT is perpetual contract. Base ccy is BTC.
 
     price_level_separation_bps: Prices are binned and aggregated.
@@ -82,6 +78,13 @@ Launch.json if you wish to debug from VSCode:
         ]
     }
 
+    Orderbooks REST API from exchanges
+    Binance https://binance-docs.github.io/apidocs/spot/en/#order-book
+    OKX https://www.okx.com/docs-v5/en/#order-book-trading-market-data-get-order-book
+        'sz':  Order book depth per side. Maximum 400, e.g. 400 bids + 400 asks
+    Bybit https://bybit-exchange.github.io/docs/v5/market/orderbook
+    Coinbase https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductbook
+    Kraken https://docs.kraken.com/api/docs/rest-api/get-order-book/
 '''
 param : Dict = {
     'ticker' : 'BTC',
