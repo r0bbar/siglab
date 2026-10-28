@@ -188,9 +188,10 @@ def instantiate_exchange(
     
     exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
-    for option in exchange_specific_options:
-        if option not in exchange.options:
-            exchange.options[option] = exchange_specific_options[option]
+    if exchange_specific_options:
+        for option in exchange_specific_options:
+            if option not in exchange.options:
+                exchange.options[option] = exchange_specific_options[option]
 
     exchange.load_markets() # type: ignore
 
@@ -410,9 +411,10 @@ async def async_instantiate_exchange(
 
     exchange.options['default_max_slippage_bps'] = default_max_slippage_bps
 
-    for option in exchange_specific_options:
-        if option not in exchange.options:
-            exchange.options[option] = exchange_specific_options[option]
+    if exchange_specific_options:
+        for option in exchange_specific_options:
+            if option not in exchange.options:
+                exchange.options[option] = exchange_specific_options[option]
 
     await exchange.load_markets() # type: ignore
 
