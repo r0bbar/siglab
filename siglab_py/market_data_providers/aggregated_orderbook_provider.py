@@ -297,6 +297,9 @@ async def main():
         return redis_client
     
     parse_args()
+
+    logger.info(f"Strategy startup parameters: {json.dumps(param, indent=4)}")
+
     redis_client = init_redis_client()
 
     primary_exchange = supported_exchanges[0]
