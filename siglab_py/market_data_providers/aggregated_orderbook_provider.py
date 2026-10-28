@@ -90,7 +90,7 @@ Launch.json if you wish to debug from VSCode:
 '''
 param : Dict = {
     'ticker' : 'BTC',
-    'depth' : 200,
+    'depth' : 500,
 
     'price_level_separation_bps' : 20,
     'order_notional' : 1_000_000,
