@@ -24,7 +24,16 @@ VALIDATION_MAX_GAPS = 30
 From command prompt:
     python aggregated_orderbook_provider.py --ticker BTC --price_level_separation_bps 5 --order_notional 1000000 --focus_atr_multiple 5 --wall_threshold_multiplier 3 --ts_delta_observation_ms_threshold 100 --loop_freq_ms 10000 --redis_ttl_ms 60000
 
-This script is pypy compatible.
+Every iteration, it will spits out a summary like one below:
+
++----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+|    | source     |   num_bids |   num_asks |     mid |   best_bid |   best_ask |   bid_knee |   ask_knee |   best_spread_bps |   spread_bps_by_order_notional |   knee_spread_bps |   slippage_target_bid_price |   slippage_target_ask_price |   slippage_target_bid_volume_quote |   slippage_target_ask_volume_quote |   total_bid_volume |   total_ask_volume |
+|----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------|
+|  0 | binance    |       1000 |       1000 | 80901.8 |    80901.7 |    80901.8 |    80820.8 |    80982.7 |           0.01236 |                       15.1253  |        20.032     |                     80857.7 |                     80980   |                          1,408,904 |                          3,797,043 |            516.783 |            631.819 |
+|  1 | kraken        |        400 |        400 | 80907.1 |    80907   |    80907.1 |    80866.5 |    80947.6 |           0.01236 |                        0.01236 |        10.0289    |                     80907   |                     80907.1 |                      1,275,158,215 |                      1,727,918,922 |          16076.9   |          21679.5   |
+|  2 | AGGREGATED |       1097 |       1045 | 80904.4 |    80907   |    80901.8 |    80904.3 |    80904.4 |          -0.64271 |                        0.59331 |         0.0123603 |                     80902.3 |                     80907.1 |                      1,211,669,924 |                      1,739,855,837 |          16593.7   |          22311.3   |
++----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
+
 
 Orderbooks REST API from exchanges
     Binance https://binance-docs.github.io/apidocs/spot/en/#order-book
@@ -321,8 +330,8 @@ async def main():
                     'knee_spread_bps' : features['knee_spread_bps'],
                     'slippage_target_bid_price' : features['slippage_target_bid'][0] if features['slippage_target_bid'] else None,
                     'slippage_target_ask_price' : features['slippage_target_ask'][0] if features['slippage_target_ask'] else None,
-                    'slippage_target_bid_volume_quote' : features['slippage_target_bid'][1] * features['mid'] if features['slippage_target_bid'] else None, # volume in USD
-                    'slippage_target_ask_volume_quote' : features['slippage_target_ask'][1] * features['mid'] if features['slippage_target_ask'] else None,
+                    'slippage_target_bid_volume_quote' : f"{features['slippage_target_bid'][1] * features['mid']:,.0f}" if features['slippage_target_bid'] else None, # volume in USD
+                    'slippage_target_ask_volume_quote' : f"{features['slippage_target_ask'][1] * features['mid']:,.0f}" if features['slippage_target_ask'] else None,
                     'total_bid_volume' : features['total_bid_volume'],
                     'total_ask_volume' : features['total_ask_volume'],
                 }
