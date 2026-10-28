@@ -229,7 +229,7 @@ async def main():
         parser.add_argument("--how_many_candles", help="Sliding window size for TA calculations", default=24)
 
         parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
-        parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)", default=1000*60*15)
+        parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: assuming candle_size 1h, then redis_ttl_ms defaults to 24*7 hours.", default=None)
 
         args = parser.parse_args()
         param['ticker'] = args.ticker
@@ -242,9 +242,11 @@ async def main():
 
         param['candle_size'] = args.candle_size
         param['how_many_candles'] = int(args.how_many_candles)
+        param['candle_interval_sec'] = candle_size_to_interval_sec(param['candle_size'])
 
         param['loop_freq_ms'] = int(args.loop_freq_ms)
-        param['redis_ttl_ms'] = int(args.redis_ttl_ms)
+        
+        param['redis_ttl_ms'] = int(args.redis_ttl_ms) if args.redis_ttl_ms else int(param['candle_interval_sec']*1000)*24*7
         
     def init_redis_client():
         redis_client = StrictRedis(
@@ -276,7 +278,7 @@ async def main():
 
     candle_size : str = param['candle_size']
     how_many_candles : int = param['how_many_candles']
-    candle_interval_sec = candle_size_to_interval_sec(candle_size)
+    candle_interval_sec : int = param['candle_interval_sec']
 
     i = 0
     total_loop_elapsed_ms : int = 0
