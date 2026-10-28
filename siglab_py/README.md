@@ -59,7 +59,8 @@ TAs computed (This is an expanding list):
 
 + [Volume Profiles and Value Area (analytic_util.compute_volume_profile and compute_value_area)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
 
-[**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) https://medium.com/@norman-lm-fung/aggregated-orderbooks-using-ccxt-and-rest-calls-to-cexes-7bfdc8400d05
+[**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py)
+
 
 [**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
 
