@@ -34,10 +34,10 @@ Every iteration, it will spits out a summary like one below:
     +----+------------+------------+------------+---------+------------+------------+------------+------------+-------------------+--------------------------------+-------------------+-----------------------------+-----------------------------+------------------------------------+------------------------------------+--------------------+--------------------+
 
 It will also publish to redis individual order book from supported_exchanges under key:
-    ob_key : str = f"orderbooks:{ob['source']}:{ob['orderbook']['timestamp']}"
+    ob_key : str = f"orderbooks:{ticker}:{ob['source']}:{ob['orderbook']['timestamp']}"
 
 Aggregated orderbook is also published under key:
-    ob_key : str = f"orderbooks:aggregated:{int(time.time()*1000)}"
+    ob_key : str = f"orderbooks:{ticker}:aggregated:{int(time.time()*1000)}"
 
 Key config:
     ticker: For crypto or FX, this is base ccy. For example, BTC/USDT:USDT is perpetual contract. Base ccy is BTC.
@@ -172,10 +172,22 @@ okx_linear_exchange = instantiate_exchange(
     }
 )
 
+deribit_linear_exchange = instantiate_exchange(
+    exchange_name="deribit",
+    default_sub_type="linear",
+    exchange_specific_options={
+        'fetch_ob_params' : {
+            'limit' : depth if depth <= 200 else 200,
+        },
+        'quote_ccy' : 'USDT'
+    }
+)
+
 supported_exchanges = [
     binance_linear_exchange,
     bybit_linear_exchange,
-    okx_linear_exchange
+    okx_linear_exchange,
+    deribit_linear_exchange
 ]
 
 async def _fetch_orderbook(ticker : str, exchange : Exchange):
@@ -319,6 +331,7 @@ async def main():
 
             elapsed_ms = (time.time() - loop_start) * 1000
             logger.info(f"orderbooks fetch elapsed (ms): {elapsed_ms}, # orderbooks: {len(valid_orderbooks)}. Invalid books: {invalid_orderbooks_names}")
+            logger.info(f"atr_bps: {atr_bps} from {candle_size} bars, over sliding window size of {how_many_candles} intervals")
 
             def _extract_summary(
                 source : str,
@@ -350,7 +363,7 @@ async def main():
             }
 
             for ob in valid_orderbooks:
-                ob_key : str = f"orderbooks:{ob['source']}:{ob['orderbook']['timestamp']}"
+                ob_key : str = f"orderbooks:{ticker}:{ob['source']}:{ob['orderbook']['timestamp']}"
                 redis_client.set(name=ob_key, value=json.dumps(ob['orderbook']).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
                 features.append(
                     _extract_summary(
@@ -415,7 +428,7 @@ async def main():
                         )
                     )
 
-            ob_key : str = f"orderbooks:aggregated:{int(time.time()*1000)}"
+            ob_key : str = f"orderbooks:{ticker}:aggregated:{int(time.time()*1000)}"
             redis_client.set(name=ob_key, value=json.dumps(aggregated_orderbooks).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
 
             pd_orderbook_features = pd.DataFrame(features)
