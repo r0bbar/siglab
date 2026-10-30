@@ -2583,9 +2583,6 @@ async def main():
                         if abs(pnl_live_bps/100)>=running_sl_percent_hard:
                             sl = True
                             reason = "Hard stop"
-                        elif param['max_trade_age_num_intervals'] and trade_age_num_intervals>param['max_trade_age_num_intervals']:
-                            sl = True
-                            reason = f"SL. trade_age_num_intervals {trade_age_num_intervals} exceeds max_trade_age_num_intervals {param['max_trade_age_num_intervals']}"
 
                 if tp or sl:
                     log(f"******** EXIT (loop# {loop_counter}) ********")
