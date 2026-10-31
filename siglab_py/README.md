@@ -5,7 +5,7 @@ The repo include all the infrastructure code necessary to backtest a trading str
 
 + indicators calculation
 
-+ [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing) engine
++ [**back test**](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo) engine
 
 Drill down into back tests results with [**bacttest_trades_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/backtest_trades_viewer.ipynb)
 
@@ -154,7 +154,7 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 - Notebook to view equity curve and calc Sharpe: 
     https://github.com/r0bbar/siglab/blob/master/siglab_py/backtests/macd_15m_tc_crypto.ipynb
 
-- backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?usp=sharing
+- backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo
 
 **partition_sliding_window** segments time series based on inflection points: Where price crosses MAs.
     https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
@@ -396,7 +396,7 @@ The spirit of the implementation is to have a very very simple standalone order 
 
 ## 3. Under [**backtest_core**](https://github.com/r0bbar/siglab/tree/master/siglab_py/backtests)
 
-**backtest_core** doc is [here](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?tab=t.0)
+**backtest_core** doc is [here](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo)
 
 Why siglab_py backtest_core.py?
 + Clean separation between strategy file (small nimble) and back test common logic such as replaying historical market data/signals (That’s what they all do), unrealised pnl estimation, entry/TP/SL. Thus, Reflection and Lambdas.
@@ -441,7 +441,7 @@ This is the core live algo engine: It loads strategy you specify from command li
 This is the industrailized of [**tp_algo.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/tp_algo.py), which is primarily for manual trades: You decides on entry, and from command line arguments specify TP/SL targets. OneShotStrategy will do the rest.
 
 + [**macd_crosses_targets_from_level_15m_tc_strategy.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/macd_crosses_targets_from_level_15m_tc_strategy.py)
-This is the live version of Example 2.1 from [backtest_core doc](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo/edit?tab=t.0)
+This is the live version of Example 1 from [backtest_core doc](https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo)
 
 + [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
 
