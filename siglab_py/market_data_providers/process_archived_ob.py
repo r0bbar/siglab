@@ -1,6 +1,5 @@
 import argparse
 import time
-import csv
 import json
 import re
 from typing import Dict
@@ -9,7 +8,7 @@ from pprint import pformat
 import logging
 from redis import StrictRedis
 
-from siglab_py.util.orderbook_util import OrderBookFeatures, extract_ob_features
+from siglab_py.util.orderbook_util import extract_ob_features
 
 '''
 Usage:
