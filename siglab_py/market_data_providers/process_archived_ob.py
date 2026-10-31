@@ -40,6 +40,11 @@ Debug from vscode, launch.json:
         ]
     }
 
+The actual function extract_ob_features which evaluates orderbook features is here:
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/util/orderbook_util.py
+
+Same usage of extract_ob_features is here:
+    https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/orderbook_exploratory.ipynb
 '''
 param : Dict = {
     'mds' : {
