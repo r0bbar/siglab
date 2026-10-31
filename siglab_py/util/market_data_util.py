@@ -463,6 +463,7 @@ def timestamp_to_datetime_cols(
         else:
             raise ValueError(f"Unsupported type {type(x)} for timestamp conversion")
     pd_candles['timestamp_ms'] = pd_candles['timestamp_ms'].apply(_fix_timestamp_ms)
+    pd_candles['timestamp_ms'] = pd.to_numeric(pd_candles['timestamp_ms'], errors='coerce')
     pd_candles['datetime'] = pd_candles['timestamp_ms'].apply(lambda x: datetime.fromtimestamp(int(x/1000)))
     pd_candles['datetime'] = pd.to_datetime(pd_candles['datetime'])
     pd_candles['datetime'] = pd_candles['datetime'].dt.tz_localize(None)  # type: ignore
