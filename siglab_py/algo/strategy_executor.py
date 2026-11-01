@@ -2572,6 +2572,9 @@ async def main():
                         # tp = tp_final or tp_trailing_stop
                         tp = tp_trailing_stop
 
+                        if (not tp) and (param['max_trade_age_num_intervals'] and trade_age_num_intervals>param['max_trade_age_num_intervals']):
+                            tp = True
+
                         if tp_final:
                             reason = f"tp_max_target {tp_max_target} reached."
                         elif tp_trailing_stop:
