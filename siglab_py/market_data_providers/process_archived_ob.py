@@ -119,7 +119,7 @@ def _extract_timestamp_ms(ob, key):
     if ob.get('timestamp_ms') is not None:
         return int(ob['timestamp_ms'])
     if ob.get('timestamp') is not None:
-        return int(ob['timestamp']) * 1000
+        return int(ob['timestamp'])
     if key is not None:
         if isinstance(key, bytes):
             key = key.decode('utf-8')
