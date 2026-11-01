@@ -1004,7 +1004,7 @@ def fetch_tape(
     pd_new_trades = pd_new_trades.rename(columns={"timestamp": "timestamp_ms", "amount": "amount_base_ccy"})
     pd_new_trades = pd_new_trades.drop_duplicates(subset="id").sort_values("timestamp_ms").reset_index(drop=True)
     pd_new_trades["datetime"] = pd.to_datetime(pd_new_trades["timestamp_ms"], unit="ms", utc=True)
-    timestamp_to_datetime_cols(pd_new_trades)
+    
     return pd_new_trades
 
 def fetch_deribit_btc_option_expiries(
