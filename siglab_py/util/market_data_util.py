@@ -962,6 +962,49 @@ def _fetch_candles_ccxt(
 
     return rsp
 
+def fetch_tape(
+    exchange,
+    symbol: str,
+    max_batches: int = 10,
+    limit: int = 1000,
+) -> pd.DataFrame:
+    @retry(num_attempts=3, pause_between_retries_ms=1000)
+    def _fetch_trades(exchange, symbol, limit, params) -> List:
+        trades = exchange.fetch_trades(symbol=symbol, limit=limit, params=params)
+        if trades and len(trades)>1:
+            trades.sort(key=lambda x : x['timestamp'], reverse=False)
+            assert(trades[0]['timestamp']<trades[-1]['timestamp'])
+        return trades
+
+    all_trades = []
+    last_id = None
+
+    for batch_id in range(max_batches):
+        params = {}
+        if last_id is not None:
+            params["fromId"] = last_id + 1
+
+        trades = _fetch_trades(exchange=exchange, symbol=symbol, limit=limit, params=params)
+        if not trades:
+            break
+
+        all_trades.extend(trades)
+        last_id = int(trades[-1]["id"])
+        logger.info(f"batch_id {batch_id}: fetched {len(trades)} trades, last_id={last_id}")
+
+        if len(trades) < limit:
+            break
+
+    if not all_trades:
+        return pd.DataFrame(columns=["timestamp_ms", "datetime", "price", "amount_base_ccy", "side", "id"])
+
+    pd_new_trades = pd.DataFrame(all_trades)
+    pd_new_trades = pd_new_trades.rename(columns={"timestamp": "timestamp_ms", "amount": "amount_base_ccy"})
+    pd_new_trades = pd_new_trades.drop_duplicates(subset="id").sort_values("timestamp_ms").reset_index(drop=True)
+    pd_new_trades["datetime"] = pd.to_datetime(pd_new_trades["timestamp_ms"], unit="ms", utc=True)
+    timestamp_to_datetime_cols(pd_new_trades)
+    return pd_new_trades
+
 def fetch_deribit_btc_option_expiries(
     market: str = 'BTC'
 ) -> Dict[
