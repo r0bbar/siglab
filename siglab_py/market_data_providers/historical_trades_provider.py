@@ -221,7 +221,7 @@ async def main() -> None:
                         else:
                             pd_historical_trades = pd.DataFrame()
 
-                        trades = _fetch_trades(exchange=exchange, symbol="BTC/USDT:USDT", since=None, limit=1000)
+                        trades = _fetch_trades(exchange=exchange, symbol=ticker, since=None, limit=1000)
                         pd_new_trades = pd.DataFrame(trades)
                         pd_new_trades = pd_new_trades.rename(columns={"timestamp": "timestamp_ms", "amount": "amount_base_ccy"})
                         pd_new_trades["amount_quote_ccy"] = pd_new_trades["amount_base_ccy"] * pd_new_trades["price"]
