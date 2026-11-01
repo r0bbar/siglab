@@ -968,6 +968,8 @@ def fetch_tape(
     max_batches: int = 10,
     limit: int = 1000,
 ) -> pd.DataFrame:
+    logger: logging.Logger = logging.getLogger()
+    
     @retry(num_attempts=3, pause_between_retries_ms=1000)
     def _fetch_trades(exchange, symbol, limit, params) -> List:
         trades = exchange.fetch_trades(symbol=symbol, limit=limit, params=params)
