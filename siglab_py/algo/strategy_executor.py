@@ -1971,8 +1971,9 @@ async def main():
                         unrealized_pnl_optimistic, unrealized_pnl_pessimistic = unreal_live, unreal_live
 
                         if lo_candles_valid:
-                            unrealized_pnl_optimistic = round_to_sigfigs((trailing_candles[-1]['high'] - entry_px) * pos, sigfigs=6)
-                            unrealized_pnl_pessimistic = round_to_sigfigs((trailing_candles[-1]['low'] - entry_px) * pos, sigfigs=6)
+                            # Why max/min? trailing_candles[-1] from candles_provider fresh enough? 
+                            unrealized_pnl_optimistic = round_to_sigfigs((max(mid, trailing_candles[-1]['high']) - entry_px) * pos, sigfigs=6)
+                            unrealized_pnl_pessimistic = round_to_sigfigs((min(mid, trailing_candles[-1]['low']) - entry_px) * pos, sigfigs=6)
                         unrealized_pnl_open = unreal_live
                         if total_sec_since_pos_created > (lo_interval_ms/1000) and lo_candles_valid:
                             '''
@@ -1996,8 +1997,9 @@ async def main():
                         unrealized_pnl_optimistic, unrealized_pnl_pessimistic = unreal_live, unreal_live
                         
                         if lo_candles_valid:
-                            unrealized_pnl_optimistic = round_to_sigfigs((entry_px - trailing_candles[-1]['low']) * abs(pos), sigfigs=6)
-                            unrealized_pnl_pessimistic = round_to_sigfigs((entry_px - trailing_candles[-1]['high']) * abs(pos), sigfigs=6)
+                            # Why max/min? trailing_candles[-1] from candles_provider fresh enough? 
+                            unrealized_pnl_optimistic = round_to_sigfigs((entry_px - min(mid, trailing_candles[-1]['low'])) * abs(pos), sigfigs=6)
+                            unrealized_pnl_pessimistic = round_to_sigfigs((entry_px - max(mid, trailing_candles[-1]['high'])) * abs(pos), sigfigs=6)
                         unrealized_pnl_open = unreal_live
                         if total_sec_since_pos_created > lo_interval_ms/1000 and lo_candles_valid:
                             unrealized_pnl_open = (entry_px - trailing_candles[-1]['open']) * abs(pos)
