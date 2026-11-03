@@ -2126,9 +2126,9 @@ def run_all_scenario(
         
         # Fetch BTC
         reference_ticker : str = algo_param['reference_ticker']
-        target_candle_file_name_fast : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_file_name_fast : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_ta_file_name_fast : str = target_candle_file_name_fast.replace('candles', 'candles_ta')
-        target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{datetime(2021,1,1, tzinfo=timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_ta_file_name_slow : str = target_candle_file_name_slow.replace('candles', 'candles_ta')
         logger.info(f"reference_ticker: {reference_ticker}, target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}, reference_candles_file: {algo_param['reference_candles_file'] if 'reference_candles_file' in algo_param else '---'}")
         if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name_fast) or not os.path.isfile(target_candle_ta_file_name_slow):
