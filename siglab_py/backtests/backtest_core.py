@@ -2025,12 +2025,15 @@ def run_all_scenario(
 
     stage_strat_specific_preentry_data_func : Callable[..., Dict] = None,
 
-    reference_start_dt : datetime = datetime(2021,1,1, tzinfo=timezone.utc),
+    reference_start_dt : datetime = None,
 ) -> List[Dict]:
     all_exceptions = []
 
     start = datetime.now()
     max_test_end_date = start
+
+    if not reference_start_dt:
+        reference_start_dt = min([algo_param['start_date'] for algo_param in algo_params])
 
     current_dir : str = os.getcwd()
     cache_dir_fullpath : str = f"{current_dir}\\{CACHE_DIR}"
