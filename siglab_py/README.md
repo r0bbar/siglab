@@ -68,7 +68,7 @@ TAs computed (This is an expanding list):
 
 + time you trade 
 
-+ size you intend to trade
++ size you intend to trade (Thus [**process_archived_ob.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/process_archived_ob.py) takes a couple arguments, one of those is --order_notional)
 
 Traders need look beyond best_spread_bps (i.e. spread between best bid and best ask) for acccurate estimation of actual trade frictions. 
 
