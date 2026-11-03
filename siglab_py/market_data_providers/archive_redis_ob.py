@@ -98,13 +98,13 @@ def archive_hist_ob(
     for key in buffer:
         grouped: Dict[tuple, list] = {}
         for item in buffer[key]:
-            yyyyMMdd = datetime.fromtimestamp(
+            yyyyMM = datetime.fromtimestamp(
                 item['timestamp_ms'] / 1000, tz=timezone.utc
-            ).strftime('%Y%m%d')
-            grouped.setdefault((item['ticker'], item['exchange_name'], yyyyMMdd), []).append(item)
+            ).strftime('%Y%m')
+            grouped.setdefault((item['ticker'], item['exchange_name'], yyyyMM), []).append(item)
 
-        for (ticker, exchange_name, yyyyMMdd), items in grouped.items():
-            archive_filename: str = f"orderbooks_{ticker}_{exchange_name}_{yyyyMMdd}.json"
+        for (ticker, exchange_name, yyyyMM), items in grouped.items():
+            archive_filename: str = f"orderbooks_{ticker}_{exchange_name}_{yyyyMM}.json"
             print(archive_filename)
 
             existing = []
@@ -119,7 +119,7 @@ def archive_hist_ob(
             with open(archive_filename, 'w') as f:
                 json.dump(merged, f)
 
-            orderbooks.setdefault(ticker, {})[f"{exchange_name}_{yyyyMMdd}"] = archive_filename
+            orderbooks.setdefault(ticker, {})[f"{exchange_name}_{yyyyMM}"] = archive_filename
 
 if __name__ == "__main__":
     redis_client : StrictRedis = init_redis_client()
