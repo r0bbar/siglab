@@ -60,7 +60,7 @@ TAs computed (This is an expanding list):
 + [Volume Profiles and Value Area (analytic_util.compute_volume_profile and compute_value_area)](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/unit/analytic_util_tests.py)
 
 [**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) persists orderbook snapshots in redis. [**strategy_executor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) also takes orderbook snapshots on entries and exits. Feed snapshots you collected to your lambdas. 
-[**orderbook_util**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/orderbook_util.py) provides basic order book analytics. For orderbook snapshots time-series visualization, use [**orderbook_ts_exploratory.ipynb](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/orderbook_ts_exploratory.ipynb). The example shows for $100k notional, if you're trading Binance, spread ~ 3 bps during weekdays, and substantially higher on weekend's. Trade friction depends on:
+[**orderbook_util**](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/orderbook_util.py) provides basic order book analytics. For orderbook snapshots time-series visualization, use [**orderbook_ts_exploratory.ipynb**](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/manual/orderbook_ts_exploratory.ipynb). The example shows for $100k notional, if you're trading Binance, spread ~ 3 bps during weekdays, and substantially higher on weekend's. Trade friction depends on:
 
 + where you trade
 
