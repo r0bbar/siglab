@@ -57,7 +57,7 @@ param : Dict = {
             'ttl_ms' : 1000,
         },
         'archive' : {
-            'filename_pattern' : r"^orderbooks_(?P<ticker>[A-Za-z0-9]+)_(?P<exchange_name>[A-Za-z0-9]+)_(?P<date>\d{8})\.json$",
+            'filename_pattern' : r"^orderbooks_(?P<ticker>[A-Za-z0-9]+)_(?P<exchange_name>[A-Za-z0-9]+)_(?P<date>\d{6})\.json$",
         }
     }
 }
