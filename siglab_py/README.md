@@ -70,7 +70,7 @@ TAs computed (This is an expanding list):
 
 + size you intend to trade (Thus [**process_archived_ob.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/process_archived_ob.py) takes a couple arguments, one of those is --order_notional)
 
-Traders need look beyond best_spread_bps (i.e. spread between best bid and best ask) for acccurate estimation of actual trade frictions. 
+Traders need look beyond best_spread_bps (i.e. spread between best bid and best ask) for acccurate estimation of actual trade frictions. [**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) supports scanning orderbooks from multiple exchanges, use it to find where's the best place to trade, where you can find the tightest spreads.
 
 
 [**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
