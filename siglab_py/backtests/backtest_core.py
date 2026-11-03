@@ -2126,9 +2126,9 @@ def run_all_scenario(
         
         # Fetch BTC
         reference_ticker : str = algo_param['reference_ticker']
-        target_candle_file_name_fast : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_fast_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_file_name_fast : str = f'{cache_dir_fullpath}\\{reference_ticker.replace(":","_").replace("/","").replace("^","")}_fast_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_ta_file_name_fast : str = target_candle_file_name_fast.replace('candles', 'candles_ta')
-        target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace("^","").replace("/","").replace(":","")}_slow_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
+        target_candle_file_name_slow : str = f'{cache_dir_fullpath}\\{reference_ticker.replace(":","_").replace("/","").replace("^","")}_slow_candles_{reference_start_dt.strftime("%Y-%m-%d-%H-%M-%S")}_{test_end_date_ref.strftime("%Y-%m-%d-%H-%M-%S")}_1d.csv'
         target_candle_ta_file_name_slow : str = target_candle_file_name_slow.replace('candles', 'candles_ta')
         logger.info(f"reference_ticker: {reference_ticker}, target_candle_file_name_fast: {target_candle_file_name_fast}, target_candle_file_name_slow: {target_candle_file_name_slow}, reference_candles_file: {algo_param['reference_candles_file'] if 'reference_candles_file' in algo_param else '---'}")
         if algo_param['recompute_ta'] or not os.path.isfile(target_candle_ta_file_name_fast) or not os.path.isfile(target_candle_ta_file_name_slow):
@@ -2232,7 +2232,7 @@ def run_all_scenario(
                     else:    
                         all_exchange_candles[exchange.name][ticker] = {}
 
-                        _ticker = ticker.replace(":","_").replace("/","").split(":")[0]
+                        _ticker = ticker.replace(":","_").replace("/","").replace("^","").split(":")[0]
                         total_seconds = (test_end_date - test_fetch_start_date).total_seconds()
                         total_hours = total_seconds / 3600
                         total_days = total_hours / 24
