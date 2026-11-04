@@ -1520,12 +1520,16 @@ def run_scenario(
 
                         unrealized_pnl = unrealized_pnl_live
                         pnl_percent_notional = unrealized_pnl_open / current_position_usdt * 100 # This is evaluated using open (Don't use close, that's forward bias!)
+                        pnl_optimistic_percent_notional = unrealized_pnl_live_optimistic / current_position_usdt * 100 # This is evaluated using tm1 candle!!!
                         max_pnl_percent_notional = max_unrealized_pnl_live / current_position_usdt * 100
                         max_pain_percent_notional = max_pain / current_position_usdt * 100
                         max_recovered_pnl_percent_notional = max_recovered_pnl / current_position_usdt * 100
 
                         if (
-                            (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent)
+                            (
+                                (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent)
+                                or (pnl_optimistic_percent_notional>tp_min_percent)
+                            )
                             or (
                                 recover_max_pain_percent
                                 and pnl_percent_notional<0 
