@@ -1527,8 +1527,11 @@ def run_scenario(
 
                         if (
                             (
-                                (pnl_percent_notional>0 and pnl_percent_notional>=tp_min_percent)
-                                or (pnl_optimistic_percent_notional>tp_min_percent)
+                                pnl_percent_notional>0 
+                                and (
+                                    pnl_percent_notional>=tp_min_percent
+                                    or pnl_optimistic_percent_notional>tp_min_percent
+                                )
                             )
                             or (
                                 recover_max_pain_percent
