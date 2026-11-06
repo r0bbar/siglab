@@ -5,7 +5,7 @@ import json
 from numpy import equal
 from pathlib import Path
 
-from util.simple_str import keywords_match, classify_ticker
+from util.simple_str import keywords_match, classify_ticker, base_ccy_from_ticker
 
 class SimpleStrTests(unittest.TestCase):
     
@@ -62,6 +62,7 @@ class SimpleStrTests(unittest.TestCase):
             ("BTC/USDT:USDT",           "crypto.perpetual"),
             ("NVDA/USDC:USDC",          "crypto.perpetual"),
             ("XRP/USDT:1000XRP",        "crypto.perpetual"),
+            ('XYZ-EUR/USDC:USDC',       "crypto.perpetual"), # 
 
             # Crypto dated future & option
             ("BTC-26MAR26",             "crypto.dated_future"),
@@ -88,6 +89,63 @@ class SimpleStrTests(unittest.TestCase):
         ]
 
         for ticker, expected in cases:
-            result = classify_ticker(ticker)
-            assert result == expected, \
-                f"Failed: {ticker!r} → got {result!r}, expected {expected!r}"
+            ticker_class = classify_ticker(ticker)
+            assert ticker_class == expected, \
+                f"Failed: {ticker!r} → got {ticker_class!r}, expected {expected!r}"
+
+    def test_base_ccy_from_ticker(self):
+        cases = [
+            # Crypto spot
+            ("BTC/USDT",                "spot"),
+            ("ETH/BTC",                 "spot"),
+            ("1000PEPE/USDT",           "spot"),
+            ("NVDA/USDC",               "spot"),
+            ("EUR/JPY",                 "spot"),
+            ("AUD/NZD",                 "spot"),
+
+            # Crypto perpetual
+            ("BTC/USDT:USDT",           "crypto.perpetual"),
+            ("NVDA/USDC:USDC",          "crypto.perpetual"),
+            ("XRP/USDT:1000XRP",        "crypto.perpetual"),
+            ('XYZ-EUR/USDC:USDC',       "crypto.perpetual"), # 
+
+            # Crypto dated future & option
+            ("BTC-26MAR26",             "crypto.dated_future"),
+            ("BTC-22MAR26-68500-C",     "crypto.option"),
+            ("ETH-25DEC25",             "crypto.dated_future"),
+            ("BTC-USD-251226-100000-C", "crypto.option"),
+
+            # TradFi / IBKR style
+            ("AAPL",                    "tradfi.stock"),
+            ("TSLA",                    "tradfi.stock"),
+            ("IBM-STK-SMART-USD",       "tradfi.stock"),
+            ("ESU6",                    "tradfi.future"),       # Sep 2026
+            ("NQZ5",                    "tradfi.future"),
+            ("CLM6",                    "tradfi.future"),
+            ("AAPL-OPT-20260320-250-C-SMART-100-USD", "tradfi.option"),
+            ("SPY-OPT-20260618-550-P-CBOE", "tradfi.option"),
+            ("ES-FOP-20260320-5000-C-CME",  "tradfi.option"),
+
+            # Edge / invalid
+            ("BTCUSDT",                 "tradfi.stock"),
+            ("BTC-USDT",                "unknown"),
+            ("@ES",                     "unknown"),       # continuous future
+            ("SPY",                     "tradfi.stock"),  # ETF
+        ]
+
+        for ticker, expected in cases:
+            ticker_class = classify_ticker(ticker)
+            base_ccy = base_ccy_from_ticker(ticker)
+            if ticker_class in ['spot', 'crypto.perpetual']:
+                expected_base_ccy = ticker.split('/')[0]
+            elif ticker_class in ['crypto.dated_future', 'crypto.option']:
+                expected_base_ccy = ticker.split('-')[0]
+            else:
+                expected_base_ccy = None
+
+            assert base_ccy == expected_base_ccy, \
+                f"Failed: {ticker!r} ({ticker_class}) → got {base_ccy!r}, expected {expected_base_ccy!r}"
+
+
+    
+    

@@ -151,3 +151,13 @@ def classify_ticker(ticker: str) -> str:
         return 'tradfi.future_or_option'
 
     return 'unknown'
+
+def base_ccy_from_ticker(ticker: str) -> str:
+    base_ccy : Union[str, None] = None
+    ticker_class : str = classify_ticker(ticker=ticker)
+    if ticker_class in ['spot', 'crypto.perpetual']:
+        base_ccy = ticker.split('/')[0]
+    elif ticker_class in ['crypto.dated_future', 'crypto.option']:
+        base_ccy = ticker.split('-')[0]
+    return base_ccy
+        
