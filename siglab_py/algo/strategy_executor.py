@@ -1025,7 +1025,7 @@ async def main():
             log(f"lo_candles_provider_topic not specified, no lo_candles_provider triggering.")
 
         if orderbooks_provider_topic:
-            _trigger_producers(redis_client, [ f"{provider_exchange if provider_exchange else exchange_name}|{_ticker}" ], orderbooks_provider_topic)
+            _trigger_producers(redis_client, [ f"{provider_exchange if provider_exchange else exchange_name}|{_provider_ticker}" ], orderbooks_provider_topic)
         else:
             log(f"orderbooks_provider_topic not specified, no orderbooks_provider triggering.")
 
