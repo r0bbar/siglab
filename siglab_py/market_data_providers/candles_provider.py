@@ -383,7 +383,11 @@ def process_universe(
 
                     if not task.keep_running:
                         break
-                
+
+                else:
+                    logger.info(f"Skip this iteration, waiting on mutex {provider_mutex_key}")
+                    time.sleep(int(param['loop_freq_ms']/1000))
+
                 i += 1
 
             if num_fetches_this_wave>0:
