@@ -309,6 +309,9 @@ param : Dict = {
     'max_current_economic_calendar_age_sec' : 10,
     'num_intervals_current_ecoevents' : 4* 24, # x4 because lo_interval "15m" per 'lo_candles_w_ta_topic': If you want to convert to 24 hrs ...
 
+    'provider_ticker' : None,
+    'provider_exchange' : None,
+
     # Ticker change
     'ticker_change_map' : 'ticker_change_map.json',
 
@@ -527,6 +530,8 @@ def parse_args():
     parser.add_argument("--hi_candles_w_ta_topic", help="hi_candles TA redis topic. Example candles_ta-SOL-USDT-SWAP-hyperliquid-1h, this is for strategy_executor source candles TA from redis.", default=None)
     parser.add_argument("--lo_candles_w_ta_topic", help="lo_candles TA redis topic. Example candles_ta-SOL-USDT-SWAP-hyperliquid-15m, this is for strategy_executor source candles TA from redis.", default=None)
     parser.add_argument("--orderbook_topic", help="lo_candles TA redis topic. Example orderbooks_SOL/USDT:USDT_hyperliquid, this is for strategy_executor source orderbooks from redis.", default=None)
+    parser.add_argument("--provider_ticker", help="Ticker you're trading. Example BTC/USDT:USDT for where you're actually trading. However, if your candles provider is sourcing from different exchange where ticker is different? BTC/USDC:USDC?", default=None)
+    parser.add_argument("--provider_exchange", help="Exchange name of candles provider, not exchange you're trading. If you're trading binance (Mostly USDT pairs) and your candles provider is sourcing from lighter DEX (USDC pairs), then you need to configure this.", default=None)
 
     args, additional_args = parser.parse_known_args()
 
@@ -655,6 +660,9 @@ def parse_args():
     param['mds']['topics']['hi_candles_w_ta_topic'] = args.hi_candles_w_ta_topic.strip() if args.hi_candles_w_ta_topic else None
     param['mds']['topics']['lo_candles_w_ta_topic'] = args.lo_candles_w_ta_topic.strip() if args.lo_candles_w_ta_topic else None
     param['mds']['topics']['orderbook_topic'] = args.orderbook_topic.strip() if args.orderbook_topic else None
+
+    param['provider_ticker'] = args.provider_ticker.strip() if args.provider_ticker else None
+    param['provider_exchange'] = args.provider_exchange.strip() if args.provider_exchange else None
 
     if args.fetch_position_with_retry:
         if args.fetch_position_with_retry=='Y':
@@ -834,7 +842,7 @@ async def main():
     log(f"orderhist_cache_file_name: {orderhist_cache_file_name}")
     log(f"position_cache_file_name: {position_cache_file_name}")
     
-    exchange_name : str = gateway_id.split('_')[0]
+    exchange_name : str = gateway_id.split('_')[0] # For example, binance_1 (not 'binance_linear_1', not 'Binance'. This needs to be compatible with your gateway setting and also providers settings.)
 
     ticker_change_map = None
     with open(param['ticker_change_map'], 'r', encoding='utf-8') as f:
@@ -843,14 +851,29 @@ async def main():
         log(json.dumps(ticker_change_map))
 
     ticker : str = param['ticker']
+    provider_ticker : str = param['provider_ticker']
+    _provider_ticker : str = provider_ticker
+    provider_exchange : str = param['provider_exchange']
+    provider_exchange = provider_exchange if provider_exchange else exchange_name
+
     _ticker = ticker # In case ticker changes ...
     if ticker_change_map:
-        old_ticker= get_old_ticker(_ticker, ticker_change_map)
+        old_ticker = get_old_ticker(_ticker, ticker_change_map)
         if old_ticker:
-            ticker_change_mapping = get_ticker_map(reference_ticker, ticker_change_map)
+            ticker_change_mapping = get_ticker_map(old_ticker, ticker_change_map)
             ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
             if datetime.now().timestamp()<ticker_change_cutoff_sec:
                 _ticker = old_ticker
+
+        if provider_ticker:
+            old_ticker = get_old_ticker(provider_ticker, ticker_change_map)
+            if old_ticker:
+                ticker_change_mapping = get_ticker_map(old_ticker, ticker_change_map)
+                ticker_change_cutoff_sec = int(ticker_change_mapping['cutoff_ms']) / 1000
+                if datetime.now().timestamp()<ticker_change_cutoff_sec:
+                    _provider_ticker = old_ticker
+        else:
+            _provider_ticker = _ticker
 
     ordergateway_pending_orders_topic : str = 'ordergateway_pending_orders_$GATEWAY_ID$'
     ordergateway_pending_orders_topic = ordergateway_pending_orders_topic.replace("$GATEWAY_ID$", gateway_id)
@@ -881,6 +904,8 @@ async def main():
     log(f"lo_candles_w_ta_topic: {lo_candles_w_ta_topic}")
     log(f"hi_candles_provider_topic: {hi_candles_provider_topic}")
     log(f"lo_candles_provider_topic: {lo_candles_provider_topic}")
+    log(f"provider_ticker: {_provider_ticker}")
+    log(f"provider_exchange: {provider_exchange}")
     log(f"orderbook_topic: {orderbook_topic}")
     log(f"ordergateway_pending_orders_topic: {ordergateway_pending_orders_topic}")
     log(f"ordergateway_executions_topic: {ordergateway_executions_topic}")
@@ -990,17 +1015,17 @@ async def main():
             redis_client.publish(channel=candles_partition_assign_topic, message=json.dumps(exchange_tickers).encode('utf-8'))
         
         if hi_candles_provider_topic:
-            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], hi_candles_provider_topic)
+            _trigger_producers(redis_client, [ f"{provider_exchange if provider_exchange else exchange_name}|{_provider_ticker}" ], hi_candles_provider_topic)
         else:
             log(f"hi_candles_provider_topic not specified, no hi_candles_provider triggering.")
         
         if lo_candles_provider_topic:
-            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], lo_candles_provider_topic)
+            _trigger_producers(redis_client, [ f"{provider_exchange if provider_exchange else exchange_name}|{_provider_ticker}" ], lo_candles_provider_topic)
         else:
             log(f"lo_candles_provider_topic not specified, no lo_candles_provider triggering.")
 
         if orderbooks_provider_topic:
-            _trigger_producers(redis_client, [ f"{exchange_name}|{_ticker}" ], orderbooks_provider_topic)
+            _trigger_producers(redis_client, [ f"{provider_exchange if provider_exchange else exchange_name}|{_ticker}" ], orderbooks_provider_topic)
         else:
             log(f"orderbooks_provider_topic not specified, no orderbooks_provider triggering.")
 
