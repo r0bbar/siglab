@@ -223,7 +223,7 @@ def process_universe(
     @retry(num_attempts=3, pause_between_retries_ms=10000, logger=logger)
     def _instantiate_exchange(
         exchange_name : str,
-        market_type : str
+        default_type : str
     ):
         exchange = instantiate_exchange(
                 exchange_name=exchange_name,
