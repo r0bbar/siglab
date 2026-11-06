@@ -210,7 +210,7 @@ def init_redis_channel_subscription(redis_client : StrictRedis, partition_assign
 
 def process_universe(
     universe : pd.DataFrame, 
-    instantiated_exchanges Dict[str, Union[AnyExchange, None]],
+    instantiated_exchanges : Dict[str, Union[AnyExchange, None]],
     ticker_change_map,
     task,
     redis_client : StrictRedis
