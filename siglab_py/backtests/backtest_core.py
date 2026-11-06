@@ -810,6 +810,7 @@ def run_scenario(
                 lo_candle_hi_lo = lo_high - lo_low
                 lo_volume = lo_row['volume']
                 lo_atr = lo_row['atr']
+                lo_atr_bps = lo_row['atr_bps']
                 lo_rsi = lo_row['rsi']
                 lo_rsi_bucket = lo_row['rsi_bucket']
                 lo_rsi_trend = lo_row['rsi_trend']
@@ -1081,6 +1082,7 @@ def run_scenario(
                         hi_close = hi_row['close']
                         hi_volume = hi_row['volume']
                         hi_atr = hi_row['atr']
+                        hi_atr_bps = hi_row['atr_bps']
                         hi_rsi = hi_row['rsi']
                         hi_rsi_bucket = hi_row['rsi_bucket']
                         hi_rsi_trend = hi_row['rsi_trend']
