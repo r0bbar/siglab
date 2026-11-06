@@ -13,6 +13,7 @@ from threading import Thread
 from collections import defaultdict
 import pandas as pd
 import numpy as np
+import hashlib
 from redis import StrictRedis
 from redis.client import PubSub
 
