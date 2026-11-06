@@ -24,6 +24,7 @@ from ccxt.okx import okx
 from ccxt.bybit import bybit
 from ccxt.base.exchange import Exchange
 
+from siglab_py.util.retry_util import retry
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import instantiate_exchange
 from siglab_py.util.market_data_util import fetch_candles, get_old_ticker, get_ticker_map
