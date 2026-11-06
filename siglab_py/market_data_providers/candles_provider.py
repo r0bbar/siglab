@@ -415,7 +415,8 @@ async def main():
             self.keep_running = True
             self.universe_reload_id = universe_reload_id
     task = None
-    instantiated_exchanges Dict[str, Union[AnyExchange, None]] = {}
+    
+    instantiated_exchanges : Dict[str, Union[AnyExchange, None]] = {}
 
     log(f"candles_provider {param['provider_id']} started, waiting for trigger. (Can use trigger_provider.py to trigger it)")
 
