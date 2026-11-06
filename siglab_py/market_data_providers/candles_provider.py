@@ -249,7 +249,7 @@ def process_universe(
                 provider_mutex = redis_client.get(provider_mutex_key)
                 if provider_mutex:
                     message_hash = hashlib.sha256(provider_mutex).hexdigest()
-                    s_provider_mutex = message.decode('utf-8')
+                    s_provider_mutex = provider_mutex.decode('utf-8')
                     
                 if not s_provider_mutex:
                     redis_client.set(name=provider_mutex_key, value=provider_mutex_key)
