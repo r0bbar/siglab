@@ -174,7 +174,7 @@ def parse_args():
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
     parser.add_argument("--publish_key_symbol", help="Use denormalized_ticker in publish_key? or use base_ccy?", default='denormalized_ticker')
-    parser.add_argument("--check_exchange_mutex", help="Acquire mutex before fetches. This is for exchanges with sensitive rate limits, such as hyperliquid. Default False (i.e. no check)", default=False)
+    parser.add_argument("--check_mutex", help="Acquire mutex before fetches. This is for exchanges with sensitive rate limits, such as hyperliquid, running multiple candles_provider instances in parallel. Default False (i.e. no check)", default=False)
 
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
     parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=1000)
@@ -187,13 +187,13 @@ def parse_args():
     param['how_many_candles'] = int(args.how_many_candles)
     param['publish_key_symbol'] = args.publish_key_symbol
 
-    if args.check_exchange_mutex:
-        if args.check_exchange_mutex=='Y':
-            param['check_exchange_mutex'] = True
+    if args.check_mutex:
+        if args.check_mutex=='Y':
+            param['check_mutex'] = True
         else:
-            param['check_exchange_mutex'] = False
+            param['check_mutex'] = False
     else:
-        param['check_exchange_mutex'] = False
+        param['check_mutex'] = False
 
     param['redis_ttl_ms'] = int(args.redis_ttl_ms)
     param['loop_freq_ms'] = int(args.loop_freq_ms)
@@ -261,10 +261,11 @@ def process_universe(
                     message_hash = hashlib.sha256(provider_mutex).hexdigest()
                     s_provider_mutex = provider_mutex.decode('utf-8')
                     
-                if not param['check_exchange_mutex'] or not s_provider_mutex:
-                    redis_client.set(name=provider_mutex_key, value=provider_mutex_key)
-                    logger.info(f"Secured mutex {provider_mutex_key}")
-                
+                if not param['check_mutex'] or not s_provider_mutex:
+                    if param['check_mutex']:
+                        redis_client.set(name=provider_mutex_key, value=provider_mutex_key)
+                        logger.info(f"Secured mutex {provider_mutex_key}")
+                    
                     try:
                         _ticker : str = ticker # In case ticker change
                         if ticker_change_map:
@@ -388,15 +389,16 @@ def process_universe(
                     except Exception as loop_error:
                         log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
                     finally:
-                        redis_client.delete(provider_mutex_key)
-                        logger.info(f"Released mutex {provider_mutex_key}")
+                        if param['check_mutex']:
+                            redis_client.delete(provider_mutex_key)
+                            logger.info(f"Released mutex {provider_mutex_key}")
                         time.sleep(int(param['loop_freq_ms']/1000) * 10)
 
                     if not task.keep_running:
                         break
 
                 else:
-                    if param['check_exchange_mutex']:
+                    if param['check_mutex']:
                         logger.info(f"Skip this iteration, waiting on mutex {provider_mutex_key}")
                         time.sleep(int(param['loop_freq_ms']/1000))
 
