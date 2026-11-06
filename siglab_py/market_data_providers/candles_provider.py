@@ -253,7 +253,7 @@ def process_universe(
                     
                 if not s_provider_mutex:
                     redis_client.set(name=provider_mutex_key, value=provider_mutex_key)
-                    logger.info(f"Securing mutex {provider_mutex_key}")
+                    logger.info(f"Secured mutex {provider_mutex_key}")
                 
                     try:
                         _ticker : str = ticker # In case ticker change
@@ -380,6 +380,7 @@ def process_universe(
                     finally:
                         redis_client.delete(provider_mutex_key)
                         logger.info(f"Released mutex {provider_mutex_key}")
+                        time.sleep(int(param['loop_freq_ms']/1000) * 10)
 
                     if not task.keep_running:
                         break
