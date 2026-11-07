@@ -26,6 +26,7 @@ from ccxt.bybit import bybit
 from ccxt.base.exchange import Exchange
 
 from siglab_py.util.retry_util import retry
+from siglab_py.util.simple_str import classify_ticker, base_ccy_from_ticker
 from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import instantiate_exchange
 from siglab_py.util.market_data_util import fetch_candles, get_old_ticker, get_ticker_map
@@ -44,6 +45,8 @@ Key parameters you may want to modify:
     candle_size: 1m, 5m, 15min, 1h, 1d for example.
     how_many_candles: default to 2169 (24 x 90). 
     redis_ttl_ms: This is how long orderbook snapshot will last on redis when provider publishes to it.
+    publish_key_prefix: Candles are published to redis under 'publish_key'. Specify 'publish_key_prefix' to indicate prefix used.
+    publish_key_symbol: Specify ['denormalized_ticker', or 'base_ccy']. This is to specify whether 'publish_key' to include 'denormalized_ticker' as part of 'publish_key'? Or 'base_ccy' as part of 'publish_key'
 
 Launch.json if you wish to debug from VSCode:
     {
@@ -171,9 +174,9 @@ def parse_args():
 
     parser.add_argument("--provider_id", help="candle_provider will go to work if from redis a matching topic partition_assign_topic with provider_id in it.", default=None)
     parser.add_argument("--publish_key_prefix", help="publish_key prefix", default=None)
+    parser.add_argument("--publish_key_symbol", help="Use denormalized_ticker in publish_key? or use base_ccy? Specify: denormalized_ticker or base_ccy", default='denormalized_ticker')
     parser.add_argument("--candle_size", help="candle interval: 1m, 1h, 1d... etc", default='1h')
     parser.add_argument("--how_many_candles", help="how_many_candles", default=24*7)
-    parser.add_argument("--publish_key_symbol", help="Use denormalized_ticker in publish_key? or use base_ccy?", default='denormalized_ticker')
     parser.add_argument("--check_mutex", help="Acquire mutex before fetches. This is for exchanges with sensitive rate limits, such as hyperliquid, running multiple candles_provider instances in parallel. Default False (i.e. no check)", default=False)
 
     parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 1000*60*60 (i.e. 1hr)",default=1000*60*60)
@@ -183,9 +186,9 @@ def parse_args():
     if args.provider_id:
         param['provider_id'] = args.provider_id
     param['publish_key_prefix'] = args.publish_key_prefix
+    param['publish_key_symbol'] = args.publish_key_symbol
     param['candle_size'] = args.candle_size
     param['how_many_candles'] = int(args.how_many_candles)
-    param['publish_key_symbol'] = args.publish_key_symbol
 
     if args.check_mutex:
         if args.check_mutex=='Y':
@@ -348,7 +351,8 @@ def process_universe(
                             num_fetches_this_wave += 1
 
                             denormalized_ticker = next(iter([ exchange.markets[x] for x in exchange.markets if exchange.markets[x]['symbol']==_ticker]))['id']
-                            base_ccy = _ticker.split('/')[0]
+                            ticker_class = classify_ticker(_ticker)
+                            base_ccy = base_ccy_from_ticker(_ticker)
                             publish_key_symbol = denormalized_ticker
                             if param['publish_key_symbol']=='denormalized_ticker':
                                 publish_key_symbol = denormalized_ticker
@@ -363,6 +367,8 @@ def process_universe(
                             publish_key = publish_key.replace('$SYMBOL$', publish_key_symbol)
                             publish_key = publish_key.replace('$EXCHANGE_NAME$', exchange_name)
                             publish_key = publish_key.replace('$INTERVAL$', param['candle_size'])
+
+                            log(f"denormalized_ticker: {denormalized_ticker}, ticker_class: {ticker_class}, base_ccy: {base_ccy}, publish_key: {publish_key}")
 
                             data = candles[_ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                             
