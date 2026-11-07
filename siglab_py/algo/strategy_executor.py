@@ -113,6 +113,16 @@ Usage:
         '--target_strategy_name' is your strategy file, containing the lambdas controlling entry, TP/SL logic. Reflection isn't best friend to fastest execution, it is however design intent to allow maximum, maintainable, back-test to live correspondence.
         Bear in mind numba don't support reflection.
 
+        --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb: These are referencing candles_provider provider_id 'aaa'  and 'bbb' (remove 'mds_assign' prefix) from STEP 1.
+        --orderbooks_provider_topic mds_assign_ccc: Same, you're referencing provider_id 'ccc' from STEP 3. 
+
+        If your candles_provider fetching 'BTC/USDT:USDT' candles from binance, and your strategy_executor trading 'BTC/USDC:USDC' via lighter DEX, specify:
+            --ticker            BTC/USDC:USDC
+            --provider_ticker   BTC/USDT:USDT
+            --gateway           lighter_01  --> i.e. gateway 'lighter' (remove '01' postfix)
+            --provider_exchange binance (not 'Binance', not 'binance_linear')
+        Leave --provider_ticker and --provider_exchange null (simply omit from command line) if providers and strategy_executor operate against same exchange.
+
         Any complex json that's not easy to feed thru command line args?
             Example 1, exchange specific custom params you'd need to pass to create_order.
                 For long: --non_unified_params_long 
