@@ -28,9 +28,7 @@ from ccxt.base.exchange import Exchange
 from siglab_py.util.retry_util import retry
 from siglab_py.util.simple_str import classify_ticker, base_ccy_from_ticker
 from siglab_py.exchanges.any_exchange import AnyExchange
-from siglab_py.util.market_data_util import instantiate_exchange
-from siglab_py.util.market_data_util import fetch_candles, get_old_ticker, get_ticker_map
-
+from siglab_py.util.market_data_util import instantiate_exchange, fetch_candles, get_old_ticker, get_ticker_map, candle_size_to_interval_sec
 
 '''
 To start from command prompt:
@@ -337,7 +335,16 @@ def process_universe(
                                 time.sleep(10) # Give some time for the exchange
 
                             start_fetch_ts = time.time()
-                            candles = fetch_candles(
+
+                            cached_candles = subscribed[(exchange_name, _ticker)]['candles'] if (exchange_name, _ticker) in subscribed else None
+                            if cached_candles is not None and cached_candles.shape[0] > 0:
+                                max_timestamp_ms = int(cached_candles['timestamp_ms'].max())
+                                # overlap by 2 intervals so revised last-closed bars are re-fetched and superseded
+                                cutoff_ts = int(max_timestamp_ms / 1000) - 2 * candle_size_to_interval_sec(f"1{candle_size[-1]}")
+                            else:
+                                cutoff_ts = int(start_date.timestamp())
+
+                            new_candles = fetch_candles(
                                                         start_ts=cutoff_ts, 
                                                         end_ts=int(end_date.timestamp()), 
                                                         exchange=exchange, normalized_symbols=[_ticker], 
@@ -345,12 +352,24 @@ def process_universe(
                                                         num_candles_limit = 100,
                                                         logger = None
                                                     )
+                            pd_new_candles : Union[pd.DataFrame, None] = new_candles[_ticker] if new_candles else None
+
+                            if cached_candles is None or cached_candles.shape[0] == 0:
+                                cached_candles = pd_new_candles
+                            elif pd_new_candles is not None and pd_new_candles.shape[0] > 0:
+                                cached_candles = (
+                                    pd.concat([cached_candles, pd_new_candles], ignore_index=True)
+                                    .drop_duplicates(subset=['timestamp_ms'], keep='last')
+                                    .sort_values('timestamp_ms')
+                                    .reset_index(drop=True)
+                                )
+
                             end_fetch_ts = time.time()
                             log(f"fetch_elapsed_sec: {int(end_fetch_ts-start_fetch_ts)}")
 
                             subscribed[(exchange_name, _ticker)] = {
-                                'candles' : candles[ _ticker ],
-                                'num_candles' : candles[ _ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
+                                'candles' : cached_candles,
+                                'num_candles' : cached_candles.shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
                             }
                             num_fetches_this_wave += 1
 
@@ -374,10 +393,10 @@ def process_universe(
 
                             log(f"denormalized_ticker: {denormalized_ticker}, ticker_class: {ticker_class}, base_ccy: {base_ccy}, publish_key: {publish_key}")
 
-                            data = candles[_ticker].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                            data = subscribed[(exchange_name, _ticker)]['candles'].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                             
                             start = time.time()
-                            if redis_client:
+                            if subscribed[(exchange_name, _ticker)]['candles'] and subscribed[(exchange_name, _ticker)]['candles'].shape[0]>0 and redis_client:
                                 '''
                                 https://redis.io/commands/set/
                                 '''
@@ -394,7 +413,7 @@ def process_universe(
 
                                 redis_set_elapsed_ms = int((time.time() - start) *1000)
 
-                                log(f"published candles {candles[_ticker].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
+                                log(f"published candles {subscribed[(exchange_name, _ticker)]['candles'].shape[0]} rows. {this_row_header} {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms")
 
                     except Exception as loop_error:
                         log(f"Failed to process {this_row_header}. Error: {loop_error} {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
