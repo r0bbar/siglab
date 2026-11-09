@@ -79,7 +79,7 @@ Usage:
         c: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
             48 = 2 days worth of hourly bars
             96 = 4x24 = 24 hours of 15m bars
-            From performance perspective, you don't want to fetch too many candles: You'd pay a performance penalty.
+            From performance perspective, you don't want to fetch too many candles: You'd pay a performance penalty: That penalty is down chain in candles_ta_provider (compute_candles_stats) instances as candles_provider implement caching strategy: First fetch it fetches full history requested. Subsequent fetches only fetch trailing candles, which is layered on top of historical candles which remains in cache until process is restarted.
 
     Step 2. Start candles_ta_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
