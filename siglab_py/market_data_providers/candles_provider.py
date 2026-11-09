@@ -256,7 +256,7 @@ def process_universe(
                 exchange_name : str = row['exchange']
                 ticker : str = row['ticker']
 
-                provider_mutex_key : str = f"candles_provider_mutex_{exchange_name}"
+                provider_mutex_key : str = f"provider_mutex_{exchange_name}"
                 
                 s_provider_mutex = None
                 provider_mutex = redis_client.get(provider_mutex_key)
