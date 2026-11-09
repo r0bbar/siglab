@@ -336,6 +336,7 @@ def process_universe(
                             if datetime.now().minute==0:
                                 time.sleep(10) # Give some time for the exchange
 
+                            start_fetch_ts = time.time()
                             candles = fetch_candles(
                                                         start_ts=cutoff_ts, 
                                                         end_ts=int(end_date.timestamp()), 
@@ -344,6 +345,9 @@ def process_universe(
                                                         num_candles_limit = 100,
                                                         logger = None
                                                     )
+                            end_fetch_ts = time.time()
+                            log(f"fetch_elapsed_sec: {int(end_fetch_ts-start_fetch_ts)}")
+
                             subscribed[(exchange_name, _ticker)] = {
                                 'candles' : candles[ _ticker ],
                                 'num_candles' : candles[ _ticker ].shape[0] # type: ignore Otherwise, Error: "shape" is not a known attribute of "None"
