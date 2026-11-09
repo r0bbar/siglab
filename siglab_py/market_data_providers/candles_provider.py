@@ -396,7 +396,7 @@ def process_universe(
                             data = subscribed[(exchange_name, _ticker)]['candles'].to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
                             
                             start = time.time()
-                            if subscribed[(exchange_name, _ticker)]['candles'] and subscribed[(exchange_name, _ticker)]['candles'].shape[0]>0 and redis_client:
+                            if subscribed[(exchange_name, _ticker)]['candles'] is not None and subscribed[(exchange_name, _ticker)]['candles'].shape[0]>0 and redis_client:
                                 '''
                                 https://redis.io/commands/set/
                                 '''
