@@ -251,43 +251,87 @@ def work(
 
                                 candles = json.loads(message)
                                 pd_candles = pd.read_json(StringIO(candles), convert_dates=False)
+                                last_candle =pd_candles.iloc[-1]
 
                                 publish_key : str = s_key.replace('candles-', 'candles_ta-')
                                 publish_key = publish_key + f"-L{ma_long_intervals}-S{ma_short_intervals}"
 
                                 log(f"sliding window size ma_long_intervals: {ma_long_intervals}, ma_short_intervals: {ma_short_intervals}")
 
-                                start = time.time()
-                                compute_candles_stats(
-                                            pd_candles=pd_candles, 
-                                            boillenger_std_multiples=boillenger_std_multiples, 
-                                            sliding_window_how_many_candles=ma_long_intervals, 
-                                            slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals),
-                                            pypy_compat=param['pypy_compatible']
-                                        )
-                                compute_candles_stats_elapsed_sec = int(time.time() - start)
-                                num_trailing_rows = param['tail']
-                                _pd_candles = pd_candles.tail(num_trailing_rows) if num_trailing_rows!=-1 else pd_candles
-                                data = _pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                                dt_now = datetime.now()
+                                '''
+                                Below is a performance hack. Given compute_candles_stats takes time, we'd hold compute_candles_stats calls until after candles (just) rolled.
+                                '''
+                                def _skip_iteration_before_candle_rolls(
+                                        candle_size : str,
+                                        dt_now : datetime,
+                                        last_candle
+                                ) -> bool:
+                                    ts_ms = int(last_candle['timestamp_ms'])
+
+                                    if candle_size == '15m':
+                                        if dt_now.minute in (58, 59, 0):
+                                            boundary = datetime(dt_now.year, dt_now.month, dt_now.day, dt_now.hour, 0)
+                                            if dt_now.minute in (58, 59):
+                                                boundary = boundary + timedelta(hours=1)
+                                            threshold_ms = int(boundary.timestamp() * 1000)
+                                            return not (ts_ms >= threshold_ms)
+                                        elif dt_now.minute in (13, 14, 15):
+                                            threshold_ms = int(datetime(dt_now.year, dt_now.month, dt_now.day, dt_now.hour, 15).timestamp() * 1000)
+                                            return not (ts_ms >= threshold_ms)
+                                        elif dt_now.minute in (28, 29, 30):
+                                            threshold_ms = int(datetime(dt_now.year, dt_now.month, dt_now.day, dt_now.hour, 30).timestamp() * 1000)
+                                            return not (ts_ms >= threshold_ms)
+                                        elif dt_now.minute in (43, 44, 45):
+                                            threshold_ms = int(datetime(dt_now.year, dt_now.month, dt_now.day, dt_now.hour, 45).timestamp() * 1000)
+                                            return not (ts_ms >= threshold_ms)
+                                        else:
+                                            return False
+
+                                    elif candle_size[-1] == "h": # 1h, 4h ...etc
+                                        if dt_now.minute in (58, 59, 0):
+                                            boundary = datetime(dt_now.year, dt_now.month, dt_now.day, dt_now.hour, 0)
+                                            if dt_now.minute in (58, 59):
+                                                boundary = boundary + timedelta(hours=1)
+                                            threshold_ms = int(boundary.timestamp() * 1000)
+                                            return not (ts_ms >= threshold_ms)
+                                        else:
+                                            return False
+
+                                    return False
                                 
-                                start = time.time()
-                                if redis_client:
-                                    '''
-                                    https://redis.io/commands/set/
-                                    '''
-                                    expiry_sec : int = 0
-                                    if candle_size[-1]=="m":
-                                        expiry_sec = 60 + 60*15
-                                    elif candle_size[-1]=="h":
-                                        expiry_sec = 60*60 + 60*15
-                                    elif candle_size[-1]=="d":
-                                        expiry_sec = 60*60*24 
-                                    expiry_sec += 60*15 # additional 15min
+                                if not _skip_iteration_before_candle_rolls(dt_now=dt_now, last_candle=last_candle):
+                                    start = dt_now.timestamp()
+                                    compute_candles_stats(
+                                                pd_candles=pd_candles, 
+                                                boillenger_std_multiples=boillenger_std_multiples, 
+                                                sliding_window_how_many_candles=ma_long_intervals, 
+                                                slow_fast_interval_ratio=(ma_long_intervals/ma_short_intervals),
+                                                pypy_compat=param['pypy_compatible']
+                                            )
+                                    compute_candles_stats_elapsed_sec = int(time.time() - start)
+                                    num_trailing_rows = param['tail']
+                                    _pd_candles = pd_candles.tail(num_trailing_rows) if num_trailing_rows!=-1 else pd_candles
+                                    data = _pd_candles.to_json(orient='records') # type: ignore Otherwise, Error: "to_json" is not a known attribute of "None"
+                                    
+                                    start = time.time()
+                                    if redis_client:
+                                        '''
+                                        https://redis.io/commands/set/
+                                        '''
+                                        expiry_sec : int = 0
+                                        if candle_size[-1]=="m":
+                                            expiry_sec = 60 + 60*15
+                                        elif candle_size[-1]=="h":
+                                            expiry_sec = 60*60 + 60*15
+                                        elif candle_size[-1]=="d":
+                                            expiry_sec = 60*60*24 
+                                        expiry_sec += 60*15 # additional 15min
 
-                                    redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
-                                    redis_set_elapsed_ms = int((time.time() - start) *1000)
+                                        redis_client.set(name=publish_key, value=json.dumps(data).encode('utf-8'), ex=expiry_sec)
+                                        redis_set_elapsed_ms = int((time.time() - start) *1000)
 
-                                    log(f"published candles {_pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms. compute_candles_stats_elapsed_sec: {compute_candles_stats_elapsed_sec}.")
+                                        log(f"published candles {_pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms. compute_candles_stats_elapsed_sec: {compute_candles_stats_elapsed_sec}.")
                             else:
                                 if i%100==0:
                                     log(f"#{i} {s_key} message with hash {message_hash} been processed previously.")
