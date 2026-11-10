@@ -300,7 +300,7 @@ def work(
 
                                     return False
                                 
-                                if not _skip_iteration_before_candle_rolls(dt_now=dt_now, last_candle=last_candle):
+                                if not _skip_iteration_before_candle_rolls(candle_size=candle_size, dt_now=dt_now, last_candle=last_candle):
                                     start = dt_now.timestamp()
                                     compute_candles_stats(
                                                 pd_candles=pd_candles, 
