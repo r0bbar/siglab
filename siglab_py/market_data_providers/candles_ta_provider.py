@@ -256,8 +256,6 @@ def work(
                                 publish_key : str = s_key.replace('candles-', 'candles_ta-')
                                 publish_key = publish_key + f"-L{ma_long_intervals}-S{ma_short_intervals}"
 
-                                log(f"sliding window size ma_long_intervals: {ma_long_intervals}, ma_short_intervals: {ma_short_intervals}")
-
                                 dt_now = datetime.now()
                                 '''
                                 Below is a performance hack. Given compute_candles_stats takes time, we'd hold compute_candles_stats calls until after candles (just) rolled.
@@ -301,6 +299,8 @@ def work(
                                     return False
                                 
                                 if not _skip_iteration_before_candle_rolls(candle_size=candle_size, dt_now=dt_now, last_candle=last_candle):
+                                    log(f"sliding window size ma_long_intervals: {ma_long_intervals}, ma_short_intervals: {ma_short_intervals}")
+
                                     start = dt_now.timestamp()
                                     compute_candles_stats(
                                                 pd_candles=pd_candles, 
@@ -332,6 +332,9 @@ def work(
                                         redis_set_elapsed_ms = int((time.time() - start) *1000)
 
                                         log(f"published candles {_pd_candles.shape[0]} rows. {publish_key} {sys.getsizeof(data, -1)} bytes to mds elapsed {redis_set_elapsed_ms} ms. compute_candles_stats_elapsed_sec: {compute_candles_stats_elapsed_sec}.")
+                                else:
+                                    log(f"Skipping this iteration and waiting for the candles to roll.")
+
                             else:
                                 if i%100==0:
                                     log(f"#{i} {s_key} message with hash {message_hash} been processed previously.")
