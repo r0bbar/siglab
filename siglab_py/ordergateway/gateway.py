@@ -731,7 +731,7 @@ async def execute_one_position(
                                 ob_res = await _fetch_order_book(position.ticker, exchange) 
                                 best_ask = ob_res['best_ask']
                                 log(f"#slippage_check best_ask {best_ask} > price_cap {price_cap}, wait some more ...")
-                                if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
+                                if int(time.time() * 1000)-start_wait_ts > position.wait_fill_threshold_ms:
                                     price_cap_check_msg = f"#slippage_check side: {position.side}, best_ask: {best_ask}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
                                     if i==0:
                                         # If you raise on first slice, no subsequent slices will be executed. Ball back to strategy_executor.
@@ -751,7 +751,7 @@ async def execute_one_position(
                                 best_bid = await _fetch_order_book(position.ticker, exchange) 
                                 best_bid = ob_res['best_bid']
                                 log(f"#slippage_check best_bid {best_bid} < price_cap {price_cap}, wait some more ...")
-                                if int(time.time() * 1000)-start_wait_ts > slice.wait_fill_threshold_ms:
+                                if int(time.time() * 1000)-start_wait_ts > position.wait_fill_threshold_ms:
                                     price_cap_check_msg = f"#slippage_check side: {position.side}, best_bid: {best_bid}, ref_price: {position.ref_price}, price_cap: {price_cap}, max_slippage_from_ref_price_bps: {position.max_slippage_from_ref_price_bps}"
                                     if i==0:
                                         # if you raise on first slice, no subsequent slices will be executed. Ball back to strategy_executor.
