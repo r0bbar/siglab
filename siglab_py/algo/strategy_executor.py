@@ -2725,6 +2725,8 @@ async def main():
                                 'reason' : reason,
                                 'closing_duration_ms' : closing_duration_ms
                             }
+                            for indicator in _all_indicators.keys():
+                                executed_position_close['position']['indicators'][indicator] = _all_indicators[indicator]
 
                             new_status = PositionStatus.SL.name if closed_pnl<=0 else PositionStatus.CLOSED.name
                             pd_position_cache.loc[position_cache_row.name, 'pos'] = new_pos_from_exchange
