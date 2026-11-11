@@ -2723,7 +2723,8 @@ async def main():
                                 'tp_min_crossed' : pos_tp_min_crossed.strftime("%Y%m%d %H:%M:%S") if pos_tp_min_crossed else None,
                                 'closed' : dt_now.strftime("%Y%m%d %H:%M:%S"),
                                 'reason' : reason,
-                                'closing_duration_ms' : closing_duration_ms
+                                'closing_duration_ms' : closing_duration_ms,
+                                'indicators' : {}
                             }
                             for indicator in _all_indicators.keys():
                                 executed_position_close['position']['indicators'][indicator] = _all_indicators[indicator]
