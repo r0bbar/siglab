@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import time
@@ -48,7 +49,9 @@ def init_redis_client() -> StrictRedis:
 
 def archive_hist_ob(
     redis_client,
-    pattern: str
+    archive_files_folder : str,
+    pattern: str,
+    loop_freq_ms : int = 1000 *60 *60 *24
 ):
     orderbooks: dict[str, dict] = {}
     buffer: Dict[str, list] = {}
@@ -95,33 +98,51 @@ def archive_hist_ob(
     to_dt = datetime.fromtimestamp(int(max_timestamp_ms/1000))
     logger.info(f"{i} order books fetched from {from_dt} to {to_dt}")
 
-    for key in buffer:
-        grouped: Dict[tuple, list] = {}
-        for item in buffer[key]:
-            yyyyMM = datetime.fromtimestamp(
-                item['timestamp_ms'] / 1000, tz=timezone.utc
-            ).strftime('%Y%m')
-            grouped.setdefault((item['ticker'], item['exchange_name'], yyyyMM), []).append(item)
+    try:
+        for key in buffer:
+            grouped: Dict[tuple, list] = {}
+            for item in buffer[key]:
+                yyyyMM = datetime.fromtimestamp(
+                    item['timestamp_ms'] / 1000, tz=timezone.utc
+                ).strftime('%Y%m')
+                grouped.setdefault((item['ticker'], item['exchange_name'], yyyyMM), []).append(item)
 
-        for (ticker, exchange_name, yyyyMM), items in grouped.items():
-            archive_filename: str = f"orderbooks_{ticker}_{exchange_name}_{yyyyMM}.json"
-            print(archive_filename)
+            for (ticker, exchange_name, yyyyMM), items in grouped.items():
+                archive_filename: str = f"{archive_files_folder}\orderbooks_{ticker}_{exchange_name}_{yyyyMM}.json"
 
-            existing = []
-            if os.path.exists(archive_filename):
-                try:
-                    with open(archive_filename, 'r') as f:
-                        existing = json.load(f)
-                except (json.JSONDecodeError, ValueError):
-                    existing = []
+                existing = []
+                if os.path.exists(archive_filename):
+                    try:
+                        with open(archive_filename, 'r') as f:
+                            existing = json.load(f)
+                    except (json.JSONDecodeError, ValueError):
+                        existing = []
 
-            merged = existing + [it['ob'] for it in items if it['ob'] is not None]
-            with open(archive_filename, 'w') as f:
-                json.dump(merged, f)
+                merged = existing + [it['ob'] for it in items if it['ob'] is not None]
+                with open(archive_filename, 'w') as f:
+                    json.dump(merged, f)
+                    logger.info(f"Orderbooks from redis dumped (appended) to {archive_filename}")
 
-            orderbooks.setdefault(ticker, {})[f"{exchange_name}_{yyyyMM}"] = archive_filename
+                orderbooks.setdefault(ticker, {})[f"{exchange_name}_{yyyyMM}"] = archive_filename
+    except Exception as loop_err:
+        logger.error(loop_err)
+    finally:
+        logger.info(f"Sleeping for {int(loop_freq_ms/1000)} seconds.")
+        time.sleep(int(loop_freq_ms/1000))
+
 
 if __name__ == "__main__":
     redis_client : StrictRedis = init_redis_client()
 
-    archive_hist_ob(redis_client, pattern=param['mds']['topics']['source_orderbooks_topic'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('folder', help='Folder containing orderbooks JSON files.', default=".")
+    parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=1000 *60 *60 *24)
+    args = parser.parse_args()
+
+    archive_files_folder : str = args.folder
+    if archive_files_folder[-1]=="\\":
+        archive_files_folder = archive_files_folder[:-1]
+
+    loop_freq_ms : int = int(args.loop_freq_ms)
+
+    archive_hist_ob(redis_client=redis_client, archive_files_folder=archive_files_folder, pattern=param['mds']['topics']['source_orderbooks_topic'], loop_freq_ms=loop_freq_ms)
