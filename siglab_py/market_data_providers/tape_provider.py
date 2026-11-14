@@ -226,7 +226,7 @@ async def main():
                 raise SystemExit(0)
     
             logger.info(f"\nFetched {len(tape)} unique trades.")
-            logger.info(f"Time range: {tape['datetime'].min()}  →  {tape['datetime'].max()}")
+            logger.info(f"Time range: {tape['datetime'].min()} to {tape['datetime'].max()}")
             logger.info(f"Last price: {tape['price'].iloc[-1]:.2f}")
     
             result = detect_sweeps_and_absorption(
