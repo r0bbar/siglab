@@ -121,6 +121,9 @@ def calc_eff_trailing_sl(
 
 def detect_sweeps_and_absorption(
     tape: pd.DataFrame,
+
+    volume_threshold_base_ccy : float,
+
     burst_gap_sec: float = 0.05,
 
     # percentile thresholds
@@ -170,6 +173,7 @@ def detect_sweeps_and_absorption(
     sweeps = bursts[
         (bursts["vol_rank"] > sweep_vol_pct)
         & (bursts["move_rank"] > sweep_move_pct)
+        & bursts['volume'] > volume_threshold_base_ccy
     ].copy()
     sweeps["direction"] = np.where(sweeps["buy_vol"] > sweeps["sell_vol"], "up", "down")
     
@@ -177,6 +181,7 @@ def detect_sweeps_and_absorption(
     absorption = bursts[
         (bursts["vol_rank"] > absorb_vol_pct)
         & (bursts["move_rank"] < absorb_move_pct)
+        & bursts['volume'] > volume_threshold_base_ccy
     ].copy()
     absorption["absorbed_side"] = np.where(
         absorption["buy_vol"] > absorption["sell_vol"],
@@ -201,11 +206,13 @@ def detect_sweeps_and_absorption(
     }
 
 if __name__ == '__main__':
+    from datetime import datetime, timedelta
     import time
     import logging
 
     import ccxt
-    from siglab_py.util.market_data_util import fetch_tape
+    from siglab_py.util.market_data_util import fetch_tape, fetch_candles
+    from siglab_py.util.analytic_util import compute_candles_stats
 
     logging.Formatter.converter = time.gmtime
     logger = logging.getLogger()
@@ -225,7 +232,32 @@ if __name__ == '__main__':
     exchange.load_markets()
     symbol = "BTC/USDT:USDT"
 
+    dt_end = datetime.now()
+    dt_start = dt_end + timedelta(days=-365)
+
+    candles = fetch_candles(
+        exchange=exchange,
+        normalized_symbols=[symbol],
+        start_ts=dt_start.timestamp(),
+        end_ts=dt_end.timestamp(),
+        candle_size='1d'
+    )
+    pd_candles = candles[symbol]
+    compute_candles_stats(
+        pd_candles=pd_candles,
+        boillenger_std_multiples=2,
+        sliding_window_how_many_candles=int(365/12)
+    )
+
     while True:
+        _pd_candles = pd_candles[
+            (pd_candles['dayofweek']==dt_end.weekday()) # You can't compare Monday against Fri after close
+        ]
+        avg_daily_volume_base_ccy = _pd_candles['volume'].mean()
+        daily_volume_std_base_ccy = _pd_candles['volume'].std()
+        daily_volume_threshold_base_ccy = avg_daily_volume_base_ccy + daily_volume_std_base_ccy
+        volume_threshold_base_ccy = daily_volume_threshold_base_ccy / (24*4)
+    
         start_fetch_ts = time.time()
         tape = fetch_tape(exchange=exchange, symbol=symbol, max_batches=10, limit=1000)
         finish_fetch_ts = time.time()
@@ -242,6 +274,7 @@ if __name__ == '__main__':
 
         result = detect_sweeps_and_absorption(
             tape,
+            volume_threshold_base_ccy=volume_threshold_base_ccy,
             reference_level=float(tape["price"].iloc[-1]),
             level_tolerance_pct=0.001,
         )
