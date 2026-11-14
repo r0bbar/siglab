@@ -300,7 +300,7 @@ async def main():
     
     parse_args()
 
-    logger.info(f"Strategy startup parameters: {json.dumps(param, indent=4)}")
+    logger.info(f"startup parameters: {json.dumps(param, indent=4)}")
 
     redis_client = init_redis_client()
 
