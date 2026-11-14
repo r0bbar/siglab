@@ -243,7 +243,12 @@ async def main():
             logger.info(f"Absorption:  {len(result['absorption'])}\n")
 
             tape_key : str = f"tape:{ticker}:aggregated:{int(time.time()*1000)}"
-            # redis_client.set(name=tape_key, value=json.dumps(result).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
+            payload = {
+                "bursts":     result["bursts"].to_dict(orient="records"),
+                "sweeps":     result["sweeps"].to_dict(orient="records"),
+                "absorption": result["absorption"].to_dict(orient="records"),
+            }
+            redis_client.set(tape_key, json.dumps(payload, default=str).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
     
             if not result["sweeps"].empty:
                 logger.info("Top sweeps by volume:")
