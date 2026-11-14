@@ -110,13 +110,9 @@ param : Dict = {
 
     'loop_freq_ms' : 1000*30, # Loop frequency
     'redis_ttl_ms' : 1000*60*15,
-    
-    # Provider ID is part of mds publish topic. 
-    'provider_id' : 1,
 
     # Publish to message bus
     'mds' : {
-        'mds_topic' : 'ccxt_rest_ob_$PROVIDER_ID$', 
         'redis' : {
             'host' : 'localhost',
             'port' : 6379,
