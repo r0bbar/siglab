@@ -241,14 +241,6 @@ async def main():
             logger.info(f"Bursts:      {len(bursts)}  (max volume residual: {residual:.2e})")
             logger.info(f"Sweeps:      {len(result['sweeps'])}")
             logger.info(f"Absorption:  {len(result['absorption'])}\n")
-
-            tape_key : str = f"tape:{ticker}:aggregated:{int(time.time()*1000)}"
-            payload = {
-                "bursts":     result["bursts"].to_dict(orient="records"),
-                "sweeps":     result["sweeps"].to_dict(orient="records"),
-                "absorption": result["absorption"].to_dict(orient="records"),
-            }
-            redis_client.set(tape_key, json.dumps(payload, default=str).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
     
             if not result["sweeps"].empty:
                 logger.info("Top sweeps by volume:")
@@ -262,6 +254,9 @@ async def main():
                     top_sweeps[["start_time", "end_price", "volume", "direction", "near_reference"]]
                     .to_string(index=False)
                 )
+                tape_key : str = f"tape:{ticker}:sweeps:{int(time.time()*1000)}"
+                payload = top_sweeps.to_dict(orient="records")
+                redis_client.set(tape_key, json.dumps(payload, default=str).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
     
             if not result["absorption"].empty:
                 logger.info("Top absorption by volume:")
@@ -275,7 +270,10 @@ async def main():
                     top_absorption[["start_time", "end_price", "volume", "absorbed_side", "near_reference"]]
                     .to_string(index=False)
                 )
-
+                tape_key : str = f"tape:{ticker}:sweeps:{int(time.time()*1000)}"
+                payload = top_absorption.to_dict(orient="records")
+                redis_client.set(tape_key, json.dumps(payload, default=str).encode('utf-8'), ex=int(param['mds']['redis']['ttl_ms']/1000))
+    
         except Exception as loop_err:
             logger.error(f"#{i} Error: {loop_err}. {str(sys.exc_info()[0])} {str(sys.exc_info()[1])} {traceback.format_exc()}")
 
