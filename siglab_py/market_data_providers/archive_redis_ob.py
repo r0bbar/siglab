@@ -69,9 +69,16 @@ def archive_hist_ob(
 
             logger.info(f"key: {key}")
 
-            ticker: str = key.split(':')[1]
-            exchange_name: str = key.split(':')[2]
-            timestamp_ms: int = int(key.split(':')[3])
+            tokens = key.split(":")
+            if len(tokens)==3:
+                ticker: str = key.split(':')[1]
+                exchange_name: str = key.split(':')[2]
+                timestamp_ms: int = int(key.split(':')[-1])
+            else:
+                # strategy_executor also logs ob to redis, but format: f"orderbooks:entry|exit:{_ticker}:{exchange_name}:{ob['timestamp']}"
+                ticker: str = key.split(':')[2]
+                exchange_name: str = key.split(':')[3]
+                timestamp_ms: int = int(key.split(':')[-1])
 
             if timestamp_ms<min_timestamp_ms:
                 min_timestamp_ms = timestamp_ms
