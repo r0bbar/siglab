@@ -307,7 +307,6 @@ async def main():
     primary_exchange = supported_exchanges[0]
 
     ticker : str = param['ticker']
-    param['job_name'] = f'ccxt_agg_ob_provider_{ticker.replace(":","_").replace("/","-")}'
 
     price_level_separation_bps : int = param['price_level_separation_bps']
     order_notional : float = param['order_notional']
