@@ -1,4 +1,6 @@
 import math
+import pandas as pd
+import numpy as np
 
 '''
 pnl_percent_notional = Trade's current pnl in percent.
@@ -116,3 +118,162 @@ def calc_eff_trailing_sl(
             effective_tp_trailing_percent = default_effective_tp_trailing_percent
 
     return effective_tp_trailing_percent
+
+def detect_sweeps_and_absorption(
+    tape: pd.DataFrame,
+    burst_gap_sec: float = 0.05,
+
+    # percentile thresholds
+    sweep_vol_pct: float = 0.90,
+    sweep_move_pct: float = 0.90,
+    absorb_vol_pct: float = 0.90,
+    absorb_move_pct: float = 0.25,
+
+    reference_level: float = None,
+    level_tolerance_pct: float = 0.001,
+) -> dict:
+    def _burst_stats(g: pd.DataFrame) -> pd.Series:
+        return pd.Series({
+            "start_time": g["datetime"].iloc[0],
+            "end_time": g["datetime"].iloc[-1],
+            "start_price": g["price"].iloc[0],
+            "end_price": g["price"].iloc[-1],
+            "volume": g["amount_base_ccy"].sum(),
+            "buy_vol": g.loc[g["side"] == "buy", "amount_base_ccy"].sum(),
+            "sell_vol": g.loc[g["side"] == "sell", "amount_base_ccy"].sum(),
+            "num_trades": len(g),
+        })
+
+    tape = tape.copy().sort_values("datetime").reset_index(drop=True)
+
+    if "side" not in tape.columns:
+        raise ValueError("Tape must contain a 'side' column ('buy'/'sell').")
+    if not set(tape["side"].dropna().unique()).issubset({"buy", "sell"}):
+        raise ValueError("'side' must only contain 'buy' or 'sell'.")
+
+    # Step 1: burst construction via time gaps
+    tape["time_gap"] = tape["datetime"].diff().dt.total_seconds()
+    tape["burst_id"] = (tape["time_gap"] > burst_gap_sec).cumsum()
+
+    bursts = (
+                tape.groupby("burst_id", group_keys=False)
+                .apply(_burst_stats, include_groups=False)
+                .reset_index()
+            )
+
+    bursts["price_move"] = (bursts["end_price"] - bursts["start_price"]).abs()
+    bursts["price_move_bps"] = bursts["price_move"]/bursts["start_price"] *10000
+    bursts["vol_rank"] = bursts["volume"].rank(pct=True)
+    bursts["move_rank"] = bursts["price_move"].rank(pct=True)
+
+    # Step 2a: sweeps
+    sweeps = bursts[
+        (bursts["vol_rank"] > sweep_vol_pct)
+        & (bursts["move_rank"] > sweep_move_pct)
+    ].copy()
+    sweeps["direction"] = np.where(sweeps["buy_vol"] > sweeps["sell_vol"], "up", "down")
+    
+    # Step 2b: absorption
+    absorption = bursts[
+        (bursts["vol_rank"] > absorb_vol_pct)
+        & (bursts["move_rank"] < absorb_move_pct)
+    ].copy()
+    absorption["absorbed_side"] = np.where(
+        absorption["buy_vol"] > absorption["sell_vol"],
+        "buyers_absorbed",
+        "sellers_absorbed",
+    )
+
+    # Step 3: reference-level tagging
+    if reference_level is not None:
+        tol = reference_level * level_tolerance_pct
+        sweeps["near_reference"] = (sweeps["end_price"] - reference_level).abs() < tol
+        absorption["near_reference"] = (absorption["end_price"] - reference_level).abs() < tol
+    else:
+        sweeps["near_reference"] = False
+        absorption["near_reference"] = False
+
+    return {
+        "tape": tape,
+        "bursts": bursts,
+        "sweeps": sweeps,
+        "absorption": absorption,
+    }
+
+if __name__ == '__main__':
+    import time
+    import logging
+
+    import ccxt
+    from siglab_py.util.market_data_util import fetch_tape
+
+    logging.Formatter.converter = time.gmtime
+    logger = logging.getLogger()
+    log_level = logging.INFO # DEBUG --> INFO --> WARNING --> ERROR
+    logger.setLevel(log_level)
+    format_str = '%(asctime)s %(message)s'
+    formatter = logging.Formatter(format_str)
+    sh = logging.StreamHandler()
+    sh.setLevel(log_level)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+
+    exchange = ccxt.binance({
+            "enableRateLimit": True,
+            "options": {"defaultType": "future"},
+        })
+    exchange.load_markets()
+    symbol = "BTC/USDT:USDT"
+
+    while True:
+        start_fetch_ts = time.time()
+        tape = fetch_tape(exchange=exchange, symbol=symbol, max_batches=10, limit=1000)
+        finish_fetch_ts = time.time()
+        elapsed_sec = round(finish_fetch_ts - start_fetch_ts)
+        logger.info(f"elapsed_sec: {elapsed_sec}")
+
+        if tape.empty:
+            logger.info("No trades fetched — check symbol or network.")
+            raise SystemExit(0)
+
+        logger.info(f"\nFetched {len(tape)} unique trades.")
+        logger.info(f"Time range: {tape['datetime'].min()}  →  {tape['datetime'].max()}")
+        logger.info(f"Last price: {tape['price'].iloc[-1]:.2f}")
+
+        result = detect_sweeps_and_absorption(
+            tape,
+            reference_level=float(tape["price"].iloc[-1]),
+            level_tolerance_pct=0.001,
+        )
+
+        bursts = result["bursts"]
+        residual = (bursts["buy_vol"] + bursts["sell_vol"] - bursts["volume"]).abs().max()
+        logger.info(f"Bursts:      {len(bursts)}  (max volume residual: {residual:.2e})")
+        logger.info(f"Sweeps:      {len(result['sweeps'])}")
+        logger.info(f"Absorption:  {len(result['absorption'])}\n")
+
+        if not result["sweeps"].empty:
+            logger.info("Top sweeps by volume:")
+            top_sweeps = (
+                result["sweeps"]
+                .sort_values("volume", ascending=False)
+                .head(5)
+                .sort_values("start_time")
+            )
+            logger.info(
+                top_sweeps[["start_time", "end_price", "volume", "direction", "near_reference"]]
+                .to_string(index=False)
+            )
+
+        if not result["absorption"].empty:
+            logger.info("Top absorption by volume:")
+            top_absorption = (
+                result["absorption"]
+                .sort_values("volume", ascending=False)
+                .head(5)
+                .sort_values("start_time")
+            )
+            logger.info(
+                top_absorption[["start_time", "end_price", "volume", "absorbed_side", "near_reference"]]
+                .to_string(index=False)
+            )
