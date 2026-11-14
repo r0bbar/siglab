@@ -283,6 +283,5 @@ async def main():
             time.sleep(int(param['loop_freq_ms']/1000))
         
         i += 1
-
-
+        
 asyncio.run(main())
