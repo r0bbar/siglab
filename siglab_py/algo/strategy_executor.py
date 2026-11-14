@@ -282,6 +282,8 @@ Debug from VSCode, launch.json:
         5. #ordernotfound potential position break (See gateway.py)
         6. #target_adj Target adjustment? tp_min_percent/tp_max_percent/sl_hard_percent
         7. #closed_candle_mutation: closed candles supposed to be immutable. But in reality, they aren't: For example late trade processed by exchanges.
+        8. #lo_candles_interval_rolled: This marks when strategy_executor gets fresh candles upon candle rolls. For example if you're trading 1h bars, you may find #lo_candles_interval_rolled at 00:00:00:30, 00:00:01:30 ... etc (i.e. 30 seconds after candles rolls) depending on your candles_provider configuration: It's sensitive to --how_many_candles as explained above.
+
 '''
 param : Dict = {
     'max_position_break_diff_bps' : 3, # max allowable position break threshold in bps, default: 3 bps. If diff between position cache vs exchange exceeds this, strategy_executor will dispatch alert and stop algo. Idea is: Let it run if break is just rounding differences.
@@ -2822,7 +2824,7 @@ async def main():
                     and lo_candles_valid # Sometimes when you started strategy_executor just when lo_candles rolled
                 ):
                     if lo_candles_interval_rolled:
-                        log(f"candles_provider lo_candles interval rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
+                        log(f"candles_provider #lo_candles_interval_rolled! Latest: {lo_row['datetime']} lo_row_timestamp_ms: {lo_row_timestamp_ms}")
                     else:
                         log(f"[indicators]")
                     log(f"{tabulate(pd_position_cache.loc[:, 'lo_row:datetime':'hi_row_tm1:id'], headers='keys', tablefmt='psql')}", log_level=LogLevel.INFO)
