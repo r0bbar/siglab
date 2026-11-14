@@ -263,8 +263,8 @@ async def main():
         parser.add_argument("--candle_size", help="We fetch trailing candles for things like ATR", default="1h")
         parser.add_argument("--how_many_candles", help="Sliding window size for TA calculations", default=24)
 
-        parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster.", default=5000)
-        parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: assuming candle_size 1h, then redis_ttl_ms defaults to 24*7 hours.", default=None)
+        parser.add_argument("--loop_freq_ms", help="Loop delays. Reduce this if you want to trade faster. Default: 900000 ms (15 min)", default=900000)
+        parser.add_argument("--redis_ttl_ms", help="TTL for items published to redis. Default: 90 days.", default=7776000000)
 
         args = parser.parse_args()
         param['ticker'] = args.ticker
