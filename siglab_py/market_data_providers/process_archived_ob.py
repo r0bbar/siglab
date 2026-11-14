@@ -140,6 +140,7 @@ def parse_archive_json(
     default_ticker = stem_parts[1] if len(stem_parts) > 1 else None
     default_exchange = stem_parts[2] if len(stem_parts) > 2 else None
 
+    i = 0
     summaries = []
     for ob in orderbooks:
         ticker = ob.get('ticker', default_ticker)
@@ -160,7 +161,9 @@ def parse_archive_json(
         key = key.replace("$EXCHANGE_NAME$", exchange_name)
         key = key.replace("$TIMESTAMP_MS$", str(timestamp_ms))
         redis_client.set(name=key, value=json.dumps(features).encode('utf-8'), ex=60)
-        logger.info(f"Orderbook processed, features published to redis key: {key}")
+        logger.info(f"[{i}/{len(orderbooks)}] Orderbook processed, features published to redis key: {key}")
+        i += 1
+
     return summaries
 
 def find_archive_files(folder) -> list:
@@ -196,5 +199,8 @@ if __name__ == '__main__':
 
     all_rows = []
     for file in find_archive_files(args.folder):
+        start_ts = time.time()
         all_rows.extend(parse_archive_json(file, redis_client, **kwargs))
-        logger.info(f"Processed {file}")
+        end_ts = time.time()
+        elapsed_sec = int(end_ts - start_ts)
+        logger.info(f"Processed {file} in {elapsed_sec} sec.")
