@@ -536,12 +536,32 @@ def compute_candles_stats(
 												pd_candles['min_short_periods'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).apply(trend_from_lows, raw=True)
 												)
 
+    def wilder_smooth(series: pd.Series, period: int) -> pd.Series:
+        if period <= 0:
+            raise ValueError("period must be > 0")
+        n = len(series)
+        if n < period:
+            # Not enough data; return NaNs
+            return pd.Series(np.nan, index=series.index)
+        
+        alpha = 1.0 / period
+        ewm = series.ewm(alpha=alpha, adjust=False).mean()
+        pivot = period - 1
+        init_avg = series.iloc[:period].mean()
+        correction = init_avg - ewm.iloc[pivot]
+        result = ewm.copy()
+        indices = np.arange(pivot, n)
+        decay = (1 - alpha) ** (indices - pivot)
+        result.iloc[pivot:] = ewm.iloc[pivot:] + correction * decay
+        result.iloc[:pivot] = np.nan
+        return result
+        
     # ATR https://medium.com/codex/detecting-ranging-and-trending-markets-with-choppiness-index-in-python-1942e6450b58 
     pd_candles.loc[:,'h_l'] = pd_candles['high'] - pd_candles['low']
     pd_candles.loc[:,'h_pc'] = abs(pd_candles['high'] - pd_candles['close'].shift(1))
     pd_candles.loc[:,'l_pc'] = abs(pd_candles['low'] - pd_candles['close'].shift(1))
     pd_candles.loc[:,'tr'] = pd_candles[['h_l', 'h_pc', 'l_pc']].max(axis=1)
-    pd_candles.loc[:,'atr'] = pd_candles['tr'].rolling(window=sliding_window_how_many_candles).mean()
+    pd_candles.loc[:,'atr'] = wilder_smooth(pd_candles['tr'], sliding_window_how_many_candles)
     pd_candles.loc[:,'atr_avg_short_periods'] = pd_candles['atr'].rolling(window=int(sliding_window_how_many_candles/slow_fast_interval_ratio)).mean()
     pd_candles.loc[:,'atr_avg_long_periods'] = pd_candles['atr'].rolling(window=sliding_window_how_many_candles).mean()
     pd_candles.loc[:,'atr_bps'] = pd_candles['atr']/pd_candles['ema_close'] *10000
@@ -562,25 +582,6 @@ def compute_candles_stats(
     # 20-50	 Trending
     # 50-75	 Strong Trend
     # 75-100 Very Strong Trend
-    def wilder_smooth(series: pd.Series, period: int) -> pd.Series:
-        if period <= 0:
-            raise ValueError("period must be > 0")
-        n = len(series)
-        if n < period:
-            # Not enough data; return NaNs
-            return pd.Series(np.nan, index=series.index)
-        
-        alpha = 1.0 / period
-        ewm = series.ewm(alpha=alpha, adjust=False).mean()
-        pivot = period - 1
-        init_avg = series.iloc[:period].mean()
-        correction = init_avg - ewm.iloc[pivot]
-        result = ewm.copy()
-        indices = np.arange(pivot, n)
-        decay = (1 - alpha) ** (indices - pivot)
-        result.iloc[pivot:] = ewm.iloc[pivot:] + correction * decay
-        result.iloc[:pivot] = np.nan
-        return result
     high, low = pd_candles['high'], pd_candles['low']
     up_move = high - high.shift(1)
     down_move = low.shift(1) - low
