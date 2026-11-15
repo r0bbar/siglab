@@ -11,7 +11,7 @@ Drill down into back tests results with [**bacttest_trades_viewer**](https://git
 
 + [**order gateway**](https://medium.com/@norman-lm-fung/standalone-order-gateway-on-top-of-ccxt-576680a2d603) - dispatch orders to exchanges. 
 
-+ [**strategy_executor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) - Take the lamdba functions with entry/TP/SL logic from back tests, use them in live algo. Ensure backtest-vs-live correspondence.
++ [**strategy_executor**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/strategy_executor.py) - Take the lamdba functions with entry/TP/SL logic from back tests, use them in live algo. Ensure backtest-vs-live correspondence. (usage instructions top of scripts, as with most other scripts in this repo)
 
 + [**orderhist_cache_viewer**](https://github.com/r0bbar/siglab/blob/master/siglab_py/algo/orderhist_cache_viewer.ipynb) - Post-trade analysis: Everything from slippages, pnl distribution (before/after fees), pnl curve, fees distribution (taker -vs- maker), hitratio, drawdowns, Sharpe/Sortino ratio’s… etc.
 
