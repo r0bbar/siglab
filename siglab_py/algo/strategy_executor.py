@@ -1728,45 +1728,7 @@ async def main():
 
                     _trailing_candles = pd_hi_candles_w_ta.tail(param['reversal_num_intervals'])
                     closed_trailing_candles = _trailing_candles.iloc[:-1].to_dict('records')
-                    cutoff_ts = int((datetime.now().timestamp() - 60*60*24) * 1000)        
-                    for closed_candle in closed_trailing_candles:
-                        if closed_candle['timestamp_ms'] not in closed_hi_candles_cache:
-                            closed_hi_candles_cache[closed_candle['timestamp_ms']] = closed_candle
-
-                        else:
-                            expected = {
-                                'open' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['open'],
-                                'high' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['high'],
-                                'low' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['low'],
-                                'close' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['close'],
-                                'volume' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['volume'],
-                            }
-                            actual = {
-                                'open' : closed_candle['open'],
-                                'high' : closed_candle['high'],
-                                'low' : closed_candle['low'],
-                                'close' : closed_candle['close'],
-                                'volume' : closed_candle['volume'],
-                            }
-                            if (
-                                expected['open']!=actual['open']
-                                or expected['high']!=actual['high']
-                                or expected['low']!=actual['low']
-                                or expected['close']!=actual['close']
-                                or expected['volume']!=actual['volume']
-                            ):
-                                logger.error(f"#closed_candle_mutation in pd_hi_candles_w_ta: : {closed_candle['datetime']} ({closed_candle['timestamp_ms']})")
-                                prettyprint = pformat(expected, indent=2, width=100)
-                                logger.error(f"expected: {prettyprint}")
-                                prettyprint = pformat(actual, indent=2, width=100)
-                                logger.error(f"actual: {prettyprint}")
-
-                                closed_hi_candles_cache[closed_candle['timestamp_ms']] = closed_candle
-
-                    if closed_trailing_candles:
-                        oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
-                        for ts in [t for t in closed_hi_candles_cache if t < oldest_kept_ts]:
-                            del closed_hi_candles_cache[ts]
+                    cutoff_ts = int((datetime.now().timestamp() - 60*60*24) * 1000)
                     
                     hi_row = pd_hi_candles_w_ta.iloc[-1]
                     hi_row_tm1 = pd_hi_candles_w_ta.iloc[-2]
@@ -1827,39 +1789,40 @@ async def main():
                         Closed candles are generally immutable. But they aren't. Late trade processing/amends can result in back-dated candles revisions. This happens more during fast markets.
                         However, impact from closed candles amends are just as big during quiet markets. For example signal can be above/below a simple VWAP. Small amends easier result in signal being on wrong side of the VWAP just as it would in fast markets. 
                         '''
-                        for closed_candle in closed_trailing_candles:
-                            if closed_candle['timestamp_ms'] not in closed_lo_candles_cache:
-                                closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
-
-                            else:
-                                expected = {
-                                    'open' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['open'],
-                                    'high' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['high'],
-                                    'low' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['low'],
-                                    'close' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['close'],
-                                    'volume' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['volume'],
-                                }
-                                actual = {
-                                    'open' : closed_candle['open'],
-                                    'high' : closed_candle['high'],
-                                    'low' : closed_candle['low'],
-                                    'close' : closed_candle['close'],
-                                    'volume' : closed_candle['volume'],
-                                }
-                                if (
-                                    expected['open']!=actual['open']
-                                    or expected['high']!=actual['high']
-                                    or expected['low']!=actual['low']
-                                    or expected['close']!=actual['close']
-                                    or expected['volume']!=actual['volume']
-                                ):
-                                    logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta: {closed_candle['datetime']} ({closed_candle['timestamp_ms']})")
-                                    prettyprint = pformat(expected, indent=2, width=100)
-                                    logger.error(f"expected: {prettyprint}")
-                                    prettyprint = pformat(actual, indent=2, width=100)
-                                    logger.error(f"actual: {prettyprint}")
-
+                        if lo_candles_interval_rolled:
+                            for closed_candle in closed_trailing_candles:
+                                if closed_candle['timestamp_ms'] not in closed_lo_candles_cache:
                                     closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
+
+                                else:
+                                    expected = {
+                                        'open' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['open'],
+                                        'high' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['high'],
+                                        'low' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['low'],
+                                        'close' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['close'],
+                                        'volume' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['volume'],
+                                    }
+                                    actual = {
+                                        'open' : closed_candle['open'],
+                                        'high' : closed_candle['high'],
+                                        'low' : closed_candle['low'],
+                                        'close' : closed_candle['close'],
+                                        'volume' : closed_candle['volume'],
+                                    }
+                                    if (
+                                        expected['open']!=actual['open']
+                                        or expected['high']!=actual['high']
+                                        or expected['low']!=actual['low']
+                                        or expected['close']!=actual['close']
+                                        or expected['volume']!=actual['volume']
+                                    ):
+                                        logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta: {closed_candle['datetime']} ({closed_candle['timestamp_ms']})")
+                                        prettyprint = pformat(expected, indent=2, width=100)
+                                        logger.error(f"expected: {prettyprint}")
+                                        prettyprint = pformat(actual, indent=2, width=100)
+                                        logger.error(f"actual: {prettyprint}")
+
+                                        closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
 
                         if closed_trailing_candles:
                             oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
