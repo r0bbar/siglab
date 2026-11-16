@@ -339,8 +339,8 @@ def process_universe(
                             cached_candles = subscribed[(exchange_name, _ticker)]['candles'] if (exchange_name, _ticker) in subscribed else None
                             if cached_candles is not None and cached_candles.shape[0] > 0:
                                 max_timestamp_ms = int(cached_candles['timestamp_ms'].max())
-                                # overlap by 2 intervals so revised last-closed bars are re-fetched and superseded
-                                cutoff_ts = int(max_timestamp_ms / 1000) - 2 * candle_size_to_interval_sec(f"1{candle_size[-1]}")
+                                # overlap by 3 intervals (so revised, if any) last-closed bars are re-fetched and superseded
+                                cutoff_ts = int(max_timestamp_ms / 1000) - 3 * candle_size_to_interval_sec(candle_size)
                             else:
                                 cutoff_ts = int(start_date.timestamp())
 
