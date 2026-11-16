@@ -434,8 +434,8 @@ POSITION_CACHE_COLUMNS = [
 ORDERHIST_CACHE_COLUMNS = [  'datetime', 'timestamp_ms', 'exchange', 'ticker', 'reason', 'reason2', 'side', 'avg_price', 'amount', 'pnl', 'pnl_bps', 'max_unreal_live_bps', 'max_pain', 'fees', 'slippage_bps', 'remarks' ]
 BASIC_CANDLES_COLUMNS = ['timestamp_ms', 'open', 'high', 'low', 'close', 'volume']
 
-closed_hi_candles_hash_cache = {}
-closed_lo_candles_hash_cache = {}
+closed_hi_candles_cache = {}
+closed_lo_candles_cache = {}
 
 def log(message : str, log_level : LogLevel = LogLevel.INFO):
     if log_level.value<LogLevel.WARNING.value:
@@ -1727,18 +1727,47 @@ async def main():
                     )
 
                     _trailing_candles = pd_hi_candles_w_ta.tail(param['reversal_num_intervals'])
-                    closed_trailing_candles = _trailing_candles.iloc[:-1]
-                    last_closed_candle_timestamp_ms = closed_trailing_candles.iloc[-1]['timestamp_ms']
-                    last_closed_candle_dt_str : str = datetime.fromtimestamp(last_closed_candle_timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
-                    quantized = (closed_trailing_candles[BASIC_CANDLES_COLUMNS] * param['rounding_precision']).round().astype(np.int64)
-                    last_closed_row_hash : str = pd.util.hash_pandas_object(
-                        quantized, index=False
-                    ).astype(str).iloc[-1]
-                    if last_closed_candle_timestamp_ms not in closed_hi_candles_hash_cache:
-                        closed_hi_candles_hash_cache[last_closed_candle_timestamp_ms] = last_closed_row_hash
-                    if closed_hi_candles_hash_cache[last_closed_candle_timestamp_ms]!=last_closed_row_hash:
-                        logger.error(f"#closed_candle_mutation in pd_hi_candles_w_ta. last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_candle_timestamp_ms: {last_closed_candle_timestamp_ms}, last_closed_row_hash: {last_closed_row_hash}")
+                    closed_trailing_candles = _trailing_candles.iloc[:-1].to_dict('records')
+                    cutoff_ts = int((datetime.now().timestamp() - 60*60*24) * 1000)        
+                    for closed_candle in closed_trailing_candles:
+                        if closed_candle['timestamp_ms'] not in closed_hi_candles_cache:
+                            closed_hi_candles_cache[closed_candle['timestamp_ms']] = closed_candle
 
+                        else:
+                            expected = {
+                                'open' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['open'],
+                                'high' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['high'],
+                                'low' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['low'],
+                                'close' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['close'],
+                                'volume' : closed_hi_candles_cache[closed_candle['timestamp_ms']]['volume'],
+                            }
+                            actual = {
+                                'open' : closed_candle['open'],
+                                'high' : closed_candle['high'],
+                                'low' : closed_candle['low'],
+                                'close' : closed_candle['close'],
+                                'volume' : closed_candle['volume'],
+                            }
+                            if (
+                                expected['open']!=actual['open']
+                                or expected['high']!=actual['high']
+                                or expected['low']!=actual['low']
+                                or expected['close']!=actual['close']
+                                or expected['volume']!=actual['volume']
+                            ):
+                                logger.error(f"#closed_candle_mutation in pd_hi_candles_w_ta: : {closed_candle['datetime']} ({closed_candle['timestamp_ms']})")
+                                prettyprint = pformat(expected, indent=2, width=100)
+                                logger.error(f"expected: {prettyprint}")
+                                prettyprint = pformat(actual, indent=2, width=100)
+                                logger.error(f"actual: {prettyprint}")
+
+                                closed_hi_candles_cache[closed_candle['timestamp_ms']] = closed_candle
+
+                    if closed_trailing_candles:
+                        oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
+                        for ts in [t for t in closed_hi_candles_cache if t < oldest_kept_ts]:
+                            del closed_hi_candles_cache[ts]
+                    
                     hi_row = pd_hi_candles_w_ta.iloc[-1]
                     hi_row_tm1 = pd_hi_candles_w_ta.iloc[-2]
                     candles_age = int(dt_now.timestamp() *1000 - hi_row['timestamp_ms'])
@@ -1792,31 +1821,58 @@ async def main():
                             lo_candles_interval_rolled = True
 
                         _trailing_candles = pd_lo_candles_w_ta.tail(param['reversal_num_intervals'])
-                        closed_trailing_candles = _trailing_candles.iloc[:-1]
+                        closed_trailing_candles = _trailing_candles.iloc[:-1].to_dict('records')
 
                         '''
                         Closed candles are generally immutable. But they aren't. Late trade processing/amends can result in back-dated candles revisions. This happens more during fast markets.
                         However, impact from closed candles amends are just as big during quiet markets. For example signal can be above/below a simple VWAP. Small amends easier result in signal being on wrong side of the VWAP just as it would in fast markets. 
                         '''
-                        last_closed_candle_timestamp_ms = closed_trailing_candles.iloc[-1]['timestamp_ms']
-                        last_closed_candle_dt_str : str = datetime.fromtimestamp(last_closed_candle_timestamp_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
-                        quantized = (closed_trailing_candles[BASIC_CANDLES_COLUMNS] * param['rounding_precision']).round().astype(np.int64)
-                        last_closed_row_hash : str = pd.util.hash_pandas_object(
-                            quantized, index=False
-                        ).astype(str).iloc[-1]
+                        for closed_candle in closed_trailing_candles:
+                            if closed_candle['timestamp_ms'] not in closed_lo_candles_cache:
+                                closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
 
+                            else:
+                                expected = {
+                                    'open' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['open'],
+                                    'high' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['high'],
+                                    'low' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['low'],
+                                    'close' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['close'],
+                                    'volume' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['volume'],
+                                }
+                                actual = {
+                                    'open' : closed_candle['open'],
+                                    'high' : closed_candle['high'],
+                                    'low' : closed_candle['low'],
+                                    'close' : closed_candle['close'],
+                                    'volume' : closed_candle['volume'],
+                                }
+                                if (
+                                    expected['open']!=actual['open']
+                                    or expected['high']!=actual['high']
+                                    or expected['low']!=actual['low']
+                                    or expected['close']!=actual['close']
+                                    or expected['volume']!=actual['volume']
+                                ):
+                                    logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta: {closed_candle['datetime']} ({closed_candle['timestamp_ms']})")
+                                    prettyprint = pformat(expected, indent=2, width=100)
+                                    logger.error(f"expected: {prettyprint}")
+                                    prettyprint = pformat(actual, indent=2, width=100)
+                                    logger.error(f"actual: {prettyprint}")
+
+                                    closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
+
+                        if closed_trailing_candles:
+                            oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
+                            for ts in [t for t in closed_lo_candles_cache if t < oldest_kept_ts]:
+                                del closed_lo_candles_cache[ts]
+                        
                         trailing_candles = _trailing_candles.values.tolist()                                
                         trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in pd_lo_candles_w_ta.tail(param['reversal_num_intervals']+1).values.tolist()]
 
-                        if last_closed_candle_timestamp_ms not in closed_lo_candles_hash_cache:
-                            closed_lo_candles_hash_cache[last_closed_candle_timestamp_ms] = last_closed_row_hash
-                        if closed_lo_candles_hash_cache[last_closed_candle_timestamp_ms]!=last_closed_row_hash:
-                            logger.error(f"#closed_candle_mutation in pd_lo_candles_w_ta. last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_candle_timestamp_ms: {last_closed_candle_timestamp_ms}, last_closed_row_hash: {last_closed_row_hash}")
-
-                        logger.info(f"lo candles 1st trailing candle {trailing_candles[0]['datetime']}, last trailing candle {trailing_candles[-1]['datetime']}, last_closed_candle_dt_str: {last_closed_candle_dt_str}, last_closed_row_hash: {last_closed_row_hash}")
-                        logger.info(f"1st trailing candle open: {trailing_candles[0]['open']}, high: {trailing_candles[0]['high']}, low: {trailing_candles[0]['low']}, close: {trailing_candles[0]['close']}, volume: {trailing_candles[0]['volume']}")
-                        logger.info(f"current candle      open: {trailing_candles[-1]['open']}, high: {trailing_candles[-1]['high']}, low: {trailing_candles[0]['low']}, close: {trailing_candles[-1]['close']}, volume: {trailing_candles[-1]['volume']}")
-
+                        logger.info(f"#lo_trailing_candles")
+                        for trailing_candle in trailing_candles:
+                            logger.info(f"{trailing_candle['datetime']} open: {trailing_candle['open']}, high: {trailing_candle['high']}, low: {trailing_candle['low']}, close: {trailing_candle['close']}, volume: {trailing_candle['volume']}")
+                        
                     else:
                         lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
                         
