@@ -1793,8 +1793,9 @@ async def main():
                             for closed_candle in closed_trailing_candles:
                                 if closed_candle['timestamp_ms'] not in closed_lo_candles_cache:
                                     closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
-
-                                else:
+                        else:
+                            for closed_candle in closed_trailing_candles:
+                                if closed_candle['timestamp_ms'] in closed_lo_candles_cache:
                                     expected = {
                                         'open' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['open'],
                                         'high' : closed_lo_candles_cache[closed_candle['timestamp_ms']]['high'],
@@ -1824,17 +1825,17 @@ async def main():
 
                                         closed_lo_candles_cache[closed_candle['timestamp_ms']] = closed_candle
 
-                        if closed_trailing_candles:
-                            oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
-                            for ts in [t for t in closed_lo_candles_cache if t < oldest_kept_ts]:
-                                del closed_lo_candles_cache[ts]
+                                if closed_trailing_candles:
+                                    oldest_kept_ts = closed_trailing_candles[0]['timestamp_ms']
+                                    for ts in [t for t in closed_lo_candles_cache if t < oldest_kept_ts]:
+                                        del closed_lo_candles_cache[ts]
                         
                         trailing_candles = _trailing_candles.values.tolist()                                
                         trailing_candles = [dict(zip(pd_lo_candles_w_ta.columns, row)) for row in pd_lo_candles_w_ta.tail(param['reversal_num_intervals']+1).values.tolist()]
 
                         logger.info(f"#lo_trailing_candles")
                         for trailing_candle in trailing_candles:
-                            logger.info(f"{trailing_candle['datetime']} open: {trailing_candle['open']}, high: {trailing_candle['high']}, low: {trailing_candle['low']}, close: {trailing_candle['close']}, volume: {trailing_candle['volume']}")
+                            logger.info(f"{trailing_candle['datetime']} ({trailing_candle['timestamp_ms']}) open: {trailing_candle['open']}, high: {trailing_candle['high']}, low: {trailing_candle['low']}, close: {trailing_candle['close']}, volume: {trailing_candle['volume']}")
                         
                     else:
                         lo_candles_invalid_reason = f"stale candles. candles_age: {candles_age}, lo_interval_ms: {lo_interval_ms}, timestamp_ms: {lo_row['timestamp_ms']}"
