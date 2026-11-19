@@ -6,19 +6,40 @@ from siglab_py.exchanges.any_exchange import AnyExchange
 from siglab_py.util.market_data_util import async_instantiate_exchange
 
 '''
-Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+Pass apikey/secret to CCXT lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
-            lighter = ccxt.lighter({
-                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
+Case 1: For metamask wallets, pass your wallet privateKey below:
+            exchange = ccxt.lighter({
+                'privateKey': 'YOUR_WALLET_PRIVATE_KEY_HERE',                        # It is NOT Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
                 'options': {
                     'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
                     'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
                     'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
                 }
             })
+
+Case 2: For hardware wallets, pass the "private key" from app.lighter.xyz/apikeys (They will give key pairs to you when you create the API key)
+            exchange = ccxt.lighter({
+                'options': {
+                    'accountIndex': 12345,
+                    'apiKeyIndex': 5,
+                    'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll', # signer dll: https://github.com/elliottech/lighter-go/releases
+                    'builderFee': False,
+                    'auths': {
+                        '12345': {
+                            '5': {
+                                'lighterPrivateKey': 'LIGHTER_GENERATED_PRIVATE_KEY_HERE',  # ← the private key from app.lighter.xyz/apikeys
+                                'signer': None,
+                                'deadline': None,
+                                'token': None,
+                            }
+                        }
+                    }
+                }
+            })
 '''
 async def main():
-    private_key : str = 'xxxxx' # This is your Ethereum Wallet private key. It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys).
+    private_key : str = 'xxxxx' # Case 1 or Case 2? If case 1 you're using metamask wallets: YOUR_WALLET_PRIVATE_KEY_HERE. If case 2 you're using Hardware wallets: LIGHTER_GENERATED_PRIVATE_KEY_HERE from app.lighter.xyz/apikeys
 
     ticker : str = "SOL/USDC:USDC"
     amount_base_ccy = 0.1
@@ -35,11 +56,20 @@ async def main():
 
     exchange_specific_options: Union[Dict[str, Any], None] = {
         'apiKeyIndex': 0,
-        'accountIndex': 123456,
-        'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
+        'accountIndex': 12345,
+        'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll',
+        'auths': { # Case 2: Specify 'auth' tag, instead of 'privateKey' tag directly.
+                '12345': {
+                    '5': {
+                        'lighterPrivateKey': None,  # ← async_instantiate_exchange will populate this field with 'private_key'
+                        'signer': None,
+                        'deadline': None,
+                        'token': None,
+                    }
+                }
+            }
     }
-
-    # instantiate exchange using siglab_py market_data_util.async_instantiate_exchange
+    
     exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
         gateway_id='lighter',
         api_key=private_key,
