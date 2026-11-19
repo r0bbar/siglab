@@ -115,68 +115,99 @@ def instantiate_exchange(
         )  
     elif exchange_name=='lighter':
         '''
-        For Lighter, pass your Ethereum wallet private key to 'api_key'.
-        
-        https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
-
-            lighter = ccxt.lighter({
-                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
-                'options': {
-                    'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
-                    'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
-                    'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
-                }
-            })
-
-        To test:
-            from siglab_py.util.market_data_util import async_instantiate_exchange
-
-            api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
-
-            # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
-            # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
-            default_max_slippage_bps : int = 30
-
-            exchange_specific_options = {
-                    'apiKeyIndex': 0,
-                    'accountIndex': 687361,
-                    'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
-                }
-
-            exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
-                gateway_id='lighter',
-                api_key=api_key,
-                secret=secret,
-                passphrase=passphrase,
-                default_type=default_type,
-                default_sub_type=default_sub_type,
-                rate_limit_ms=rate_limit_ms,
-                default_max_slippage_bps=default_max_slippage_bps,
-                exchange_specific_options=exchange_specific_options,
-                verbose=verbose
-            )
-
-            normalized_ticker = 'SOL/USDC:USDC'
-            amount = 0.3
-            price = 85
-            side = 'sell'
-            order_type = 'market'
-
-            entry_order = await exchange.create_order(
-                symbol = normalized_ticker,
-                amount = amount,
-                price = price, # This is NOT optional: ccxt.base.errors.ArgumentsRequired: lighter createOrder() requires a price argument
-                type=order_type,
-                side=side
-            )
-        '''
+            For Lighter, pass your Ethereum wallet private key to 'api_key'.
+            
+            https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+    
+            Case 1: For metamask wallets, pass your wallet privateKey below:
+                exchange = ccxt.lighter({
+                    'privateKey': 'YOUR_WALLET_PRIVATE_KEY_HERE',                        # It is NOT Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
+                    'options': {
+                        'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
+                        'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
+                        'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
+                    }
+                })
+    
+            Case 2: For hardware wallets, pass the "private key" from app.lighter.xyz/apikeys (They will give key pairs to you when you create the API key)
+                exchange = ccxt.lighter({
+                    'options': {
+                        'accountIndex': 12345,
+                        'apiKeyIndex': 5,
+                        'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll', # signer dll: https://github.com/elliottech/lighter-go/releases
+                        'builderFee': False,
+                        'auths': {
+                            '12345': {
+                                '5': {
+                                    'lighterPrivateKey': 'LIGHTER_GENERATED_PRIVATE_KEY_HERE',  # ← the private key from app.lighter.xyz/apikeys
+                                    'signer': None,
+                                    'deadline': None,
+                                    'token': None,
+                                }
+                            }
+                        }
+                    }
+                })
+    
+            To test:
+                from siglab_py.util.market_data_util import async_instantiate_exchange
+    
+                api_key : str = "xxxxx" # Your Ethereum Wallet's private key (not address)! This is NOT public key or private key from under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys)
+    
+                # create_order go thru with NO exception. But from Order History you will find the trade actually cancelled by Lighter: "Order canceled due to excessive slippage beyond allowed limit"
+                # Lighter very strict with market order, first create_order need specify price. Don't use mid price, very often your order will be canceled.
+                default_max_slippage_bps : int = 100
+    
+                exchange_specific_options = {
+                        'apiKeyIndex': 0,
+                        'accountIndex': 687361,
+                        'libraryPath': r'D:\lighter\lighter-signer-windows-amd64.dll'
+                    }
+    
+                exchange : Union[AnyExchange, None] = await async_instantiate_exchange(
+                    gateway_id='lighter',
+                    api_key=api_key,
+                    secret=secret,
+                    passphrase=passphrase,
+                    default_type=default_type,
+                    default_sub_type=default_sub_type,
+                    rate_limit_ms=rate_limit_ms,
+                    default_max_slippage_bps=default_max_slippage_bps,
+                    exchange_specific_options=exchange_specific_options,
+                    verbose=verbose
+                )
+    
+                normalized_ticker = 'SOL/USDC:USDC'
+                amount = 0.3
+                price = 85
+                side = 'sell'
+                order_type = 'market'
+    
+                entry_order = await exchange.create_order(
+                    symbol = normalized_ticker,
+                    amount = amount,
+                    price = price, # This is NOT optional: ccxt.base.errors.ArgumentsRequired: lighter createOrder() requires a price argument
+                    type=order_type,
+                    side=side
+                )
+            '''
         if exchange_specific_options:
             exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
-        lighter_params = {
-            'privateKey' : api_key
-        }
-        if exchange_specific_options:
-            lighter_params['options'] = exchange_specific_options
+        if exchange_specific_options and 'auths' in exchange_specific_options:
+            # Case 2. Hardware Wallets
+            for account_index in exchange_specific_options['auths']:
+                for api_key_index in exchange_specific_options['auths'][account_index]:
+                    exchange_specific_options['auths'][account_index][api_key_index]['lighterPrivateKey'] = api_key
+            lighter_params = {
+                            'options' : exchange_specific_options
+                        }
+        else:
+            # Case 1. Metamask wallets
+            lighter_params = {
+                'privateKey' : api_key
+            }
+            if exchange_specific_options:
+                lighter_params['options'] = exchange_specific_options
         exchange = Lighter(lighter_params)
     elif exchange_name=='aster':
         '''
@@ -342,12 +373,33 @@ async def async_instantiate_exchange(
         
         https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
-            lighter = ccxt.lighter({
-                'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
+        Case 1: For metamask wallets, pass your wallet privateKey below:
+            exchange = ccxt.lighter({
+                'privateKey': 'YOUR_WALLET_PRIVATE_KEY_HERE',                        # It is NOT Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
                 'options': {
                     'apiKeyIndex': 0,                                               # Integer (0–254) corresponding to the specific API key you created.
                     'accountIndex': 12345,                                          # https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x1234567890abcdef...
                     'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll'   # signer dll: https://github.com/elliottech/lighter-go/releases
+                }
+            })
+
+        Case 2: For hardware wallets, pass the "private key" from app.lighter.xyz/apikeys (They will give key pairs to you when you create the API key)
+            exchange = ccxt.lighter({
+                'options': {
+                    'accountIndex': 12345,
+                    'apiKeyIndex': 5,
+                    'libraryPath': r'C:\lighter\lighter-signer-windows-amd64.dll', # signer dll: https://github.com/elliottech/lighter-go/releases
+                    'builderFee': False,
+                    'auths': {
+                        '12345': {
+                            '5': {
+                                'lighterPrivateKey': 'LIGHTER_GENERATED_PRIVATE_KEY_HERE',  # ← the private key from app.lighter.xyz/apikeys
+                                'signer': None,
+                                'deadline': None,
+                                'token': None,
+                            }
+                        }
+                    }
                 }
             })
 
@@ -395,11 +447,21 @@ async def async_instantiate_exchange(
         '''
         if exchange_specific_options:
             exchange_specific_options['libraryPath'] = exchange_specific_options['libraryPath'].replace('/', '\\') # Forward vs back slash!!! Otherwise, on Windows, Lighter will complain "ExchangeError('lighter {"code":21120,"message":"invalid signature"}')"
-        lighter_params = {
-            'privateKey' : api_key
-        }
-        if exchange_specific_options:
-            lighter_params['options'] = exchange_specific_options
+        if exchange_specific_options and 'auths' in exchange_specific_options:
+            # Case 2. Hardware Wallets
+            for account_index in exchange_specific_options['auths']:
+                for api_key_index in exchange_specific_options['auths'][account_index]:
+                    exchange_specific_options['auths'][account_index][api_key_index]['lighterPrivateKey'] = api_key
+            lighter_params = {
+                'options' : exchange_specific_options
+            }
+        else:
+            # Case 1. Metamask wallets
+            lighter_params = {
+                'privateKey' : api_key
+            }
+            if exchange_specific_options:
+                lighter_params['options'] = exchange_specific_options
         exchange = LighterAsync(lighter_params)
     elif exchange_name=='aster':
         '''
