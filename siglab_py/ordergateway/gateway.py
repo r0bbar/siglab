@@ -1366,13 +1366,15 @@ async def main():
         rate_limit_ms=param['rate_limit_ms'],
         default_max_slippage_bps=param['default_max_slippage_bps'],
         exchange_specific_options=param['exchange_specific_options'] if 'exchange_specific_options' in param else None,
-        verbose=param['verbose'],
+        verbose=True,
         pass_aiohttp_session=param['pass_aiohttp_session']
     )
     if exchange:
         # Once exchange instantiated, try fetch_balance to confirm connectivity and test credentials.
         balances = await exchange.fetch_balance()
         log(f"{param['gateway_id']}: account balances {balances}")
+        accounts = await exchange.load_accounts()
+        log(f"!!!!! accounts {accounts}")
         dispatch_notification(title=f"{param['current_filename']} {param['gateway_id']} started", message=balances['total'] if not param['privacy_first'] else f"{param['gateway_id']} started", footer=param['notification']['footer'], params=notification_params, log_level=LogLevel.CRITICAL, logger=logger)
 
         await work(param=param, exchange=exchange, redis_client=redis_client, notification_params=notification_params)

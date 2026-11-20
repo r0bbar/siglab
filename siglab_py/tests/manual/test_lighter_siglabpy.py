@@ -8,6 +8,9 @@ from siglab_py.util.market_data_util import async_instantiate_exchange
 '''
 Pass apikey/secret to CCXT lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
+To install SDK:
+    python -m pip install git+https://github.com/elliottech/lighter-python.git
+
 Case 1: For metamask wallets, pass your wallet privateKey below:
             exchange = ccxt.lighter({
                 'privateKey': 'YOUR_WALLET_PRIVATE_KEY_HERE',                        # It is NOT Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!

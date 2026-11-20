@@ -9,6 +9,9 @@ from siglab_py.exchanges.any_exchange import AnyExchange
 '''
 Pass apikey/secret to lighter constructor: https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
 
+To install SDK:
+    python -m pip install git+https://github.com/elliottech/lighter-python.git
+
             lighter = ccxt.lighter({
                 'privateKey': '0xYOUR_API_PRIVATE_KEY_HERE',                        # It is not Ligher private key under menu \ Tools \ API keys (https://app.lighter.xyz/apikeys), it's your Ethereum Wallet private key!
                 'options': {
