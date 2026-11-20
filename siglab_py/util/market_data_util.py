@@ -116,8 +116,10 @@ def instantiate_exchange(
     elif exchange_name=='lighter':
         '''
             For Lighter, pass your Ethereum wallet private key to 'api_key'.
-            
-            https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+                https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+
+            To install SDK:
+                python -m pip install git+https://github.com/elliottech/lighter-python.git
     
             Case 1: For metamask wallets, pass your wallet privateKey below:
                 exchange = ccxt.lighter({
@@ -370,8 +372,10 @@ async def async_instantiate_exchange(
     elif exchange_name=='lighter':
         '''
         For Lighter, pass your Ethereum wallet private key to 'api_key'.
-        
-        https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+            https://github.com/ccxt/ccxt/wiki/FAQ#how-to-use-the-lighter-exchange-in-ccxt
+
+        To install SDK:
+            python -m pip install git+https://github.com/elliottech/lighter-python.git
 
         Case 1: For metamask wallets, pass your wallet privateKey below:
             exchange = ccxt.lighter({
