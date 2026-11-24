@@ -73,7 +73,7 @@ TAs computed (This is an expanding list):
 Traders need look beyond best_spread_bps (i.e. spread between best bid and best ask) for acccurate estimation of actual trade frictions. [**aggregated_orderbook_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/aggregated_orderbook_provider.py) supports scanning orderbooks from multiple exchanges, use it to find where's the best place to trade, where you can find the tightest spreads.
 
 
-[**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) https://medium.com/@norman-lm-fung/monitoring-incoming-deribit-open-interest-fd8c8d596ca0
+[**deribit_options_expiry_provider.py**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/deribit_options_expiry_provider.py) monitoring-incoming-deribit-open-interest-fd8c8d596ca0
 
 [market_data_util](https://github.com/r0bbar/siglab/blob/master/siglab_py/util/market_data_util.py) **fetch_candles** contains implementation to grab candles from exchanges/market data providers. **fetch_candles** uses a sliding window technique fetching say 100 candles each batch from start to end. This is because all exchanges restrict how many candles you can get in a single fetch. It optionally support back dated ticker changes, for example XAUT/USDT:USDT to XAU/USDT:USDT from OKX on 15 Jan 2026. User need supply 'ticker_change_map'. **Example on Usage?** [market_data_util_tests.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/tests/integration/market_data_util_tests.py)
 
@@ -168,8 +168,6 @@ Further examples on usage of market_data_util and analytic_util in back tests.
 
 - backtest_core doc: https://docs.google.com/document/d/1H75O-OhPzHAzVPeFSm7DDjXEaqzvVZFnAcYM48-QZNo
 
-**partition_sliding_window** segments time series based on inflection points: Where price crosses MAs.
-    https://medium.com/@norman-lm-fung/time-series-slicer-and-price-pattern-extractions-81f9dd1108fd
 
 [**ccxt_candles_ta_to_csv**](https://github.com/r0bbar/siglab/blob/master/siglab_py/market_data_providers/ccxt_candles_ta_to_csv.py) 
 A simple command line utility to fetch candles from crypto exchanges and dump it to csv. The utility uses [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md)under the hood. Calculation of TA (Technical indicators) optional.
@@ -201,7 +199,6 @@ b. If any of keywords in message_keywords_filter matches words in message (--mes
 
 ![Orderflow Architecture](https://github.com/r0bbar/siglab/blob/master/siglab_py/siglab_py_ordergateway.jpg)
 
-Reference: https://norman-lm-fung.medium.com/standalone-order-gateway-on-top-of-ccxt-576680a2d603
 
 [**gateway.py** (pypy compatible)](https://github.com/r0bbar/siglab/blob/master/siglab_py/ordergateway/gateway.py): This is a standalone order gateway. Current implementation supports a couple crypto exchanges (CEX: binance, okx, bybit, deribit, kraken. DEX: hyperliquid, lighter, and soon Aster). But if you look at [any_exchange.py](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py), the ultimate goal is to support trading via tradfi brokerages like [**IBKR**](https://www.interactivebrokers.com). To trade exchanges not supported by [**ccxt**](https://github.com/ccxt/ccxt/blob/master/README.md) or tradfi brokerages of your choice, extend [**AnyExchange**](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/any_exchange.py). Example [**Futubull**](https://github.com/r0bbar/siglab/blob/master/siglab_py/exchanges/futubull.py). 
 
