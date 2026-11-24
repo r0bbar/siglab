@@ -66,8 +66,8 @@ if sys.platform == 'win32':
 Usage:
     Step 1. Start candles_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python candles_provider.py --provider_id aaa --candle_size 1h --how_many_candles 48 --redis_ttl_ms 3600000
-        python candles_provider.py --provider_id bbb --candle_size 15m --how_many_candles 96 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id aaa --publish_key_prefix macd15m --publish_key_symbol base_ccy --candle_size 1h --how_many_candles 48 --redis_ttl_ms 3600000
+        python candles_provider.py --provider_id bbb --publish_key_prefix macd15m --publish_key_symbol base_ccy --candle_size 15m --how_many_candles 96 --redis_ttl_ms 3600000
 
         Note,
         a. 'ticker_change_map.json' is for ticker change handling.
@@ -76,15 +76,40 @@ Usage:
             gateway.py NO (If will load_market before process each request)
             orderbooks_provider YES (resubscribe on new ticker)
 
-        c: how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
+        c. how_many_candles should be larger than compute_candles_stats.sliding_window_how_many_candles by a few times.
             48 = 2 days worth of hourly bars
             96 = 4x24 = 24 hours of 15m bars
             From performance perspective, you don't want to fetch too many candles: You'd pay a performance penalty: That penalty is down chain in candles_ta_provider (compute_candles_stats) instances as candles_provider implement caching strategy: First fetch it fetches full history requested. Subsequent fetches only fetch trailing candles, which is layered on top of historical candles which remains in cache until process is restarted.
+        
+        d. --publish_key_prefix macd15m --publish_key_symbol base_ccy
+            candles_provider will publish candles to redis under topic:
+                'candles_publish_topic' : 'candles-$PREFIX$-$SYMBOL$-$EXCHANGE_NAME$-$INTERVAL$'
+            
+            publish_key_prefix corresponds to $PREFIX$
+            --publish_key_symbol can be [denormalized_ticker, or base_ccy]
+
+                "denormalized_ticker" refers to Exchange specific ticker. For example, "ETH/USDT:USDT" is "normalized ticker" for ETH perpetual by CCXT convention. 
+                "base_ccy" for this example is "ETH".
+                
+                Corresponding "denormalized symbols" are what? 
+                    For OKX: "ETH-USDT-SWAP"
+                    For Hyperliquid: "1" 
+
+                How do you find out?
+                >>> import ccxt
+                >>> exchange = ccxt.okx()
+                >>> markets = exchange.load_markets()
+                >>> markets['ETH/USDT:USDT']
+                {'id': 'ETH-USDT-SWAP', 'lowercaseId': None, 'symbol': 'ETH/USDT:USDT', 'base': 'ETH', 'quote': 'USDT', 'settle': 'USDT', 'baseId': 'ETH', 'quoteId': 'USDT', 'settleId': 'USDT', 'type': 'swap', 'spot': False, 'margin': False, 'swap': True, 'future': False, 'option': False, ...  'instIdCode': 10461}
+                >>> exchange = ccxt.hyperliquid()
+                >>> markets = exchange.load_markets()
+                >>> markets['ETH/USDC:USDC']
+                {'id': '1', 'lowercaseId': None, 'symbol': 'ETH/USDC:USDC', 'base': 'ETH', 'quote': 'USDC', 'settle': 'USDC', 'baseId': '1', 'quoteId': 'USDC', 'settleId': 'USDC', 'type': 'swap', 'spot': False, 'margin': None, 'swap': True, 'future': False, 'option': False, 'index': None, 'active': True, 'contract': True, 'linear': True, 'inverse': False, 'subType': 'linear', ... 'baseName': 'ETH'}
 
     Step 2. Start candles_ta_providers
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
-        python candles_ta_provider.py --candle_size 1h --ma_long_intervals 48 --ma_short_intervals 12 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
-        python candles_ta_provider.py --candle_size 15m --ma_long_intervals 150 --ma_short_intervals 75 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
+        python candles_ta_provider.py --tickers ETH --candle_size 1h --ma_long_intervals 48 --ma_short_intervals 12 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
+        python candles_ta_provider.py --tickers ETH --candle_size 15m --ma_long_intervals 150 --ma_short_intervals 75 --boillenger_std_multiples 2 --redis_ttl_ms 3600000 --processed_hash_queue_max_size 999 --pypy_compat N
 
         Note, 
         a. for 15m bars, a sliding window of size 150 means 150 x 15m = 2250 minutes
@@ -95,6 +120,11 @@ Usage:
             * specify for candles_ta_provider: 
                 --tail 96 
               to trim down the candles to much smaller size, so strategy_executor hot loops won't be impacted.
+        d. --tickers
+            Assuming you have multiple instances of candles_provider running concurrently, and you want current instance to focus on just ETH pairs?
+            --tickers ETH-USDT-SWAP (if candles_provider running against OKX, and --publish_key_symbol denormalized_ticker)
+            --tickers ETH (if candles_provider --publish_key_symbol base_ccy)
+            So here candles_ta_provider setting need match candles_provider publishing settings.
 
     Step 3. Start orderbooks_provider
         set PYTHONPATH=%PYTHONPATH%;D:\dev\siglab\siglab_py
@@ -113,7 +143,8 @@ Usage:
         '--target_strategy_name' is your strategy file, containing the lambdas controlling entry, TP/SL logic. Reflection isn't best friend to fastest execution, it is however design intent to allow maximum, maintainable, back-test to live correspondence.
         Bear in mind numba don't support reflection.
 
-        --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb: These are referencing candles_provider provider_id 'aaa'  and 'bbb' (remove 'mds_assign' prefix) from STEP 1.
+        --hi_candles_provider_topic mds_assign_aaa --lo_candles_provider_topic mds_assign_bbb: 
+            These are referencing candles_provider provider_id 'aaa'  and 'bbb' (remove 'mds_assign' prefix) from STEP 1.
         --orderbooks_provider_topic mds_assign_ccc: Same, you're referencing provider_id 'ccc' from STEP 3. 
 
         If your candles_provider fetching 'BTC/USDT:USDT' candles from binance, and your strategy_executor trading 'BTC/USDC:USDC' via lighter DEX, specify:
