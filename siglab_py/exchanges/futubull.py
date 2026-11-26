@@ -7,6 +7,7 @@ Fees: https://www.futuhk.com/en/commissionnew#crypto
 Subscribe L2 data: https://openapi.futunn.com/futu-api-doc/en/intro/authority.html
 
 Investor Protection: https://www.futuhk.com/en
+Investor Compensation Fund (ICF) is a separate scheme.
 
 Margin Trading: 
     https://www.futunn.com/en/learn/detail-what-is-margin-trading-62010-220679271
