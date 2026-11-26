@@ -33,6 +33,10 @@ python -mpip install futu-api
 
 Whatsapp support: Moomoo OpenAPI 1群
 
+Trading Futures
+    Global Futures https://www.futuhk.com/en/support/topic2_411
+    Crypto Futures https://www.futuhk.com/en/support/topic2_1779
+
 API
     Fetches:
         market status https://openapi.futunn.com/futu-api-doc/en/quote/get-global-state.html
