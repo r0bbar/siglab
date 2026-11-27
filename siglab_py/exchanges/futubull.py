@@ -55,6 +55,9 @@ API
         create order https://openapi.futunn.com/futu-api-doc/en/trade/place-order.html
         amend order https://openapi.futunn.com/futu-api-doc/en/trade/modify-order.html
 
+    Market Data Subscriptions, they call it "API Cards"
+        API market data subscription: https://qtcard.futuhk.com/index/api-cards-mall
+
 '''
 from datetime import datetime, timedelta
 import pytz
