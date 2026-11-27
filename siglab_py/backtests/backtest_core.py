@@ -2518,6 +2518,7 @@ def parseargs():
     
     parser.add_argument("--asymmetric_tp_bps", help="Optional. A positive asymmetric_tp_bps means you are taking deeper TPs. A negative asymmetric_tp_bps means shallower", default=0)
     parser.add_argument("--some_multiples", help="Optional. Strategy specific variable 'multiples', however you want to interpret this whether it's std multiples? or atr multiples? Default 1", default=1)
+    parser.add_argument("--commission_bps", help="One way commission in bps. Default 5 bps.", default=5)
 
     args = parser.parse_args()
 
@@ -2571,6 +2572,8 @@ def parseargs():
     asymmetric_tp_bps = int(args.asymmetric_tp_bps)
     some_multiples = float(args.some_multiples)
 
+    commission_bps = float(args.commission_bps)
+
     return {
         'exchange_name' : exchange_name,
         'api_key' : api_key,
@@ -2590,7 +2593,8 @@ def parseargs():
         'enable_sliced_entry'  : enable_sliced_entry,
 
         'asymmetric_tp_bps' : asymmetric_tp_bps,
-        'some_multiples' : some_multiples
+        'some_multiples' : some_multiples,
+        'commission_bps' : commission_bps
     }
 
 def dump_trades_to_disk(
